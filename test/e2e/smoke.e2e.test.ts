@@ -15,21 +15,21 @@ test.afterAll(async () => {
 })
 
 test('window opens with the TokenLess title', async () => {
-  const window = await app.firstWindow()
-  await window.waitForLoadState('domcontentloaded')
-  await expect(window).toHaveTitle('TokenLess')
+  const page = await app.firstWindow()
+  await page.waitForLoadState('domcontentloaded')
+  await expect(page).toHaveTitle('TokenLess')
 })
 
 test('renderer mounts and shows the Phase 0 stub', async () => {
-  const window = await app.firstWindow()
-  const title = window.locator('.app__title')
+  const page = await app.firstWindow()
+  const title = page.locator('.app__title')
   await expect(title).toHaveText('TokenLess')
-  const subtitle = window.locator('.app__subtitle')
+  const subtitle = page.locator('.app__subtitle')
   await expect(subtitle).toContainText('Phase 0 stub')
 })
 
 test('preload exposes window.tokenless.version', async () => {
-  const window = await app.firstWindow()
-  const version = await window.evaluate(() => (window as any).tokenless?.version)
+  const page = await app.firstWindow()
+  const version = await page.evaluate(() => window.tokenless?.version)
   expect(version).toBe('0.0.1')
 })

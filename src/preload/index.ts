@@ -11,6 +11,5 @@ if (process.contextIsolated) {
     console.error('contextBridge.exposeInMainWorld failed:', error)
   }
 } else {
-  // @ts-expect-error context isolation off, attach to window
   window.tokenless = api
 }
