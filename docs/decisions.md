@@ -276,3 +276,20 @@ Phase 2B also needs a tooltip system — per spec §6.4 / brainstorm Q-G, toolti
 **Reasoning:** Gear review is a transient, focus-stealing surface that semantically sits *above* the modal/overlay layer (which is where the dev toggle lives) but *below* toasts (which should still surface success/error feedback during a review). A named token makes the stacking order self-documenting and keeps token discipline — no inline `calc()` workarounds drifting through component CSS. Toast remains the top layer; the dev toggle remains globally accessible everywhere except behind the gear review pane, which is the correct trade-off for a review-in-progress.
 
 **Discovered:** Phase 2B during integration of GearReviewPane with the global dev toggle overlay.
+
+## ADR-023 (2026-05-14) — SQLite via better-sqlite3, stored under `app.getPath('userData')`, schema applied by an idempotent migration runner
+
+**Context:** Phase 3 needs persistent storage for projects, conversations, turns, accounts, drafts, templates, and settings. The spec (§3) prescribes "all persistence in one SQLite file" with version-numbered migrations and no ORM.
+
+**Options considered:**
+- A) better-sqlite3 (synchronous, native, fastest read path; well-supported on Electron)
+- B) sql.js (pure-JS, WASM-backed; no native build but slow + can't write to disk transactionally)
+- C) node-sqlite3 (async, callback-style, slower than better-sqlite3 in practice)
+
+**Choice:** A — better-sqlite3 11.x. DB path = `path.join(app.getPath('userData'), 'tokenless.db')` (resolves to `%APPDATA%/tokenless/tokenless.db` on Windows). Native module rebuilt for Electron's ABI via `@electron/rebuild` in `postinstall`.
+
+**Schema strategy:** All DDL lives in `src/main/db/migrations/NNN_*.sql`. A `_meta` table tracks `(version INTEGER PRIMARY KEY, applied_at INTEGER)`. At startup, the migration runner reads applied versions, applies any newer ones inside a transaction, and records the version. Order is deterministic via the numeric prefix. The whole startup is wrapped in `logger.errorBoundary('db', …)` — a corrupt DB surfaces as a fatal log and a user-facing error rather than a silent crash.
+
+**Why `userData` over the spec's `~/.tokenless/`:** the spec was written platform-agnostically. `app.getPath('userData')` is the Electron convention, gets backed up with the user profile on Windows, and avoids polluting the user's home directory. Log files (Phase 1B) live under `~/.tokenless/logs/` for now — we'll consider migrating them in Phase 8 polish if it matters.
+
+**Reasoning:** better-sqlite3's synchronous API drastically simplifies DAO code (no `await` rabbit hole through every handler), and its per-op latency on small queries is in the microsecond range — well under the IPC roundtrip cost. We accept the native-rebuild cost (mitigated by `postinstall` hook) because the alternative (sql.js) can't durable-write and the async wrapper (node-sqlite3) makes the code harder to test.
