@@ -50,6 +50,8 @@ Format per entry: date · context · options considered · choice · reasoning. 
 
 ## ADR-005 (2026-05-13) — Conversations: persistent + resumable
 
+**Superseded in part by ADR-016** (the session-id capture mechanism described below is replaced with pre-specifying via `--session-id <uuid>`). The persistence + resumability decision still stands; only the implementation strategy for capturing the session ID changes.
+
 **Context:** What's the lifecycle of a Conversation?
 
 **Options considered:** A) Ephemeral (lives only while `claude` process is alive), B) Persistent + resumable via `claude --resume`, C) Persistent archive only (no resume).
@@ -141,3 +143,55 @@ Format per entry: date · context · options considered · choice · reasoning. 
 **Reasoning:** Canonical fix in the Electron ecosystem. Electron's preload loader does not support full ESM as of Electron 32+, and forcing it would require workarounds that don't carry their weight. CJS preload with an explicit `.cjs` extension bypasses Node's package-type resolution and works reliably across platforms.
 
 **Discovered:** Phase 0, Task 16 (E2E smoke test). Documenting here so Phase 1+ workers don't re-derive the lesson.
+
+## ADR-016 (2026-05-14) — Claude Code session IDs: pre-specify via `--session-id <uuid>`
+
+**Context:** Phase 1A's `spike-resume.ts` discovered that Claude Code session IDs (standard UUID v4s like `155203a8-438f-48e1-939a-7bac97748108`) do not appear anywhere in the interactive TUI startup banner. The original design assumption — capture session ID by parsing claude's stdout after spawn — fails because there is nothing to parse.
+
+**Options considered:**
+- A) Parse `--output-format stream-json --verbose` in headless `-p` mode to extract `session_id` from the first JSON event. Requires running every new session twice (once for ID, once for the actual conversation) or doing all interactions in headless mode.
+- B) Pre-specify the session UUID via `--session-id <uuid>` at spawn time. Symmetric with `--resume <uuid>`. No parsing required.
+
+**Choice:** B — pre-specify.
+
+**Reasoning:** Simpler, deterministic, and the right Phase 4 design. TokenLess generates a `randomUUID()` at conversation creation time, persists it to `conversations.cc_session_id` on insert (rather than nullable + populated after parse), and uses the same UUID for both `--session-id` (new session) and `--resume` (resume). No fragile TUI parsing. Empirically verified end-to-end by `spike-resume.ts` (commit `74ed72e`).
+
+**Implications for the data model:** `conversations.cc_session_id` should be `TEXT NOT NULL` and written on conversation insert. Update spec §3 accordingly when Phase 4 lands.
+
+**Discovered:** Phase 1A integration spike. See `spikes/cc-pty/FINDINGS.md` for the journey.
+
+## ADR-017 (2026-05-14) — Windows: spawn `claude.cmd` not `claude`
+
+**Context:** On Windows, `node-pty.spawn('claude', ...)` fails with ENOENT because Windows `CreateProcess` cannot resolve extensionless Unix-style shell shims. npm installs `claude` as a JavaScript shell script (used by Git Bash) and `claude.cmd` as a Windows batch wrapper that dispatches to `claude.exe`. node-pty's PTY-mode spawn requires the `.cmd` form on Windows.
+
+**Choice:** Use a platform-aware binary name helper:
+
+```typescript
+const CLAUDE_BIN = process.platform === 'win32' ? 'claude.cmd' : 'claude'
+```
+
+Codified as `getClaudeBinary()` in `src/main/cc/spawner.ts` when Phase 4 lands.
+
+**Reasoning:** Required for any node-pty spawn of claude on Windows. Documented so Phase 4 doesn't re-derive the fix.
+
+**Discovered:** Phase 1A integration spike (`spike-spawn.ts`, commit `3b93331`).
+
+## ADR-018 (2026-05-14) — Multi-account: per-account `ANTHROPIC_API_KEY` injection (supersedes ADR-005's CLAUDE_CONFIG_DIR-only strategy)
+
+**Context:** Phase 1A's `spike-config-dir.ts` discovered that `CLAUDE_CONFIG_DIR` isolates **preferences and config state** (theme, hooks, recent projects, onboarding) but **does NOT isolate credentials**. Pointing the env var at a freshly-created empty directory triggers Claude Code's first-run onboarding flow, proving the env var is honored — but claude proceeds with authenticated state anyway. Most likely cause: claude reads credentials from the Windows Credential Manager (OS keyring) and/or inherits `ANTHROPIC_API_KEY` from the parent environment, both of which survive a `CLAUDE_CONFIG_DIR` swap.
+
+**Options considered:**
+- A) Strip `ANTHROPIC_API_KEY` from the env when spawning a different account, hope keyring isolation is sufficient. Brittle — keyring behavior is implicit.
+- B) Inject a per-account `ANTHROPIC_API_KEY` via the spawn env. TokenLess stores each account's API key in its DB; on spawn, `env: { ANTHROPIC_API_KEY: account.api_key, CLAUDE_CONFIG_DIR: account.config_dir, ... }`. Deterministic regardless of keyring state.
+- C) Require users to set `claude logout` / `claude login` between account switches. Defeats the purpose of multi-account.
+
+**Choice:** B — per-account API key injection, paired with `CLAUDE_CONFIG_DIR` for preference isolation.
+
+**Reasoning:** Deterministic, OS-agnostic, decoupled from keyring quirks. The `CLAUDE_CONFIG_DIR` still serves a purpose (separates per-account config) but is no longer load-bearing for identity.
+
+**Implications:**
+- Phase 6 (multi-account) plan needs to add an "API key entry" step to account creation. The user provides each account's API key once, TokenLess persists it (encrypted at rest via Electron's `safeStorage`), and injects it on every spawn for that account.
+- ADR-005's "set `CLAUDE_CONFIG_DIR` per account" plan is **partially superseded**. The persistence + resumability decision stands; only the identity-isolation mechanism is corrected.
+- Update spec §5.1 and §5.3 to reflect this when Phase 6's plan is written.
+
+**Discovered:** Phase 1A integration spike (`spike-config-dir.ts`, commit `cd3a311`). See `spikes/cc-pty/FINDINGS.md` for the full analysis.
