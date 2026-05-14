@@ -1,18 +1,18 @@
 import { Dropdown, type DropdownItem } from '../common/Dropdown'
-import type { MockProject } from '../../mocks/projects'
+import type { Project } from '@shared/types/projects'
 
 interface ProjectSwitcherProps {
-  projects: readonly MockProject[]
-  activeProjectId: string
-  onSelect: (id: string) => void
+  projects: readonly Project[]
+  activeProjectId: number | null
+  onSelect: (id: number) => void
 }
 
-// Thin wrapper around <Dropdown>. Phase 2A's standalone implementation was
-// extracted in Phase 2B (Task 4) per ADR-021.
+// Thin wrapper around <Dropdown>. Converts number IDs to strings for Dropdown's
+// value prop and back to number in the onSelect callback.
 
 export function ProjectSwitcher({ projects, activeProjectId, onSelect }: ProjectSwitcherProps): JSX.Element {
   const items: readonly DropdownItem[] = projects.map((p) => ({
-    value: p.id,
+    value: String(p.id),
     label: p.name,
     description: p.rootPath
   }))
@@ -20,8 +20,8 @@ export function ProjectSwitcher({ projects, activeProjectId, onSelect }: Project
     <Dropdown
       label="Project:"
       items={items}
-      activeValue={activeProjectId}
-      onSelect={onSelect}
+      activeValue={activeProjectId !== null ? String(activeProjectId) : ''}
+      onSelect={(v) => onSelect(Number(v))}
       fallbackLabel="No project"
     />
   )

@@ -1,49 +1,81 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { rendererLogger } from '../../observability/logger-bridge'
-import { MOCK_ACCOUNTS } from '../../mocks/accounts'
-import { MOCK_CONVERSATIONS } from '../../mocks/conversations'
-import { MOCK_PROJECTS } from '../../mocks/projects'
+import { useAccounts } from '../../hooks/use-accounts'
+import { useConversations } from '../../hooks/use-conversations'
+import { useProjects } from '../../hooks/use-projects'
 import { ConversationSidebar } from './ConversationSidebar'
+import { CreateProjectModal } from './CreateProjectModal'
+import { EmptyProjectsState } from './EmptyProjectsState'
 import { MainPane } from './MainPane'
 import { TopBar } from './TopBar'
+import { OnboardingBanner } from '../onboarding/OnboardingBanner'
 import './styles.css'
 
-// AppShell orchestrates the visual layout. Phase 2A holds active project /
-// account / conversation IDs locally + sidebar collapsed state. Phase 3
-// replaces the mock data with IPC-backed hooks; Phase 6 wires real
-// account switching; Phase 8 wires the Settings button to a real view.
+const ONBOARDING_DISMISSED_KEY = 'tokenless.onboardingDismissed'
+
+function readDismissed(): boolean {
+  try {
+    return window.localStorage.getItem(ONBOARDING_DISMISSED_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+function writeDismissed(v: boolean): void {
+  try {
+    window.localStorage.setItem(ONBOARDING_DISMISSED_KEY, v ? '1' : '0')
+  } catch {
+    /* ignore */
+  }
+}
 
 export function AppShell(): JSX.Element {
-  const [activeProjectId, setActiveProjectId] = useState<string>(MOCK_PROJECTS[0].id)
-  const [activeAccountId, setActiveAccountId] = useState<string>(MOCK_ACCOUNTS[0].id)
-  const conversationsForActiveProject = MOCK_CONVERSATIONS.filter(
-    (c) => c.projectId === activeProjectId
-  )
-  const [activeConversationId, setActiveConversationId] = useState<string | null>(
-    conversationsForActiveProject[0]?.id ?? null
-  )
+  const { projects, loading: projectsLoading, create: createProject } = useProjects()
+  const { accounts } = useAccounts()
+  const [activeProjectId, setActiveProjectId] = useState<number | null>(null)
+  const [activeAccountId, setActiveAccountId] = useState<number | null>(null)
+  const [createProjectOpen, setCreateProjectOpen] = useState(false)
+  const [onboardingDismissed, setOnboardingDismissed] = useState<boolean>(readDismissed)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
-  const handleSelectProject = (id: string): void => {
+  // Pick a sensible active project + account once data lands.
+  useEffect(() => {
+    if (activeProjectId === null && projects.length > 0) {
+      setActiveProjectId(projects[0].id)
+    }
+  }, [projects, activeProjectId])
+
+  useEffect(() => {
+    if (activeAccountId === null && accounts.length > 0) {
+      setActiveAccountId(accounts[0].id)
+    }
+  }, [accounts, activeAccountId])
+
+  const { conversations } = useConversations(activeProjectId)
+  const [activeConversationId, setActiveConversationId] = useState<number | null>(null)
+
+  // Reset active conversation when project changes.
+  useEffect(() => {
+    setActiveConversationId(conversations[0]?.id ?? null)
+  }, [activeProjectId, conversations])
+
+  const handleSelectProject = (id: number): void => {
     setActiveProjectId(id)
-    // Reset active conversation to the first one in the new project
-    const firstInProject = MOCK_CONVERSATIONS.find((c) => c.projectId === id)
-    setActiveConversationId(firstInProject?.id ?? null)
-    rendererLogger.info('ui', 'project-switch', `Switched project (stub)`, { projectId: id })
+    rendererLogger.info('ui', 'project-switch', 'Switched project', { projectId: id })
   }
 
-  const handleSelectAccount = (id: string): void => {
+  const handleSelectAccount = (id: number): void => {
     setActiveAccountId(id)
-    rendererLogger.info('ui', 'account-switch', `Switched account (stub)`, { accountId: id })
+    rendererLogger.info('ui', 'account-switch', 'Switched account', { accountId: id })
   }
 
-  const handleSelectConversation = (id: string): void => {
+  const handleSelectConversation = (id: number): void => {
     setActiveConversationId(id)
-    rendererLogger.info('ui', 'conversation-select', `Selected conversation (stub)`, { conversationId: id })
+    rendererLogger.info('ui', 'conversation-select', 'Selected conversation', { conversationId: id })
   }
 
   const handleNewConversation = (): void => {
-    rendererLogger.info('ui', 'new-conversation-clicked', 'New Conversation button clicked (stub)')
+    rendererLogger.info('ui', 'new-conversation-clicked', 'New conversation button clicked (Phase 4 wires this)')
   }
 
   const handleOpenSettings = (): void => {
@@ -54,28 +86,68 @@ export function AppShell(): JSX.Element {
     setSidebarCollapsed((c) => !c)
   }
 
+  const handleOpenCreateProject = (): void => {
+    setCreateProjectOpen(true)
+  }
+
+  const handleCreateProject = async ({
+    name,
+    rootPath
+  }: {
+    name: string
+    rootPath: string
+  }): Promise<void> => {
+    const created = await createProject({ name, rootPath, defaultAccountId: activeAccountId })
+    if (created) {
+      setActiveProjectId(created.id)
+      rendererLogger.info('ui', 'project-create', 'Created project', { projectId: created.id, name })
+    }
+  }
+
+  const handleDismissOnboarding = (): void => {
+    setOnboardingDismissed(true)
+    writeDismissed(true)
+  }
+
+  const showOnboarding = projects.length === 0 && !onboardingDismissed && !projectsLoading
+  const showEmptyState = projects.length === 0 && !projectsLoading
+
   return (
     <div className="app-shell">
       <TopBar
-        projects={MOCK_PROJECTS}
+        projects={projects}
         activeProjectId={activeProjectId}
         onSelectProject={handleSelectProject}
-        accounts={MOCK_ACCOUNTS}
+        accounts={accounts}
         activeAccountId={activeAccountId}
         onSelectAccount={handleSelectAccount}
         onOpenSettings={handleOpenSettings}
       />
+      <OnboardingBanner
+        visible={showOnboarding}
+        onCreateProject={handleOpenCreateProject}
+        onDismiss={handleDismissOnboarding}
+      />
       <div className="app-shell__body">
         <ConversationSidebar
-          conversations={conversationsForActiveProject}
+          conversations={conversations}
           activeId={activeConversationId}
           onSelect={handleSelectConversation}
           collapsed={sidebarCollapsed}
           onToggleCollapsed={handleToggleSidebar}
           onNewConversation={handleNewConversation}
         />
-        <MainPane />
+        {showEmptyState ? (
+          <EmptyProjectsState onCreate={handleOpenCreateProject} />
+        ) : (
+          <MainPane />
+        )}
       </div>
+      <CreateProjectModal
+        open={createProjectOpen}
+        onClose={() => setCreateProjectOpen(false)}
+        onCreate={handleCreateProject}
+      />
     </div>
   )
 }

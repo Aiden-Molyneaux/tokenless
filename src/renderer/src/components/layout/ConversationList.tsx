@@ -1,22 +1,18 @@
-import type { MockConversation } from '../../mocks/conversations'
+import type { Conversation } from '@shared/types/conversations'
 import { ConversationListItem } from './ConversationListItem'
 
 interface ConversationListProps {
-  conversations: readonly MockConversation[]
-  activeId: string | null
-  onSelect: (id: string) => void
+  conversations: readonly Conversation[]
+  activeId: number | null
+  onSelect: (id: number) => void
 }
 
 export function ConversationList({ conversations, activeId, onSelect }: ConversationListProps): JSX.Element {
   if (conversations.length === 0) {
-    return (
-      <p className="conversation-list__empty">
-        No conversations yet. Click "+ New Conversation" to start one.
-      </p>
-    )
+    return <p className="conversation-list__empty">No conversations yet.</p>
   }
   return (
-    <ul className="conversation-list">
+    <ul className="conversation-list" role="list">
       {conversations.map((c) => (
         <ConversationListItem
           key={c.id}

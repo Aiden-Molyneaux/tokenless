@@ -1,28 +1,29 @@
 import { Dropdown, type DropdownItem } from '../common/Dropdown'
-import type { MockAccount } from '../../mocks/accounts'
+import type { Account } from '@shared/types/accounts'
 
 interface AccountSwitcherProps {
-  accounts: readonly MockAccount[]
-  activeAccountId: string
-  onSelect: (id: string) => void
+  accounts: readonly Account[]
+  activeAccountId: number | null
+  onSelect: (id: number) => void
 }
 
-// Thin wrapper around <Dropdown>. Phase 2A's standalone implementation was
-// extracted in Phase 2B (Task 4) per ADR-021. Phase 6 wires real account
-// auth + CLAUDE_CONFIG_DIR + ANTHROPIC_API_KEY injection per ADR-018.
+// Thin wrapper around <Dropdown>. Phase 6 wires real account auth +
+// CLAUDE_CONFIG_DIR + ANTHROPIC_API_KEY injection per ADR-018. Converts
+// number IDs to strings for Dropdown's value prop and back to number in
+// the onSelect callback.
 
 export function AccountSwitcher({ accounts, activeAccountId, onSelect }: AccountSwitcherProps): JSX.Element {
   const items: readonly DropdownItem[] = accounts.map((a) => ({
-    value: a.id,
+    value: String(a.id),
     label: a.label,
-    description: a.email
+    description: a.configDir || '(no config dir)'
   }))
   return (
     <Dropdown
       label="Account:"
       items={items}
-      activeValue={activeAccountId}
-      onSelect={onSelect}
+      activeValue={activeAccountId !== null ? String(activeAccountId) : ''}
+      onSelect={(v) => onSelect(Number(v))}
       fallbackLabel="No account"
     />
   )

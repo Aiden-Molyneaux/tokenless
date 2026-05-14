@@ -1,37 +1,37 @@
-import type { MockAccount } from '../../mocks/accounts'
-import type { MockProject } from '../../mocks/projects'
+import type { Account } from '@shared/types/accounts'
+import type { Project } from '@shared/types/projects'
 import { AccountSwitcher } from './AccountSwitcher'
 import { ProjectSwitcher } from './ProjectSwitcher'
 import { SettingsButton } from './SettingsButton'
 
 interface TopBarProps {
-  projects: readonly MockProject[]
-  activeProjectId: string
-  onSelectProject: (id: string) => void
-  accounts: readonly MockAccount[]
-  activeAccountId: string
-  onSelectAccount: (id: string) => void
+  projects: readonly Project[]
+  activeProjectId: number | null
+  onSelectProject: (id: number) => void
+  accounts: readonly Account[]
+  activeAccountId: number | null
+  onSelectAccount: (id: number) => void
   onOpenSettings: () => void
 }
 
 // Top bar: brand + project/account switchers + settings button.
 
-export function TopBar(props: TopBarProps): JSX.Element {
+export function TopBar({
+  projects,
+  activeProjectId,
+  onSelectProject,
+  accounts,
+  activeAccountId,
+  onSelectAccount,
+  onOpenSettings
+}: TopBarProps): JSX.Element {
   return (
     <header className="top-bar">
       <div className="top-bar__brand">TokenLess</div>
       <nav className="top-bar__nav">
-        <ProjectSwitcher
-          projects={props.projects}
-          activeProjectId={props.activeProjectId}
-          onSelect={props.onSelectProject}
-        />
-        <AccountSwitcher
-          accounts={props.accounts}
-          activeAccountId={props.activeAccountId}
-          onSelect={props.onSelectAccount}
-        />
-        <SettingsButton onClick={props.onOpenSettings} />
+        <ProjectSwitcher projects={projects} activeProjectId={activeProjectId} onSelect={onSelectProject} />
+        <AccountSwitcher accounts={accounts} activeAccountId={activeAccountId} onSelect={onSelectAccount} />
+        <SettingsButton onClick={onOpenSettings} />
       </nav>
     </header>
   )

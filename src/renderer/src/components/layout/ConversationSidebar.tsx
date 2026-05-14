@@ -1,10 +1,10 @@
-import type { MockConversation } from '../../mocks/conversations'
+import type { Conversation } from '@shared/types/conversations'
 import { ConversationList } from './ConversationList'
 
 interface ConversationSidebarProps {
-  conversations: readonly MockConversation[]
-  activeId: string | null
-  onSelect: (id: string) => void
+  conversations: readonly Conversation[]
+  activeId: number | null
+  onSelect: (id: number) => void
   collapsed: boolean
   onToggleCollapsed: () => void
   onNewConversation: () => void

@@ -1,4 +1,4 @@
-import { test, expect, _electron as electron, type ElectronApplication } from '@playwright/test'
+import { test, expect, _electron as electron, type ElectronApplication, type Page } from '@playwright/test'
 import { resolve } from 'node:path'
 
 let app: ElectronApplication
@@ -14,9 +14,24 @@ test.afterAll(async () => {
   await app.close()
 })
 
+// Phase 3: The app now starts with an empty DB. If no project exists the
+// EmptyProjectsState blocks MainPane / Composer from rendering. This helper
+// creates a project through the UI modal so subsequent assertions can proceed.
+async function ensureProjectExists(page: Page): Promise<void> {
+  const emptyState = page.getByRole('region', { name: /welcome to tokenless/i })
+  if (await emptyState.isVisible({ timeout: 2000 }).catch(() => false)) {
+    await page.getByRole('button', { name: /create your first project/i }).click()
+    await page.getByPlaceholder('My Project').fill('E2E')
+    await page.getByPlaceholder('C:/path/to/project').fill('C:/tmp/e2e')
+    await page.getByRole('button', { name: /^create$/i }).click()
+    await page.waitForSelector('.composer', { timeout: 5000 })
+  }
+}
+
 test('composer renders with textarea, 4 config dropdowns, and action buttons', async () => {
   const page = await app.firstWindow()
   await page.waitForLoadState('domcontentloaded')
+  await ensureProjectExists(page)
 
   await expect(page.locator('.prompt-textarea')).toBeVisible()
   await expect(page.locator('.configs-row .dropdown')).toHaveCount(4)
@@ -27,6 +42,7 @@ test('composer renders with textarea, 4 config dropdowns, and action buttons', a
 test('typing in the prompt textarea enables Gear and Send buttons', async () => {
   const page = await app.firstWindow()
   await page.waitForLoadState('domcontentloaded')
+  await ensureProjectExists(page)
 
   const gearButton = page.locator('.actions-row__button--gear')
   await expect(gearButton).toBeDisabled()
@@ -38,6 +54,7 @@ test('typing in the prompt textarea enables Gear and Send buttons', async () => 
 test('clicking Gear swaps to GearReviewPane with original + geared text', async () => {
   const page = await app.firstWindow()
   await page.waitForLoadState('domcontentloaded')
+  await ensureProjectExists(page)
 
   await page.locator('.prompt-textarea').fill('Refactor the auth middleware')
   await page.locator('.actions-row__button--gear').click()
@@ -50,6 +67,7 @@ test('clicking Gear swaps to GearReviewPane with original + geared text', async 
 test('Cancel button in GearReviewPane returns to Composer with prompt preserved', async () => {
   const page = await app.firstWindow()
   await page.waitForLoadState('domcontentloaded')
+  await ensureProjectExists(page)
 
   // Dismiss any lingering GearReviewPane from a previous test before interacting with the composer.
   const gearPane = page.locator('.gear-review-pane')
@@ -71,6 +89,7 @@ test('Cancel button in GearReviewPane returns to Composer with prompt preserved'
 test('terminal section is visible with toolbar + meter + xterm pane', async () => {
   const page = await app.firstWindow()
   await page.waitForLoadState('domcontentloaded')
+  await ensureProjectExists(page)
 
   await expect(page.locator('.terminal-section')).toBeVisible()
   await expect(page.locator('.terminal-toolbar__stop')).toBeVisible()

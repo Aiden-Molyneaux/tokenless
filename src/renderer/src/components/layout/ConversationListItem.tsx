@@ -1,16 +1,17 @@
-import type { MockConversation } from '../../mocks/conversations'
+import type { Conversation } from '@shared/types/conversations'
 
 interface ConversationListItemProps {
-  conversation: MockConversation
+  conversation: Conversation
   isActive: boolean
-  onSelect: (id: string) => void
+  onSelect: (id: number) => void
 }
 
 const MIN = 60 * 1000
 const HOUR = 60 * MIN
 const DAY = 24 * HOUR
 
-function relativeTime(ts: number): string {
+function relativeTime(ts: number | null): string {
+  if (ts === null) return ''
   const diff = Date.now() - ts
   if (diff < MIN) return 'just now'
   if (diff < HOUR) return `${Math.floor(diff / MIN)}m ago`
@@ -19,6 +20,7 @@ function relativeTime(ts: number): string {
 }
 
 export function ConversationListItem({ conversation, isActive, onSelect }: ConversationListItemProps): JSX.Element {
+  const model = conversation.model ?? 'sonnet'
   return (
     <li className={`conversation-item ${isActive ? 'is-active' : ''}`}>
       <button
@@ -26,11 +28,9 @@ export function ConversationListItem({ conversation, isActive, onSelect }: Conve
         className="conversation-item__button"
         onClick={() => onSelect(conversation.id)}
       >
-        <span className="conversation-item__title">{conversation.title}</span>
+        <span className="conversation-item__title">{conversation.title ?? 'Untitled'}</span>
         <span className="conversation-item__meta">
-          <span className={`conversation-item__model conversation-item__model--${conversation.model}`}>
-            {conversation.model}
-          </span>
+          <span className={`conversation-item__model conversation-item__model--${model}`}>{model}</span>
           <span className="conversation-item__time">{relativeTime(conversation.updatedAt)}</span>
         </span>
       </button>
