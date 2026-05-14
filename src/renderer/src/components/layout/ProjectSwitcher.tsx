@@ -10,6 +10,10 @@ interface ProjectSwitcherProps {
 // Dropdown trigger + menu. Phase 2A is a visual stub — no real project
 // switching yet (Phase 3 adds project CRUD + persistence). Click outside
 // closes the menu. Escape closes.
+//
+// NOTE: This component and AccountSwitcher are structurally near-identical.
+// Two instances is defensible (YAGNI); a third instance should trigger
+// extraction of a generic <Dropdown> component + useDropdown hook.
 
 export function ProjectSwitcher({ projects, activeProjectId, onSelect }: ProjectSwitcherProps): JSX.Element {
   const [open, setOpen] = useState(false)

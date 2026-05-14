@@ -10,6 +10,10 @@ interface AccountSwitcherProps {
 // Account switcher dropdown — same UX shape as ProjectSwitcher. Phase 2A
 // is a visual stub; Phase 6 wires real account auth + CLAUDE_CONFIG_DIR
 // + ANTHROPIC_API_KEY injection per ADR-018.
+//
+// NOTE: This component and ProjectSwitcher are structurally near-identical.
+// Two instances is defensible (YAGNI); a third instance should trigger
+// extraction of a generic <Dropdown> component + useDropdown hook.
 
 export function AccountSwitcher({ accounts, activeAccountId, onSelect }: AccountSwitcherProps): JSX.Element {
   const [open, setOpen] = useState(false)
