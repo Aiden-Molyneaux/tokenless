@@ -20,13 +20,16 @@ test('window opens with the TokenLess title', async () => {
   await expect(page).toHaveTitle('TokenLess')
 })
 
-test('renderer mounts and shows the Phase 0 stub', async () => {
+test('app shell renders TopBar brand + ConversationSidebar + MainPane', async () => {
   const page = await app.firstWindow()
-  const title = page.locator('.app__title')
-  await expect(title).toHaveText('TokenLess')
-  const subtitle = page.locator('.app__subtitle')
-  // App subtitle text evolves per phase; assert non-empty and contains "Phase"
-  await expect(subtitle).toContainText('Phase')
+  const brand = page.locator('.top-bar__brand')
+  await expect(brand).toHaveText('TokenLess')
+
+  const sidebar = page.locator('.conversation-sidebar')
+  await expect(sidebar).toBeVisible()
+
+  const mainPane = page.locator('.main-pane')
+  await expect(mainPane).toBeVisible()
 })
 
 test('preload exposes window.tokenless.version', async () => {
