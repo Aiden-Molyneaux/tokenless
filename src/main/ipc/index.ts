@@ -6,6 +6,7 @@ import type { Database } from 'better-sqlite3'
 import type { Logger } from '@main/observability'
 import * as pty from 'node-pty'
 
+import { IPC_CC_EVENT } from '@shared/ipc/cc'
 import { LogBridge, type Broadcast } from './log-bridge'
 import { AccountsHandler } from './accounts-handler'
 import { ProjectsHandler } from './projects-handler'
@@ -50,7 +51,7 @@ export function registerIpcHandlers(
   const ccLifecycle = new CcLifecycle(productionPtyFactory, {
     onChunk: (e) => broadcast('cc:output-chunk', e),
     onExit: (e) => broadcast('cc:exit', e),
-    onEvent: (_e) => { /* cc:event broadcast wired in Task 6 */ }
+    onEvent: (e) => broadcast(IPC_CC_EVENT, e)
   })
   const ccHandler = new CcHandler(db, logger, ccLifecycle)
   ccHandler.install(ipcMain)

@@ -22,6 +22,7 @@ import {
   IPC_CC_RESIZE,
   IPC_CC_OUTPUT_CHUNK,
   IPC_CC_EXIT,
+  IPC_CC_EVENT,
   type LogFromRendererPayload,
   type LogGetRecentRequest,
   type LogGetRecentResponse,
@@ -51,7 +52,8 @@ import {
   type CcResizeRequest,
   type CcResizeResult,
   type CcOutputChunkPayload,
-  type CcExitPayload
+  type CcExitPayload,
+  type CcEventPayload
 } from '@shared/ipc'
 
 const api = {
@@ -146,6 +148,11 @@ const api = {
       const listener = (_e: unknown, payload: CcExitPayload): void => fn(payload)
       ipcRenderer.on(IPC_CC_EXIT, listener as never)
       return () => ipcRenderer.removeListener(IPC_CC_EXIT, listener as never)
+    },
+    onEvent(fn: (payload: CcEventPayload) => void): () => void {
+      const listener = (_e: unknown, payload: CcEventPayload): void => fn(payload)
+      ipcRenderer.on(IPC_CC_EVENT, listener as never)
+      return () => ipcRenderer.removeListener(IPC_CC_EVENT, listener as never)
     }
   }
 }

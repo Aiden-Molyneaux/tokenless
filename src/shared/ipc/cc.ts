@@ -8,12 +8,14 @@
 // Phase 4B adds: cc:stop, cc:resume, cc:event (parsed), cc:error.
 
 import type { IpcResult } from './envelope'
+import type { CcEvent } from '../types/cc-events'
 
 export const IPC_CC_START = 'cc:start'
 export const IPC_CC_SEND = 'cc:send'
 export const IPC_CC_RESIZE = 'cc:resize'
 export const IPC_CC_OUTPUT_CHUNK = 'cc:output-chunk'
 export const IPC_CC_EXIT = 'cc:exit'
+export const IPC_CC_EVENT = 'cc:event'
 
 export interface CcStartRequest {
   readonly conversationId: number
@@ -58,6 +60,11 @@ export interface CcExitPayload {
   readonly conversationId: number
   readonly exitCode: number
   readonly signal?: number
+}
+
+export interface CcEventPayload {
+  readonly conversationId: number
+  readonly event: CcEvent
 }
 
 export type CcStartResult = IpcResult<CcStartResponse>

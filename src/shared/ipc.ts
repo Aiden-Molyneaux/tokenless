@@ -78,6 +78,7 @@ export {
   IPC_CC_RESIZE,
   IPC_CC_OUTPUT_CHUNK,
   IPC_CC_EXIT,
+  IPC_CC_EVENT,
   type CcStartRequest,
   type CcStartResponse,
   type CcStartResult,
@@ -87,7 +88,8 @@ export {
   type CcResizeRequest,
   type CcResizeResult,
   type CcOutputChunkPayload,
-  type CcExitPayload
+  type CcExitPayload,
+  type CcEventPayload
 } from './ipc/cc'
 
 export type { IpcResult, IpcOk, IpcError } from './ipc/envelope'
@@ -114,3 +116,4 @@ export type IpcChannelName =
   | 'cc:resize'
   | 'cc:output-chunk'
   | 'cc:exit'
+  | 'cc:event'
