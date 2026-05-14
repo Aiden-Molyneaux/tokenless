@@ -9,6 +9,8 @@ import type { Logger } from '@main/observability'
 import * as pty from 'node-pty'
 
 import { IPC_CC_EVENT, IPC_CC_CRASHED, IPC_CC_HUNG } from '@shared/ipc/cc'
+import { IPC_TELEMETRY_TICK } from '@shared/ipc/telemetry'
+import { TelemetryEmitter } from '@main/cc/telemetry-emitter'
 import { LogBridge, type Broadcast } from './log-bridge'
 import { AccountsHandler } from './accounts-handler'
 import { ProjectsHandler } from './projects-handler'
@@ -50,10 +52,22 @@ export function registerIpcHandlers(
   const conversationsHandler = new ConversationsHandler(db, logger, broadcast)
   conversationsHandler.install(ipcMain)
 
+  const telemetryEmitter = new TelemetryEmitter({
+    intervalMs: 3000,
+    emit: (tick) => broadcast(IPC_TELEMETRY_TICK, { tick })
+  })
+  telemetryEmitter.start()
+
   const ccLifecycle = new CcLifecycle(productionPtyFactory, {
     onChunk: (e) => broadcast('cc:output-chunk', e),
-    onExit: (e) => broadcast('cc:exit', e),
-    onEvent: (e) => broadcast(IPC_CC_EVENT, e),
+    onExit: (e) => {
+      telemetryEmitter.removeConversation(e.conversationId)
+      broadcast('cc:exit', e)
+    },
+    onEvent: (e) => {
+      telemetryEmitter.handle(e)
+      broadcast(IPC_CC_EVENT, e)
+    },
     onCrashed: (e) => {
       const logId = randomUUID()
       logger.error('cc', 'cc-crashed', `claude exited non-zero (code=${e.exitCode})`, {
@@ -90,6 +104,7 @@ export function registerIpcHandlers(
       conversationsHandler.uninstall(ipcMain)
       ccHandler.uninstall(ipcMain)
       ccLifecycle.closeAll()
+      telemetryEmitter.stop()
     }
   }
 }

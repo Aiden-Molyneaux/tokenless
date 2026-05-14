@@ -1,4 +1,5 @@
 import type { LogRecord } from '@shared/observability'
+import type { TelemetryTick } from '@shared/ipc'
 import type {
   AccountsListResult,
   AccountsCreateRequest,
@@ -72,6 +73,9 @@ export interface TokenlessApi {
     resume(req: CcResumeRequest): Promise<CcResumeResult>
     onCrashed(fn: (payload: CcCrashedPayload) => void): () => void
     onHung(fn: (payload: CcHungPayload) => void): () => void
+  }
+  readonly telemetry: {
+    onTick(fn: (tick: TelemetryTick) => void): () => void
   }
 }
 

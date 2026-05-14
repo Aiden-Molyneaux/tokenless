@@ -27,6 +27,8 @@ import {
   IPC_CC_RESUME,
   IPC_CC_CRASHED,
   IPC_CC_HUNG,
+  IPC_TELEMETRY_TICK,
+  type TelemetryTick,
   type LogFromRendererPayload,
   type LogGetRecentRequest,
   type LogGetRecentResponse,
@@ -179,6 +181,13 @@ const api = {
       const listener = (_e: unknown, payload: CcHungPayload): void => fn(payload)
       ipcRenderer.on(IPC_CC_HUNG, listener as never)
       return () => ipcRenderer.removeListener(IPC_CC_HUNG, listener as never)
+    }
+  },
+  telemetry: {
+    onTick(fn: (tick: TelemetryTick) => void): () => void {
+      const listener = (_e: unknown, payload: { tick: TelemetryTick }): void => fn(payload.tick)
+      ipcRenderer.on(IPC_TELEMETRY_TICK, listener as never)
+      return () => ipcRenderer.removeListener(IPC_TELEMETRY_TICK, listener as never)
     }
   }
 }
