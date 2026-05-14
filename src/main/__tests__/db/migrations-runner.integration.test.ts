@@ -3,6 +3,7 @@ import BetterSqlite3 from 'better-sqlite3'
 
 import { runMigrations, listAppliedVersions } from '../../db/migrations/runner'
 import type { Migration } from '../../db/migrations/runner'
+import { MIGRATIONS } from '../../db/migrations/index'
 
 // Purpose: the runner applies pending migrations in version order, records them
 // in _meta, is idempotent across runs, and atomically rolls back a batch on
@@ -52,5 +53,31 @@ describe('db/migrations/runner', () => {
     // m1 should NOT have been applied because the transaction wrapping the
     // batch rolls back.
     expect(listAppliedVersions(db)).toEqual([])
+  })
+})
+
+// Purpose: the real 001_init.sql migration applies cleanly and creates all
+// expected tables.
+describe('db/migrations/index — real schema', () => {
+  it('applies 001_init and creates all spec §3 tables', () => {
+    const db = new BetterSqlite3(':memory:')
+    runMigrations(db, MIGRATIONS)
+    const tables = db
+      .prepare<[], { name: string }>(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '\\_meta' ESCAPE '\\'"
+      )
+      .all()
+      .map((r) => r.name)
+      .sort()
+    expect(tables).toEqual([
+      'accounts',
+      'conversations',
+      'drafts',
+      'projects',
+      'settings',
+      'skills',
+      'templates',
+      'turns'
+    ])
   })
 })

@@ -1,7 +1,12 @@
-// Registered, ordered migrations. Numeric prefix in the file name determines
-// version. Append-only: never edit an existing migration; add a new one.
+// Registered, ordered migrations. SQL files are inlined via Vite's ?raw
+// import so they're present in the bundled main process.
+// Append-only: never edit an existing migration; add a new one.
 
 import type { Migration } from './runner'
 
-// Will be populated by Task 6 with the initial schema migration.
-export const MIGRATIONS: readonly Migration[] = []
+// eslint-disable-next-line import/no-unresolved
+import init001 from './001_init.sql?raw'
+
+export const MIGRATIONS: readonly Migration[] = [
+  { version: 1, name: 'init', sql: init001 }
+]
