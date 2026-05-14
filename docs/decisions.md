@@ -195,3 +195,23 @@ Codified as `getClaudeBinary()` in `src/main/cc/spawner.ts` when Phase 4 lands.
 - Update spec §5.1 and §5.3 to reflect this when Phase 6's plan is written.
 
 **Discovered:** Phase 1A integration spike (`spike-config-dir.ts`, commit `cd3a311`). See `spikes/cc-pty/FINDINGS.md` for the full analysis.
+
+## ADR-019 (2026-05-14) — Logger cornerstone shape: ring buffer + JSONL file + IPC broadcast subscribers
+
+**Context:** Spec §6 made observability a cornerstone but left implementation specifics open. Phase 1B implementation chose three fan-out sinks per record and a few specific shape decisions.
+
+**Choices:**
+- **Three sinks per record:** in-memory `RingBuffer<LogRecord>` (capacity 5000), `FileSink` (daily-rotating JSONL files under `~/.tokenless/logs/`, 30-day retention), and an IPC subscriber pool (the `LogBridge` subscribes once and broadcasts to all renderer windows). Each record fans out to all three.
+- **`errorBoundary` returns `undefined` on throw, not rethrowing.** Forces every call site to handle absence-of-result explicitly. Catches the "I forgot the error path existed" bug class.
+- **Renderer records are materialized in the renderer.** The renderer's `rendererLogger` builds the `LogRecord` (id, ts, source='renderer', fingerprint) and ships it via IPC. Main's `logger.ingestFromRenderer` does NOT re-materialize. This means renderer records preserve their `source: 'renderer'` field and don't get incorrectly tagged as main.
+- **Fingerprint algorithm differs main vs renderer.** Main uses SHA-256 truncated to 16 hex chars (via `node:crypto`). Renderer uses a simple polynomial hash truncated to 8 hex chars (synchronous; `crypto.subtle.digest` is async-only). Both fingerprints satisfy the same purpose: deduplicate AI error analysis caching (per spec §6.5). They don't need cryptographic strength — they need stability per `(category, event, stack)` tuple.
+- **Categories are a closed enum.** Adding a new category requires changes to `src/shared/observability.ts` AND `docs/observability.md`. This prevents drift and keeps Dev Mode filter chips finite.
+
+**Reasoning:**
+
+- Three sinks because: ring buffer is for fast Dev Mode display; file sink is for forensic debugging post-crash; subscribers are for live UI streaming. Each addresses a different access pattern; combining into one would compromise on at least one.
+- 5000 record buffer: ~5MB at typical record size (~1KB JSON). Cheap, generous for active debugging.
+- 30 days file retention: long enough for any "what happened last week" investigation; not so long that disk fills up. Trivial to adjust later.
+- `errorBoundary` discipline: see "Choices" above. Caller-explicit handling matches the CLAUDE.md cornerstone directive that every error path has a user-facing recovery path.
+
+**Discovered:** Phase 1B implementation. See `src/main/observability/` for the code, `docs/observability.md` for the usage manual.
