@@ -93,3 +93,24 @@
 .terminal-pane .xterm {
   height: 100%;
 }
+
+.hung-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+  border-bottom: 1px solid var(--tl-rule-subtle);
+}
+.hung-banner--warn  { background: rgba(212, 160, 23, 0.15); color: #d4a017; }
+.hung-banner--error { background: rgba(210, 34, 34, 0.15); color: var(--tl-color-danger); }
+.hung-banner__stop {
+  background: transparent;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  color: inherit;
+  padding: 0.15rem 0.55rem;
+  font: inherit;
+  cursor: pointer;
+}

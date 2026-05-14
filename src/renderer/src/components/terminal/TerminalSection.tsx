@@ -1,5 +1,8 @@
+import { useEffect, useState } from 'react'
+
 import { useCcEvents } from '../../hooks/use-cc-events'
 import { rendererLogger } from '../../observability/logger-bridge'
+import { HungBanner } from './HungBanner'
 import { TerminalPane } from './TerminalPane'
 import { TerminalToolbar } from './TerminalToolbar'
 import './styles.css'
@@ -14,13 +17,38 @@ interface TerminalSectionProps {
 // is a live PTY. When it's null, no PTY exists (either never started or exited).
 // The parser events flow through useCcEvents for Phase 4C to drive the budget
 // meter; for Phase 4B they're subscribed but not acted upon.
+// Phase 4C adds the HungBanner — shown when cc:hung fires for this conversation,
+// cleared on cc:exit.
 
 export function TerminalSection({ conversationId }: TerminalSectionProps): JSX.Element {
-  // Subscribe to events even though we don't use them yet — keeps the
-  // wiring hot so Phase 4C just adds state.
+  const [hung, setHung] = useState<{ severity: 'warn' | 'error' } | null>(null)
+
   useCcEvents(conversationId, () => {
-    /* Phase 4C: drive budget meter from tokens-used events */
+    /* Phase 4D: drive budget meter from tokens-used events */
   })
+
+  // Subscribe to cc.onHung for this conversation. Clear on cc.onExit (a stop
+  // or successful response always clears the banner).
+  useEffect(() => {
+    if (conversationId === null) {
+      setHung(null)
+      return undefined
+    }
+    const unsubHung = window.tokenless.cc.onHung((payload) => {
+      if (payload.conversationId === conversationId) {
+        setHung({ severity: payload.severity })
+      }
+    })
+    const unsubExit = window.tokenless.cc.onExit((payload) => {
+      if (payload.conversationId === conversationId) setHung(null)
+    })
+    // Reset on conversation change
+    setHung(null)
+    return () => {
+      unsubHung()
+      unsubExit()
+    }
+  }, [conversationId])
 
   const handleStop = async (): Promise<void> => {
     if (conversationId === null) {
@@ -30,9 +58,7 @@ export function TerminalSection({ conversationId }: TerminalSectionProps): JSX.E
     const result = await window.tokenless.cc.stop({ conversationId })
     if (!result.ok) {
       rendererLogger.error('ui', 'terminal-stop-failed', result.error.message, {
-        conversationId,
-        code: result.error.code,
-        logId: result.error.logId
+        conversationId, code: result.error.code, logId: result.error.logId
       })
     } else {
       rendererLogger.info('ui', 'terminal-stop-ok', 'Sent stop to backend', { conversationId })
@@ -42,6 +68,7 @@ export function TerminalSection({ conversationId }: TerminalSectionProps): JSX.E
   return (
     <section className="terminal-section">
       <TerminalToolbar onStop={() => void handleStop()} streaming={conversationId !== null} />
+      <HungBanner visible={hung !== null} severity={hung?.severity ?? 'warn'} onStop={() => void handleStop()} />
       <TerminalPane key={conversationId ?? 'none'} conversationId={conversationId} />
     </section>
   )
