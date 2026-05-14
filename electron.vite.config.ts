@@ -9,7 +9,8 @@ export default defineConfig({
       rollupOptions: {
         input: {
           index: resolve('src/main/index.ts')
-        }
+        },
+        external: ['better-sqlite3']
       }
     },
     resolve: {
