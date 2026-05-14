@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { useDropdown } from './use-dropdown'
+import './styles.css'
 
 export interface DropdownItem {
   value: string
