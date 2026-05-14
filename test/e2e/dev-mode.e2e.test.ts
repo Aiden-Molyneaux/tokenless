@@ -14,6 +14,14 @@ test.afterAll(async () => {
   await app.close()
 })
 
+test.beforeEach(async () => {
+  // Reset localStorage to clear any state persisted from prior tests
+  const window = await app.firstWindow()
+  await window.evaluate(() => {
+    window.localStorage.clear()
+  })
+})
+
 test('Dev Mode toggle opens and closes the panel', async () => {
   const window = await app.firstWindow()
   await window.waitForLoadState('domcontentloaded')
