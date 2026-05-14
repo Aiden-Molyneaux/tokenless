@@ -87,3 +87,55 @@ Format:
 - Clicking a conversation marks it active (orange left border + tinted background).
 - "+ New Conversation" and ⚙ Settings emit `info` records visible in Dev Mode.
 - All interactions log to Dev Mode under `ui/*` events with relevant context.
+
+## Scenario: Phase 2B — Composer flow
+
+**Preconditions:** App built and running (`npm run preview`).
+
+**Steps:**
+1. Click in the prompt textarea, type a few sentences.
+2. Click each of the 4 config dropdowns (Model, Breadth, Format, Skill), pick a non-default value.
+3. Hover the `(i)` icons next to the dropdowns. Verify tooltip text appears with context-aware lines (e.g., picking Haiku surfaces "Haiku needs explicit instructions for non-trivial tasks").
+4. Click "Gear". Verify the composer is replaced by the GearReviewPane.
+5. Inspect the side-by-side panes: original on the left (dimmed), geared on the right (highlighted, editable).
+6. Inspect the critique flags (1 info + 1 warn).
+7. Edit the geared text in the right pane.
+8. Click "Re-gear". Verify the geared content refreshes (Phase 2B re-uses the same mock — phase 5 re-calls Haiku).
+9. Click "Cancel" (×). Verify the composer reappears with the original prompt text preserved.
+10. Click "Gear" again, then "Send geared". Verify composer reappears with prompt cleared.
+
+**Expected:**
+- All dropdowns open/close with outside-click + Escape behavior intact.
+- Tooltips render on hover and disappear on mouse leave.
+- GearReviewPane shows the canned MOCK_GEARED_PROMPT in the editable side.
+- Token-savings indicator appears in the geared pane header ("saves ~N tok").
+- Re-gear logs `ui/re-gear-clicked` to Dev Mode; Send geared logs `ui/send-geared`; Cancel logs `ui/gear-cancel`.
+
+## Scenario: Phase 2B — Terminal section displays canned ANSI
+
+**Preconditions:** App built and running.
+
+**Steps:**
+1. Observe the terminal pane at the bottom of MainPane.
+2. Wait for the mock stream to play through (~10-15 seconds total).
+3. Click the "◼ Stop" button.
+4. Hover the context budget meter.
+
+**Expected:**
+- Terminal pane displays dark background with the Claude Code banner, Read/Glob tool calls, refactor narrative, and savings summary.
+- ANSI color codes render (cyan for user prompt, yellow for tool calls, green for Claude's response, dim gray for tool output).
+- Stop button is enabled during streaming, disabled after click.
+- Context budget meter shows "42%" with a blue bar fill.
+- Hover on meter shows tooltip with current/total token counts.
+
+## Scenario: Phase 2B — Dev Mode toggle below TopBar
+
+**Preconditions:** App built and running.
+
+**Steps:**
+1. Observe the Dev Mode toggle button position.
+2. Click the ⚙ Settings icon in the TopBar.
+
+**Expected:**
+- The Dev Mode toggle floats below the TopBar in the top-right corner, NOT overlapping the Settings icon.
+- Settings click is unobstructed; emits `ui/settings-clicked` log.

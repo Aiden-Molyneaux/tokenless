@@ -20,7 +20,7 @@ test('window opens with the TokenLess title', async () => {
   await expect(page).toHaveTitle('TokenLess')
 })
 
-test('app shell renders TopBar brand + ConversationSidebar + MainPane', async () => {
+test('app shell renders TopBar brand + ConversationSidebar + MainPane with composer + terminal', async () => {
   const page = await app.firstWindow()
   const brand = page.locator('.top-bar__brand')
   await expect(brand).toHaveText('TokenLess')
@@ -30,6 +30,10 @@ test('app shell renders TopBar brand + ConversationSidebar + MainPane', async ()
 
   const mainPane = page.locator('.main-pane')
   await expect(mainPane).toBeVisible()
+
+  // Phase 2B additions:
+  await expect(page.locator('.composer')).toBeVisible()
+  await expect(page.locator('.terminal-section')).toBeVisible()
 })
 
 test('preload exposes window.tokenless.version', async () => {
