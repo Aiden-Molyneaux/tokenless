@@ -6,7 +6,7 @@ import {
   installUncaughtHandlers,
   Logger
 } from './observability'
-import { createDefaultBroadcast } from './ipc/log-bridge'
+import type { Broadcast } from './ipc/log-bridge'
 import { registerIpcHandlers } from './ipc'
 
 // Initialize the Logger as early as possible so even early-startup errors
@@ -19,9 +19,18 @@ installUncaughtHandlers(logger)
 
 logger.info('observability', 'logger-online', 'Logger initialized', { logDir })
 
-// Register IPC handlers before the window is created so renderer requests
-// during app startup don't race.
-const ipcRegistration = registerIpcHandlers(ipcMain, logger, createDefaultBroadcast())
+// Broadcast records to every renderer window. Inlined here (instead of in
+// log-bridge.ts) so the bridge module stays free of electron imports — tests
+// for LogBridge can use a fake Broadcast spy without dragging electron in.
+const broadcast: Broadcast = (channel: string, payload: unknown) => {
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (!win.isDestroyed()) {
+      win.webContents.send(channel, payload)
+    }
+  }
+}
+
+const ipcRegistration = registerIpcHandlers(ipcMain, logger, broadcast)
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({

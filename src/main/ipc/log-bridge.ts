@@ -17,20 +17,6 @@ import {
 // In tests we inject a spy so we can assert calls.
 export type Broadcast = (channel: string, payload: unknown) => void
 
-// Default broadcaster used by main. Imported lazily to keep tests free of
-// electron dependencies.
-export function createDefaultBroadcast(): Broadcast {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { BrowserWindow } = require('electron') as typeof import('electron')
-  return (channel: string, payload: unknown) => {
-    for (const win of BrowserWindow.getAllWindows()) {
-      if (!win.isDestroyed()) {
-        win.webContents.send(channel, payload)
-      }
-    }
-  }
-}
-
 export class LogBridge {
   private unsubscribe: (() => void) | null = null
 
