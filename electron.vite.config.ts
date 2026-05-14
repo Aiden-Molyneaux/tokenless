@@ -10,7 +10,7 @@ export default defineConfig({
         input: {
           index: resolve('src/main/index.ts')
         },
-        external: ['better-sqlite3']
+        external: ['better-sqlite3', 'node-pty']
       }
     },
     resolve: {
