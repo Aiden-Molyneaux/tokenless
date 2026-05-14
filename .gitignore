@@ -1,0 +1,27 @@
+# Visual Companion (Superpowers brainstorming)
+.superpowers/
+
+# Node / Electron
+node_modules/
+dist/
+out/
+release/
+build/
+
+# Local environment
+.env
+.env.local
+~/.tokenless/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/settings.json
+.idea/
+
+# Logs / runtime
+logs/
+*.log
+*.tsbuildinfo
