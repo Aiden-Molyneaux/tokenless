@@ -397,3 +397,24 @@ These are deliberately conservative — built around the mock-claude's output so
 
 **Discovered:** Phase 4B parser design.
 
+## ADR-029 (2026-05-14) — Telemetry tick design: 3s interval, server-coalesced, conversation-scoped
+
+**Context:** Phase 4C wires the ContextBudgetMeter to real values from the parser's `tokens-used` events. The naive design — fire a `telemetry:tick` IPC for every parser event — would flood the IPC channel during active streaming. A coalescing emitter trades latency for bandwidth.
+
+**Options considered:**
+- A) Per-event IPC: every `tokens-used` parser event broadcasts immediately. Simple but high-frequency. Renderer must dedup.
+- B) Renderer-side coalescing: parser events flow as cc:event; renderer derives telemetry from them with its own debounce. Couples telemetry shape to the parser event shape.
+- C) Main-side coalescing: `TelemetryEmitter` keeps per-conversation latest state, fires a single `telemetry:tick` on a fixed interval (3s) only when the value changed since the previous flush. One IPC payload type per tick. Renderer just consumes the tick.
+
+**Choice:** C — `TelemetryEmitter` in `main/cc/`. Interval is 3 seconds (matches the spec's "every ~5s" tolerance — 3s gives a smoother UI without being chatty). Per-conversation dirty flag means an idle conversation generates zero ticks even though the emitter is running. Phase 5 will extend the `TelemetryTick` payload with cost fields (`$ spent`, `model usage breakdown`) without changing the cadence.
+
+**Reasoning:** Main-side coalescing keeps the renderer's data shape stable across phases. The 3s cadence is fast enough that the user perceives the meter as live (claude streams responses over many seconds anyway) and slow enough that we won't crash the IPC under burst load. Test ergonomics are clean — the emitter takes an injectable interval and a clock-friendly `emit` callback.
+
+**Trade-offs:**
+- A 3s delay between the parser seeing a `tokens-used` line and the user seeing the meter update. Acceptable.
+- Multi-conversation users see two independent meters tick on their own schedules — that's correct (no cross-talk).
+
+**Phase 5 extension:** the `TelemetryTick` interface has comment-marked Phase 5 fields. When the Anthropic SDK lands, the emitter will also fold in `$ spent` derived from per-turn token counts × model-specific pricing.
+
+**Discovered:** Phase 4C telemetry wiring.
+

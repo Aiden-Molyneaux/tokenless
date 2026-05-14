@@ -275,3 +275,32 @@ Format:
 2. **Expect:** Both stream independently — switching tabs shows the right output (because TerminalPane is keyed by conversationId, the xterm instance is per-conversation).
 3. Click Stop on B.
 4. **Expect:** B stops, A continues. The turns table for B has the latest row with `status='stopped'`. A's turns are unaffected.
+
+## Phase 4C — Failure modes + telemetry
+
+### S-4C.1 Crash toast on non-zero exit
+1. Launch with TOKENLESS_MOCK_CRASH_AFTER_MS=500 + TOKENLESS_CLAUDE_BIN=mock-claude.cmd.
+2. Create project, click New Conversation.
+3. **Expect:** Within ~1s an error toast appears: "Claude Code crashed (exit 1). Conversation saved — try resuming." Dev Mode shows `cc-crashed` log entry. The conversation row IS persisted (still in sidebar after restart).
+
+### S-4C.2 Hung banner on idle conversation
+1. Launch with the mock. Create project, New Conversation.
+2. Manually pause the mock's stdin (or just don't type anything) for >60s.
+3. **Expect:** Hung banner appears above the terminal: "Claude has been idle for a minute — still working?" Click Stop to dismiss + kill the PTY.
+
+### S-4C.3 PTY write fail toast
+Hard to trigger manually — the test double simulates this. Scenario for documentation:
+1. After a Stop or crash, the PTY is dead but the renderer hasn't fully caught up.
+2. Type a prompt + Send.
+3. **Expect:** Error toast: "Couldn't send prompt — PTY connection lost. Restart the conversation." Dev Mode shows `send-failed` with code `PTY_WRITE_FAILED`.
+
+### S-4C.4 Orphan cleanup on CLAUDE_NOT_FOUND
+1. Launch with TOKENLESS_CLAUDE_BIN=C:/nonexistent.cmd.
+2. Create project, click New Conversation.
+3. CLAUDE_NOT_FOUND modal appears.
+4. **Expect:** After dismissing the modal, the sidebar has NO orphan conversation row (it was deleted because cc:start failed).
+
+### S-4C.5 Telemetry meter shows real usage
+1. Launch with the mock (which emits `tokens: N/200000` lines).
+2. Create project, New Conversation, send a few prompts.
+3. **Expect:** The Context: meter in the terminal toolbar shows a non-zero value within 3-4 seconds of each send. The value increases monotonically as the mock's tokens counter accumulates.
