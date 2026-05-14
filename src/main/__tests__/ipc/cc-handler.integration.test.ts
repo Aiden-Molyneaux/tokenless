@@ -219,6 +219,33 @@ describe('ipc/cc-handler', () => {
     if (!result.ok) expect(result.error.code).toBe('NOT_FOUND')
   })
 
+  it('resume on an already-active conversation returns ok with the existing sessionId (idempotent)', async () => {
+    // First start — PTY now live
+    const startResult = await handler.start({
+      conversationId,
+      cwd: 'C:/x',
+      cols: 100,
+      rows: 30,
+      accountId
+    })
+    expect(startResult.ok).toBe(true)
+    if (!startResult.ok) return
+    const liveSessionId = startResult.data.sessionId
+
+    // Resume without stopping first — lifecycle.resume throws "already active",
+    // the handler catches it and returns the live slot's session info.
+    const resumeResult = await handler.resume({
+      conversationId,
+      cwd: 'C:/x',
+      cols: 100,
+      rows: 30,
+      accountId
+    })
+    expect(resumeResult.ok).toBe(true)
+    if (!resumeResult.ok) return
+    expect(resumeResult.data.sessionId).toBe(liveSessionId)
+  })
+
   it('start returns CLAUDE_NOT_FOUND when the spawner fails with that code', async () => {
     const errLifecycle = new CcLifecycle(
       () => {

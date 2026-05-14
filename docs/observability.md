@@ -7,7 +7,7 @@ The full Logger service lives at `src/main/observability/logger.ts` (added in Ph
 | Category | Use for |
 |---|---|
 | `cc` | Claude Code subprocess lifecycle, output stream parsing, session ID capture, resume mechanics. Phase 4A events: `cc-start`, `cc-send`, `cc-resize`, `cc-exit`. Phase 4B events: `cc-stop`, `cc-resume`. **Parsed events (broadcast as `cc:event` IPC, not Logger entries):** `prompt-ready`, `tool-call`, `response-complete`, `tokens-used`. |
-| `pty` | node-pty layer specifically — PTY spawn, write, resize, exit. Lower-level than `cc`. Phase 4B will add parser-detected events like `pty-hung`, `pty-quota`, `pty-auth-expired`. |
+| `pty` | node-pty layer specifically — PTY spawn, write, resize, exit. Lower-level than `cc`. Phase 4C will add parser-detected events like `pty-hung`, `pty-quota`, `pty-auth-expired`. |
 | `api` | Anthropic SDK calls — request, response, retry, error handling, malformed JSON |
 | `db` | SQLite operations — queries, migrations, lock contention, constraint violations. Phase 3 events: `db-online`, `db-init-failed`, `projects-list`, `projects-create`, `projects-update`, `projects-delete`, `conversations-list-by-project`, `conversations-create`, `conversations-update`, `conversations-delete`, `accounts-list`, `accounts-create`, `userData-override`. |
 | `ipc` | IPC channel handlers — boundary between main and renderer |
