@@ -1,0 +1,28 @@
+appId: com.aidenmolyneaux.tokenless
+productName: TokenLess
+directories:
+  buildResources: build
+  output: release
+files:
+  - "!**/.vscode/*"
+  - "!src/*"
+  - "!electron.vite.config.{js,ts,mjs,cjs}"
+  - "!tsconfig.*.json"
+  - "!docs/**/*"
+  - "!test/**/*"
+  - "!spikes/**/*"
+asarUnpack:
+  - resources/**
+win:
+  executableName: TokenLess
+  artifactName: TokenLess-${version}-setup.${ext}
+  target:
+    - target: nsis
+      arch:
+        - x64
+nsis:
+  artifactName: TokenLess-${version}-setup.${ext}
+  shortcutName: TokenLess
+  uninstallDisplayName: TokenLess
+  createDesktopShortcut: always
+publish: null
