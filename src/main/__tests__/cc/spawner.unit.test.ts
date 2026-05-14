@@ -131,4 +131,32 @@ describe('cc/spawner', () => {
     )
     expect(argsSeen).toEqual(['--resume', 'abc-def-uuid'])
   })
+
+  it('throws CLAUDE_NOT_FOUND when pty factory throws ENOENT', () => {
+    const factory: PtySpawnFn = () => {
+      const e = new Error('spawn ENOENT') as Error & { code?: string }
+      e.code = 'ENOENT'
+      throw e
+    }
+    let thrown: unknown
+    try {
+      spawnClaude(
+        {
+          conversationId: 1,
+          sessionId: 'abc-uuid',
+          cwd: 'C:/x',
+          cols: 80,
+          rows: 24,
+          env: { CLAUDE_CONFIG_DIR: 'C:/c' },
+          claudeBin: 'nonexistent-claude.cmd'
+        },
+        factory
+      )
+    } catch (e) {
+      thrown = e
+    }
+    expect(thrown).toBeInstanceOf(Error)
+    expect((thrown as Error).message).toMatch(/claude binary not found/)
+    expect((thrown as Error & { code?: string }).code).toBe('CLAUDE_NOT_FOUND')
+  })
 })

@@ -9,6 +9,7 @@ import { EmptyProjectsState } from './EmptyProjectsState'
 import { MainPane } from './MainPane'
 import { TopBar } from './TopBar'
 import { OnboardingBanner } from '../onboarding/OnboardingBanner'
+import { ClaudeNotFoundModal } from '../notifications/ClaudeNotFoundModal'
 import './styles.css'
 
 const ONBOARDING_DISMISSED_KEY = 'tokenless.onboardingDismissed'
@@ -35,6 +36,7 @@ export function AppShell(): JSX.Element {
   const [activeProjectId, setActiveProjectId] = useState<number | null>(null)
   const [activeAccountId, setActiveAccountId] = useState<number | null>(null)
   const [createProjectOpen, setCreateProjectOpen] = useState(false)
+  const [claudeNotFoundOpen, setClaudeNotFoundOpen] = useState(false)
   const [onboardingDismissed, setOnboardingDismissed] = useState<boolean>(readDismissed)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
@@ -91,6 +93,9 @@ export function AppShell(): JSX.Element {
             code: result.error.code,
             logId: result.error.logId
           })
+          if (result.error.code === 'CLAUDE_NOT_FOUND') {
+            setClaudeNotFoundOpen(true)
+          }
         }
       })
     }
@@ -134,6 +139,9 @@ export function AppShell(): JSX.Element {
         logId: started.error.logId,
         conversationId: created.data.conversation.id
       })
+      if (started.error.code === 'CLAUDE_NOT_FOUND') {
+        setClaudeNotFoundOpen(true)
+      }
       return
     }
     // 3. Activate the conversation in the sidebar
@@ -214,6 +222,10 @@ export function AppShell(): JSX.Element {
         open={createProjectOpen}
         onClose={() => setCreateProjectOpen(false)}
         onCreate={handleCreateProject}
+      />
+      <ClaudeNotFoundModal
+        open={claudeNotFoundOpen}
+        onDismiss={() => setClaudeNotFoundOpen(false)}
       />
     </div>
   )

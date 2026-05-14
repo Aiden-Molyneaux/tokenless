@@ -160,7 +160,14 @@ describe('ipc/cc-handler', () => {
     expect(result.ok).toBe(true)
 
     expect(lastPty!.killed).toBe(true)
-    expect(lastPty!.killSignals[0]).toBe('SIGINT')
+    // On Windows, lifecycle.stop() calls pty.kill() without a signal argument
+    // (node-pty does not support signal-based kill on Windows). On other platforms,
+    // SIGINT is passed explicitly.
+    if (process.platform === 'win32') {
+      expect(lastPty!.killSignals[0]).toBeUndefined()
+    } else {
+      expect(lastPty!.killSignals[0]).toBe('SIGINT')
+    }
 
     const turn = db
       .prepare(
@@ -210,5 +217,26 @@ describe('ipc/cc-handler', () => {
     })
     expect(result.ok).toBe(false)
     if (!result.ok) expect(result.error.code).toBe('NOT_FOUND')
+  })
+
+  it('start returns CLAUDE_NOT_FOUND when the spawner fails with that code', async () => {
+    const errLifecycle = new CcLifecycle(
+      () => {
+        const e = new Error('claude binary not found: claude.cmd') as Error & { code?: string }
+        e.code = 'CLAUDE_NOT_FOUND'
+        throw e
+      },
+      { onChunk: vi.fn(), onExit: vi.fn(), onEvent: vi.fn() }
+    )
+    const errHandler = new CcHandler(db, makeLogger(), errLifecycle)
+    const result = await errHandler.start({
+      conversationId,
+      cwd: 'C:/x',
+      cols: 100,
+      rows: 30,
+      accountId
+    })
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.error.code).toBe('CLAUDE_NOT_FOUND')
   })
 })

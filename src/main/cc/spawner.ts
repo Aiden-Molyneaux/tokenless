@@ -35,13 +35,24 @@ export function spawnClaude(opts: SpawnOptions, ptyFactory: PtySpawnFn): PtyHand
     env['ANTHROPIC_API_KEY'] = opts.env.ANTHROPIC_API_KEY
   }
 
-  return ptyFactory(bin, args, {
-    cols: opts.cols,
-    rows: opts.rows,
-    cwd: opts.cwd,
-    env,
-    name: 'xterm-256color'
-  })
+  try {
+    return ptyFactory(bin, args, {
+      cols: opts.cols,
+      rows: opts.rows,
+      cwd: opts.cwd,
+      env,
+      name: 'xterm-256color'
+    })
+  } catch (e) {
+    const msg = e instanceof Error ? e.message.toLowerCase() : String(e).toLowerCase()
+    if (msg.includes('enoent') || msg.includes('no such file') || msg.includes('not found')) {
+      const tagged = new Error('claude binary not found: ' + bin) as Error & { code?: string; cause?: unknown }
+      tagged.code = 'CLAUDE_NOT_FOUND'
+      tagged.cause = e
+      throw tagged
+    }
+    throw e
+  }
 }
 
 function filterOutUndefined(src: NodeJS.ProcessEnv): Record<string, string> {
