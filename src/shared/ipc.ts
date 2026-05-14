@@ -105,6 +105,12 @@ export {
 
 export type { IpcResult, IpcOk, IpcError } from './ipc/envelope'
 
+export {
+  IPC_TELEMETRY_TICK,
+  type TelemetryTickPayload,
+  type TelemetryTick
+} from './ipc/telemetry'
+
 export type IpcChannelName =
   | typeof IPC_LOG_FROM_RENDERER
   | typeof IPC_LOG_TO_RENDERER
@@ -132,3 +138,4 @@ export type IpcChannelName =
   | 'cc:resume'
   | 'cc:crashed'
   | 'cc:hung'
+  | 'telemetry:tick'
