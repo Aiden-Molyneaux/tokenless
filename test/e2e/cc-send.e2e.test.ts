@@ -41,21 +41,16 @@ test.describe('Phase 4A cc send/stream', () => {
     const win = await app.firstWindow()
     await win.waitForLoadState('domcontentloaded')
 
-    // Create a project first (same pattern as Phase 3 persistence test).
-    // The seed creates a "Personal" account on first boot, so activeAccountId
-    // will be set. We just need a project.
-    const emptyState = win.getByRole('region', { name: /welcome to tokenless/i })
-    if (await emptyState.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await win.getByRole('button', { name: /create your first project/i }).click()
-      await win.getByPlaceholder('My Project').fill('CC Test')
-      await win.getByPlaceholder('C:/path/to/project').fill(process.cwd())
-      await win.getByRole('button', { name: /^create$/i }).click()
-      // Wait for the composer to appear (project active state reached)
-      await win.waitForSelector('.composer', { timeout: 5000 })
-    }
-
-    // Verify the MainPane with terminal-pane is visible after project creation
-    await expect(win.locator('.terminal-pane')).toBeVisible({ timeout: 5000 })
+    // Create a project (same pattern as Phase 3 persistence test). Fresh
+    // userData means the welcome region appears every time — wait for it
+    // deterministically rather than racing isVisible.
+    await expect(win.getByRole('region', { name: /welcome to tokenless/i })).toBeVisible()
+    await win.getByRole('button', { name: /create your first project/i }).click()
+    await win.getByPlaceholder('My Project').fill('CC Test')
+    await win.getByPlaceholder('C:/path/to/project').fill(process.cwd())
+    await win.getByRole('button', { name: /^create$/i }).click()
+    // Wait for the MainPane (composer + terminal) to render after project active
+    await expect(win.locator('.terminal-pane')).toBeVisible({ timeout: 10000 })
 
     // Start a new conversation — this spawns the mock claude subprocess.
     // Wait for the activeAccountId to be set (accounts load async) before clicking.
