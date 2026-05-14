@@ -1,0 +1,163 @@
+/* Generic Dropdown component styles. Replaces .project-switcher__* and
+   .account-switcher__* rules in layout/styles.css after Tasks 4-5 refactor. */
+
+.dropdown {
+  position: relative;
+}
+
+.dropdown__trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--tl-space-2);
+  background: transparent;
+  border: 1px solid var(--tl-rule);
+  border-radius: var(--tl-radius-sm);
+  padding: var(--tl-space-1) var(--tl-space-3);
+  font-family: var(--tl-font-sans);
+  font-size: var(--tl-text-sm);
+  color: var(--tl-fg);
+  cursor: pointer;
+  transition: background var(--tl-transition-fast);
+}
+
+.dropdown__trigger:hover {
+  background: var(--tl-hover);
+}
+
+.dropdown__label {
+  color: var(--tl-mute);
+  font-size: var(--tl-text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dropdown__name {
+  font-weight: var(--tl-weight-medium);
+}
+
+.dropdown__caret {
+  color: var(--tl-mute);
+  font-size: var(--tl-text-xs);
+}
+
+.dropdown__menu {
+  position: absolute;
+  top: calc(100% + var(--tl-space-1));
+  left: 0;
+  min-width: 240px;
+  margin: 0;
+  padding: var(--tl-space-1) 0;
+  list-style: none;
+  background: var(--tl-bg);
+  border: 1px solid var(--tl-rule);
+  border-radius: var(--tl-radius-md);
+  box-shadow: var(--tl-shadow-md);
+  z-index: var(--tl-z-dropdown);
+}
+
+.dropdown__item {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: var(--tl-space-2) var(--tl-space-3);
+  text-align: left;
+  cursor: pointer;
+  font-family: var(--tl-font-sans);
+  font-size: var(--tl-text-sm);
+}
+
+.dropdown__item:hover {
+  background: var(--tl-hover);
+}
+
+.dropdown__item.is-active {
+  background: var(--tl-orange-50);
+  color: var(--tl-orange-700);
+}
+
+.dropdown__item-label {
+  font-weight: var(--tl-weight-medium);
+}
+
+.dropdown__item-description {
+  color: var(--tl-mute);
+  font-size: var(--tl-text-xs);
+  font-family: var(--tl-font-mono);
+}
+
+/* ===== InfoTooltip ===== */
+
+.info-tooltip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--tl-space-1);
+}
+
+.info-tooltip__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--tl-radius-full);
+  background: transparent;
+  border: 1px solid var(--tl-rule);
+  color: var(--tl-mute);
+  font-family: var(--tl-font-mono);
+  font-size: 10px;
+  cursor: help;
+  user-select: none;
+  transition: all var(--tl-transition-fast);
+}
+
+.info-tooltip__icon:hover,
+.info-tooltip__icon:focus {
+  background: var(--tl-blue-50);
+  color: var(--tl-blue-700);
+  border-color: var(--tl-blue);
+  outline: none;
+}
+
+.info-tooltip__panel {
+  position: absolute;
+  bottom: calc(100% + var(--tl-space-2));
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--tl-fg);
+  color: var(--tl-bg);
+  padding: var(--tl-space-2) var(--tl-space-3);
+  border-radius: var(--tl-radius-sm);
+  box-shadow: var(--tl-shadow-md);
+  width: max-content;
+  max-width: 320px;
+  z-index: var(--tl-z-dropdown);
+  font-size: var(--tl-text-xs);
+  line-height: var(--tl-leading-normal);
+}
+
+.info-tooltip__panel p {
+  margin: 0;
+}
+
+.info-tooltip__panel p + p {
+  margin-top: var(--tl-space-1);
+  padding-top: var(--tl-space-1);
+  border-top: 1px solid rgba(250, 247, 242, 0.16);
+}
+
+.info-tooltip__helper {
+  font-weight: var(--tl-weight-medium);
+}
+
+.info-tooltip__context {
+  font-style: italic;
+  opacity: 0.85;
+}
+
+.info-tooltip__outcome {
+  font-family: var(--tl-font-mono);
+  opacity: 0.85;
+}
