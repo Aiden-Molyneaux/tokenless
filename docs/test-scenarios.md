@@ -215,3 +215,33 @@ Format:
 - Fatal-severity log entry `db-init-failed` visible in Dev Mode panel.
 - App quits gracefully (does not white-screen or hang).
 - After making the file writable, restart succeeds.
+
+## Phase 4A — Real claude subprocess + Send
+
+### S-4A.1 New conversation spawns real claude
+**Preconditions:** real claude installed + authenticated for the active account; project root is a directory you don't mind claude reading.
+
+1. Launch the app. Active project + Personal account selected.
+2. Click "New Conversation" in the sidebar.
+3. **Expect:** A new conversation row appears in the sidebar with status active. The terminal pane shows real claude's banner / prompt. `db-online` and `cc-start` log entries visible in Dev Mode (with the sessionId UUID).
+4. **Verify (Dev Mode):** Find the `cc-start` row; expand its context. `pid` is a real OS process id. `sessionId` matches a `--session-id <uuid>` arg you can see in Task Manager → claude.exe → command line.
+
+### S-4A.2 Send echoes through the real claude
+1. Continuing from S-4A.1, type "Reply with exactly PING-OK" into the composer.
+2. Click Send.
+3. **Expect:** The terminal pane scrolls with claude's response, ending with "PING-OK" somewhere in the stream. The composer textarea clears. A `send-success` log entry shows up in Dev Mode with the `turnId`.
+4. **Verify (DB):** Open `%APPDATA%/tokenless/tokenless.db` in SQLite Browser. The `turns` table has a row with role=`user`, `original_prompt` = "Reply with exactly PING-OK", `conversation_id` matching the active conversation.
+
+### S-4A.3 Two conversations, two PTYs
+1. Open a second conversation via "New Conversation" while the first is still active.
+2. **Expect:** Both conversations appear in the sidebar. Switching between them swaps the terminal pane's `conversationId` prop — but the previous terminal's PTY is still running in main. The new conversation's terminal pane shows its own claude session.
+3. **Verify (Dev Mode):** Two distinct `cc-start` entries with distinct sessionIds.
+
+### S-4A.4 Quit closes all PTYs
+1. With at least one conversation active, quit the app (Cmd/Ctrl+Q).
+2. **Expect:** Task Manager shows no leftover `claude.exe` processes after 2 seconds. A `shutdown` log entry plus `before-quit, releasing resources` precedes the quit.
+
+### S-4A.5 Send with no active conversation
+1. Launch the app with NO conversations (delete the DB or fresh first-run).
+2. Click into the composer textarea, type a prompt, click Send.
+3. **Expect:** Send is disabled (greyed out). If somehow clicked, a `send-no-conversation` warn log entry appears. No turn row created.
