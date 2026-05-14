@@ -81,6 +81,8 @@ export {
   IPC_CC_EVENT,
   IPC_CC_STOP,
   IPC_CC_RESUME,
+  IPC_CC_CRASHED,
+  IPC_CC_HUNG,
   type CcStartRequest,
   type CcStartResponse,
   type CcStartResult,
@@ -96,7 +98,9 @@ export {
   type CcStopResult,
   type CcResumeRequest,
   type CcResumeResponse,
-  type CcResumeResult
+  type CcResumeResult,
+  type CcCrashedPayload,
+  type CcHungPayload
 } from './ipc/cc'
 
 export type { IpcResult, IpcOk, IpcError } from './ipc/envelope'
@@ -126,3 +130,5 @@ export type IpcChannelName =
   | 'cc:event'
   | 'cc:stop'
   | 'cc:resume'
+  | 'cc:crashed'
+  | 'cc:hung'

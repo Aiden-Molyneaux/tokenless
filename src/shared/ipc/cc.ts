@@ -91,3 +91,21 @@ export type CcSendResult = IpcResult<CcSendResponse>
 export type CcResizeResult = IpcResult<{ ok: true }>
 export type CcStopResult = IpcResult<{ ok: true }>
 export type CcResumeResult = IpcResult<CcResumeResponse>
+
+// Phase 4C — failure events broadcast from main → renderer.
+
+export const IPC_CC_CRASHED = 'cc:crashed'
+export const IPC_CC_HUNG = 'cc:hung'
+
+export interface CcCrashedPayload {
+  readonly conversationId: number
+  readonly exitCode: number
+  readonly signal?: number
+  readonly logId: string
+}
+
+export interface CcHungPayload {
+  readonly conversationId: number
+  readonly idleMs: number
+  readonly severity: 'warn' | 'error'
+}
