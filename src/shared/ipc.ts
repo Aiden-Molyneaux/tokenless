@@ -79,6 +79,7 @@ export {
   IPC_CC_OUTPUT_CHUNK,
   IPC_CC_EXIT,
   IPC_CC_EVENT,
+  IPC_CC_STOP,
   type CcStartRequest,
   type CcStartResponse,
   type CcStartResult,
@@ -89,7 +90,9 @@ export {
   type CcResizeResult,
   type CcOutputChunkPayload,
   type CcExitPayload,
-  type CcEventPayload
+  type CcEventPayload,
+  type CcStopRequest,
+  type CcStopResult
 } from './ipc/cc'
 
 export type { IpcResult, IpcOk, IpcError } from './ipc/envelope'
@@ -117,3 +120,4 @@ export type IpcChannelName =
   | 'cc:output-chunk'
   | 'cc:exit'
   | 'cc:event'
+  | 'cc:stop'

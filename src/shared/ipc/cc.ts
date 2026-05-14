@@ -16,6 +16,7 @@ export const IPC_CC_RESIZE = 'cc:resize'
 export const IPC_CC_OUTPUT_CHUNK = 'cc:output-chunk'
 export const IPC_CC_EXIT = 'cc:exit'
 export const IPC_CC_EVENT = 'cc:event'
+export const IPC_CC_STOP = 'cc:stop'
 
 export interface CcStartRequest {
   readonly conversationId: number
@@ -67,6 +68,11 @@ export interface CcEventPayload {
   readonly event: CcEvent
 }
 
+export interface CcStopRequest {
+  readonly conversationId: number
+}
+
 export type CcStartResult = IpcResult<CcStartResponse>
 export type CcSendResult = IpcResult<CcSendResponse>
 export type CcResizeResult = IpcResult<{ ok: true }>
+export type CcStopResult = IpcResult<{ ok: true }>

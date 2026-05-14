@@ -26,7 +26,9 @@ import type {
   CcResizeResult,
   CcOutputChunkPayload,
   CcExitPayload,
-  CcEventPayload
+  CcEventPayload,
+  CcStopRequest,
+  CcStopResult
 } from '@shared/ipc'
 
 export interface TokenlessApi {
@@ -62,6 +64,7 @@ export interface TokenlessApi {
     onOutputChunk(fn: (payload: CcOutputChunkPayload) => void): () => void
     onExit(fn: (payload: CcExitPayload) => void): () => void
     onEvent(fn: (payload: CcEventPayload) => void): () => void
+    stop(req: CcStopRequest): Promise<CcStopResult>
   }
 }
 

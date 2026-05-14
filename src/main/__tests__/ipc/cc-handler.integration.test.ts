@@ -145,4 +145,33 @@ describe('ipc/cc-handler', () => {
     expect(lastPty!.cols).toBe(120)
     expect(lastPty!.rows).toBe(40)
   })
+
+  it('stop kills the PTY and marks the most-recent in-flight turn as stopped', async () => {
+    await handler.start({ conversationId, cwd: 'C:/x', cols: 100, rows: 30, accountId })
+    await handler.send({
+      conversationId,
+      prompt: 'do something',
+      model: 'sonnet',
+      breadth: 'normal',
+      format: 'prose'
+    })
+
+    const result = await handler.stop({ conversationId })
+    expect(result.ok).toBe(true)
+
+    expect(lastPty!.killed).toBe(true)
+    expect(lastPty!.killSignals[0]).toBe('SIGINT')
+
+    const turn = db
+      .prepare(
+        `SELECT status FROM turns WHERE conversation_id = ? ORDER BY id DESC LIMIT 1`
+      )
+      .get(conversationId) as { status: string }
+    expect(turn.status).toBe('stopped')
+  })
+
+  it('stop on unknown conversationId returns ok but is a no-op', async () => {
+    const result = await handler.stop({ conversationId: 99999 })
+    expect(result.ok).toBe(true)
+  })
 })

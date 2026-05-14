@@ -23,6 +23,7 @@ import {
   IPC_CC_OUTPUT_CHUNK,
   IPC_CC_EXIT,
   IPC_CC_EVENT,
+  IPC_CC_STOP,
   type LogFromRendererPayload,
   type LogGetRecentRequest,
   type LogGetRecentResponse,
@@ -53,7 +54,9 @@ import {
   type CcResizeResult,
   type CcOutputChunkPayload,
   type CcExitPayload,
-  type CcEventPayload
+  type CcEventPayload,
+  type CcStopRequest,
+  type CcStopResult
 } from '@shared/ipc'
 
 const api = {
@@ -153,6 +156,9 @@ const api = {
       const listener = (_e: unknown, payload: CcEventPayload): void => fn(payload)
       ipcRenderer.on(IPC_CC_EVENT, listener as never)
       return () => ipcRenderer.removeListener(IPC_CC_EVENT, listener as never)
+    },
+    stop(req: CcStopRequest): Promise<CcStopResult> {
+      return ipcRenderer.invoke(IPC_CC_STOP, req) as Promise<CcStopResult>
     }
   }
 }

@@ -27,10 +27,16 @@ export function TerminalSection({ conversationId }: TerminalSectionProps): JSX.E
       rendererLogger.warn('ui', 'terminal-stop-no-conv', 'Stop clicked with no active conversation')
       return
     }
-    // The cc:stop IPC call lands in Task 9 — for now log to surface clicks.
-    rendererLogger.info('ui', 'terminal-stop-clicked', 'Stop clicked (cc:stop wiring lands Task 9)', {
-      conversationId
-    })
+    const result = await window.tokenless.cc.stop({ conversationId })
+    if (!result.ok) {
+      rendererLogger.error('ui', 'terminal-stop-failed', result.error.message, {
+        conversationId,
+        code: result.error.code,
+        logId: result.error.logId
+      })
+    } else {
+      rendererLogger.info('ui', 'terminal-stop-ok', 'Sent stop to backend', { conversationId })
+    }
   }
 
   return (

@@ -14,12 +14,15 @@ import {
   IPC_CC_START,
   IPC_CC_SEND,
   IPC_CC_RESIZE,
+  IPC_CC_STOP,
   type CcStartRequest,
   type CcStartResult,
   type CcSendRequest,
   type CcSendResult,
   type CcResizeRequest,
-  type CcResizeResult
+  type CcResizeResult,
+  type CcStopRequest,
+  type CcStopResult
 } from '@shared/ipc/cc'
 
 interface NotFoundError extends Error {
@@ -106,6 +109,30 @@ export class CcHandler {
       return { ok: true }
     })
 
+  stop = async (req: CcStopRequest): Promise<CcStopResult> =>
+    withIpcResult(this.logger, 'cc', 'cc-stop', async () => {
+      const handle = this.lifecycle.get(req.conversationId)
+      if (!handle) {
+        // Idempotent: unknown/dead conversationId is a no-op.
+        return { ok: true as const }
+      }
+      this.lifecycle.stop(req.conversationId, 'SIGINT')
+      this.db
+        .prepare(
+          `UPDATE turns SET status = 'stopped' WHERE id = (
+            SELECT id FROM turns
+            WHERE conversation_id = ?
+            ORDER BY id DESC
+            LIMIT 1
+          )`
+        )
+        .run(req.conversationId)
+      this.logger.info('cc', 'cc-stop', 'claude subprocess stopped', {
+        conversationId: req.conversationId
+      })
+      return { ok: true as const }
+    })
+
   install(ipcMain: IpcMain): void {
     ipcMain.handle(IPC_CC_START, async (_e: IpcMainInvokeEvent, req: CcStartRequest) =>
       this.start(req)
@@ -119,6 +146,10 @@ export class CcHandler {
       this.resize(req)
     )
     this.installedHandlers.push(IPC_CC_RESIZE)
+    ipcMain.handle(IPC_CC_STOP, async (_e: IpcMainInvokeEvent, req: CcStopRequest) =>
+      this.stop(req)
+    )
+    this.installedHandlers.push(IPC_CC_STOP)
   }
 
   uninstall(ipcMain: IpcMain): void {
