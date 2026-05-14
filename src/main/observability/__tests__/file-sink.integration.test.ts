@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { FileSink } from '../file-sink'
@@ -38,7 +38,7 @@ describe('FileSink', () => {
   })
 
   it('writes a JSONL line per record to the current-day file', () => {
-    const fixedDate = new Date('2026-05-14T10:00:00Z')
+    const fixedDate = new Date(2026, 4, 14, 10, 0, 0) // May 14, 10:00 local
     const sink = new FileSink(tmpDir, 30, () => fixedDate)
     sink.write(makeRecord({ event: 'first' }))
     sink.write(makeRecord({ event: 'second' }))
@@ -55,11 +55,11 @@ describe('FileSink', () => {
   })
 
   it('rotates to a new file when the date changes', () => {
-    let now = new Date('2026-05-14T23:00:00Z')
+    let now = new Date(2026, 4, 14, 23, 0, 0)
     const sink = new FileSink(tmpDir, 30, () => now)
     sink.write(makeRecord({ event: 'late-on-14' }))
 
-    now = new Date('2026-05-15T01:00:00Z')
+    now = new Date(2026, 4, 15, 1, 0, 0)
     sink.write(makeRecord({ event: 'early-on-15' }))
 
     const files = readdirSync(tmpDir).sort()
@@ -74,16 +74,15 @@ describe('FileSink', () => {
     const oldFile = join(tmpDir, 'tokenless-2026-04-01.jsonl')
     writeFileSync(oldFile, '{"event":"old"}\n')
     // Backdate its mtime to ~60 days ago
-    const sixtyDaysAgo = new Date('2026-03-15T00:00:00Z')
-    const fs = require('node:fs') as typeof import('node:fs')
-    fs.utimesSync(oldFile, sixtyDaysAgo, sixtyDaysAgo)
+    const sixtyDaysAgo = new Date(2026, 2, 15, 0, 0, 0) // March 15 local
+    utimesSync(oldFile, sixtyDaysAgo, sixtyDaysAgo)
 
-    let now = new Date('2026-05-14T23:00:00Z')
+    let now = new Date(2026, 4, 14, 23, 0, 0)
     const sink = new FileSink(tmpDir, 30, () => now)
     sink.write(makeRecord({ event: 'still-on-14' }))
 
     // Cross a date boundary to trigger pruning
-    now = new Date('2026-05-15T00:30:00Z')
+    now = new Date(2026, 4, 15, 0, 30, 0)
     sink.write(makeRecord({ event: 'on-15' }))
 
     const files = readdirSync(tmpDir)
