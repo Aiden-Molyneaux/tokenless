@@ -1,5 +1,27 @@
-import { app, BrowserWindow, shell } from 'electron'
+import { app, BrowserWindow, ipcMain, shell } from 'electron'
 import { join } from 'node:path'
+import { homedir } from 'node:os'
+import {
+  FileSink,
+  installUncaughtHandlers,
+  Logger
+} from './observability'
+import { createDefaultBroadcast } from './ipc/log-bridge'
+import { registerIpcHandlers } from './ipc'
+
+// Initialize the Logger as early as possible so even early-startup errors
+// can be captured. Log files live under ~/.tokenless/logs/.
+const logDir = join(homedir(), '.tokenless', 'logs')
+const fileSink = new FileSink(logDir)
+const logger = new Logger(fileSink, 5000, 'main')
+
+installUncaughtHandlers(logger)
+
+logger.info('observability', 'logger-online', 'Logger initialized', { logDir })
+
+// Register IPC handlers before the window is created so renderer requests
+// during app startup don't race.
+const ipcRegistration = registerIpcHandlers(ipcMain, logger, createDefaultBroadcast())
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
@@ -33,6 +55,7 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
+  logger.info('observability', 'app-ready', 'Electron ready, creating window')
   createWindow()
 
   app.on('activate', function () {
@@ -41,6 +64,8 @@ app.whenReady().then(() => {
 })
 
 app.on('window-all-closed', () => {
+  logger.info('observability', 'shutdown', 'All windows closed')
+  ipcRegistration.uninstallAll()
   if (process.platform !== 'darwin') {
     app.quit()
   }
