@@ -30,6 +30,6 @@ test('renderer mounts and shows the Phase 0 stub', async () => {
 
 test('preload exposes window.tokenless.version', async () => {
   const window = await app.firstWindow()
-  const version = await window.evaluate(() => window.tokenless?.version)
+  const version = await window.evaluate(() => (window as any).tokenless?.version)
   expect(version).toBe('0.0.1')
 })
