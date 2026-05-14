@@ -72,6 +72,28 @@ export function AppShell(): JSX.Element {
   const handleSelectConversation = (id: number): void => {
     setActiveConversationId(id)
     rendererLogger.info('ui', 'conversation-select', 'Selected conversation', { conversationId: id })
+    // Resume the underlying PTY if it has a stored session. Idempotent — the
+    // backend handles "already active" by no-oping.
+    const conv = conversations.find((c) => c.id === id)
+    if (conv?.ccSessionId && activeProjectId !== null && activeAccountId !== null) {
+      const activeProject = projects.find((p) => p.id === activeProjectId)
+      if (!activeProject) return
+      void window.tokenless.cc.resume({
+        conversationId: id,
+        cwd: activeProject.rootPath,
+        cols: 100,
+        rows: 30,
+        accountId: activeAccountId
+      }).then((result) => {
+        if (!result.ok) {
+          rendererLogger.warn('ui', 'cc-resume-failed', result.error.message, {
+            conversationId: id,
+            code: result.error.code,
+            logId: result.error.logId
+          })
+        }
+      })
+    }
   }
 
   const handleNewConversation = async (): Promise<void> => {
