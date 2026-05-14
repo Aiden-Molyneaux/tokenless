@@ -1,39 +1,91 @@
-// Typed IPC contract between main and renderer.
-// Phase 1B populates this with the Logger bridge channels.
-// Subsequent phases add cc:*, gear:*, projects:*, etc.
+// Typed IPC contract surface. Specific channel sets now live under
+// src/shared/ipc/*.ts (accounts, projects, conversations, envelope).
+// This file remains the place for the original log-bridge channels.
 
 import type { LogRecord } from './observability'
 
-// Channels: renderer -> main (fire-and-forget, ipcRenderer.send / ipcMain.on)
 export const IPC_LOG_FROM_RENDERER = 'log:event-from-renderer'
-
-// Channels: main -> renderer (push to all windows, webContents.send / ipcRenderer.on)
 export const IPC_LOG_TO_RENDERER = 'log:event-to-renderer'
-
-// Channels: renderer -> main (request/response, ipcRenderer.invoke / ipcMain.handle)
 export const IPC_LOG_GET_RECENT = 'log:get-recent'
 
-// Payload types for each channel
 export interface LogFromRendererPayload {
   record: LogRecord
 }
-
 export interface LogToRendererPayload {
   record: LogRecord
 }
-
 export interface LogGetRecentRequest {
   count?: number
 }
-
 export interface LogGetRecentResponse {
   records: readonly LogRecord[]
 }
 
-// Phase 0 placeholder — preserved for backward compat; remove when a
-// real non-log channel takes its place (Phase 2+).
+// Re-export new domain channel constants for ergonomic single imports.
+export {
+  IPC_ACCOUNTS_LIST,
+  IPC_ACCOUNTS_CREATE,
+  type AccountsListResult,
+  type AccountsCreateResult,
+  type AccountsListResponse,
+  type AccountsCreateRequest,
+  type AccountsCreateResponse
+} from './ipc/accounts'
+
+export {
+  IPC_PROJECTS_LIST,
+  IPC_PROJECTS_CREATE,
+  IPC_PROJECTS_UPDATE,
+  IPC_PROJECTS_DELETE,
+  IPC_PROJECTS_CHANGED,
+  type ProjectsListResult,
+  type ProjectsCreateResult,
+  type ProjectsUpdateResult,
+  type ProjectsDeleteResult,
+  type ProjectsListResponse,
+  type ProjectsCreateRequest,
+  type ProjectsCreateResponse,
+  type ProjectsUpdateRequest,
+  type ProjectsUpdateResponse,
+  type ProjectsDeleteRequest,
+  type ProjectsDeleteResponse
+} from './ipc/projects'
+
+export {
+  IPC_CONVERSATIONS_LIST_BY_PROJECT,
+  IPC_CONVERSATIONS_CREATE,
+  IPC_CONVERSATIONS_UPDATE,
+  IPC_CONVERSATIONS_DELETE,
+  IPC_CONVERSATIONS_CHANGED,
+  type ConversationsListResult,
+  type ConversationsCreateResult,
+  type ConversationsUpdateResult,
+  type ConversationsDeleteResult,
+  type ConversationsListRequest,
+  type ConversationsListResponse,
+  type ConversationsCreateRequest,
+  type ConversationsCreateResponse,
+  type ConversationsUpdateRequest,
+  type ConversationsUpdateResponse,
+  type ConversationsDeleteRequest,
+  type ConversationsDeleteResponse
+} from './ipc/conversations'
+
+export type { IpcResult, IpcOk, IpcError } from './ipc/envelope'
+
 export type IpcChannelName =
-  | 'phase-0:ping'
   | typeof IPC_LOG_FROM_RENDERER
   | typeof IPC_LOG_TO_RENDERER
   | typeof IPC_LOG_GET_RECENT
+  | 'accounts:list'
+  | 'accounts:create'
+  | 'projects:list'
+  | 'projects:create'
+  | 'projects:update'
+  | 'projects:delete'
+  | 'projects:changed'
+  | 'conversations:list-by-project'
+  | 'conversations:create'
+  | 'conversations:update'
+  | 'conversations:delete'
+  | 'conversations:changed'
