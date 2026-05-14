@@ -245,3 +245,33 @@ Format:
 1. Launch the app with NO conversations (delete the DB or fresh first-run).
 2. Click into the composer textarea, type a prompt, click Send.
 3. **Expect:** Send is disabled (greyed out). If somehow clicked, a `send-no-conversation` warn log entry appears. No turn row created.
+
+## Phase 4B — Parser + Stop + Resume
+
+### S-4B.1 Stop kills a running response
+1. Launch the app, create project, click New Conversation, send a long prompt.
+2. While claude is streaming a response, click Stop.
+3. **Expect:** The terminal stops appending output. Dev Mode shows `cc-stop` and `terminal-stop-ok` log entries. The `turns` table's most-recent row has `status = 'stopped'`.
+
+### S-4B.2 Resume across restart
+1. Launch the app, create project, New Conversation, send a prompt, wait for completion.
+2. Quit the app entirely (Cmd/Ctrl+Q).
+3. Relaunch. The conversation appears in the sidebar.
+4. Click the conversation.
+5. **Expect:** Dev Mode shows `cc-resume` log entry with the stored `sessionId`. The Send button is enabled — typing + Send works as expected.
+
+### S-4B.3 Resume with no stored sessionId fails cleanly
+1. Open DB browser, NULL out a conversation's `cc_session_id` column.
+2. Restart the app, click that conversation.
+3. **Expect:** `cc-resume` warn log fires with `NOT_FOUND` code. UI proceeds — Stop is enabled (since we still consider the conversation active) but Send will also fail with NOT_FOUND until a fresh `cc:start` happens.
+
+### S-4B.4 Claude not found
+1. Quit the app. Set `TOKENLESS_CLAUDE_BIN=C:/no/such/path/claude.cmd`. Relaunch.
+2. Create project, click New Conversation.
+3. **Expect:** Modal appears: "Claude Code not found." Dev Mode shows `cc-start` warn with `CLAUDE_NOT_FOUND` code. Dismiss closes the modal; no conversation is created (the DB row that was created BEFORE the spawn is left orphaned for now — Phase 4C cleanup task).
+
+### S-4B.5 Two conversations, stop one while the other streams
+1. Open conversation A, send a long prompt. Open conversation B (sidebar click on a different conversation row), send another prompt.
+2. **Expect:** Both stream independently — switching tabs shows the right output (because TerminalPane is keyed by conversationId, the xterm instance is per-conversation).
+3. Click Stop on B.
+4. **Expect:** B stops, A continues. The turns table for B has the latest row with `status='stopped'`. A's turns are unaffected.
