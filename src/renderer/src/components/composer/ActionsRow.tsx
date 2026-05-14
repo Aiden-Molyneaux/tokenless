@@ -2,6 +2,8 @@ import { InfoTooltip } from '../common/InfoTooltip'
 
 interface ActionsRowProps {
   promptEmpty: boolean
+  /** When true, both Gear and Send are disabled (in-flight send or no active conversation). */
+  disabled?: boolean
   onGear: () => void
   onSend: () => void
   onCommit: () => void
@@ -13,7 +15,7 @@ interface ActionsRowProps {
 // the composer with canned git prompts (Phase 7 wires that; Phase 2B
 // stubs the callbacks).
 
-export function ActionsRow({ promptEmpty, onGear, onSend, onCommit, onPush }: ActionsRowProps): JSX.Element {
+export function ActionsRow({ promptEmpty, disabled = false, onGear, onSend, onCommit, onPush }: ActionsRowProps): JSX.Element {
   return (
     <div className="actions-row">
       <div className="actions-row__primary">
@@ -21,7 +23,7 @@ export function ActionsRow({ promptEmpty, onGear, onSend, onCommit, onPush }: Ac
           <button
             type="button"
             className="actions-row__button actions-row__button--gear"
-            disabled={promptEmpty}
+            disabled={promptEmpty || disabled}
             onClick={onGear}
           >
             Gear
@@ -31,7 +33,7 @@ export function ActionsRow({ promptEmpty, onGear, onSend, onCommit, onPush }: Ac
           <button
             type="button"
             className="actions-row__button"
-            disabled={promptEmpty}
+            disabled={promptEmpty || disabled}
             onClick={onSend}
           >
             Send

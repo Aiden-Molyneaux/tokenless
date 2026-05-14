@@ -14,7 +14,7 @@ export function MainPane({ conversationId }: MainPaneProps): JSX.Element {
   return (
     <main className="main-pane">
       <section className="main-pane__composer-area">
-        <Composer />
+        <Composer conversationId={conversationId} />
       </section>
       <section className="main-pane__terminal-area">
         <TerminalSection conversationId={conversationId} />

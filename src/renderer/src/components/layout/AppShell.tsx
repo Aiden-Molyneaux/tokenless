@@ -74,8 +74,53 @@ export function AppShell(): JSX.Element {
     rendererLogger.info('ui', 'conversation-select', 'Selected conversation', { conversationId: id })
   }
 
-  const handleNewConversation = (): void => {
-    rendererLogger.info('ui', 'new-conversation-clicked', 'New conversation button clicked (Phase 4 wires this)')
+  const handleNewConversation = async (): Promise<void> => {
+    if (activeProjectId === null || activeAccountId === null) {
+      rendererLogger.warn('ui', 'new-conversation-blocked', 'No active project or account', {
+        projectId: activeProjectId,
+        accountId: activeAccountId
+      })
+      return
+    }
+    const activeProject = projects.find((p) => p.id === activeProjectId)
+    if (!activeProject) {
+      rendererLogger.warn('ui', 'new-conversation-blocked', 'Active project not found in list')
+      return
+    }
+    // 1. Create the conversation row
+    const created = await window.tokenless.conversations.create({
+      input: { projectId: activeProjectId, accountId: activeAccountId }
+    })
+    if (!created.ok) {
+      rendererLogger.error('ui', 'new-conversation-create-failed', created.error.message, {
+        code: created.error.code,
+        logId: created.error.logId
+      })
+      return
+    }
+    // 2. Start the cc subprocess
+    const started = await window.tokenless.cc.start({
+      conversationId: created.data.conversation.id,
+      cwd: activeProject.rootPath,
+      cols: 100, // xterm will resize on mount
+      rows: 30,
+      accountId: activeAccountId
+    })
+    if (!started.ok) {
+      rendererLogger.error('ui', 'new-conversation-start-failed', started.error.message, {
+        code: started.error.code,
+        logId: started.error.logId,
+        conversationId: created.data.conversation.id
+      })
+      return
+    }
+    // 3. Activate the conversation in the sidebar
+    setActiveConversationId(created.data.conversation.id)
+    rendererLogger.info('ui', 'new-conversation', 'New conversation started', {
+      conversationId: created.data.conversation.id,
+      sessionId: started.data.sessionId,
+      pid: started.data.pid
+    })
   }
 
   const handleOpenSettings = (): void => {
@@ -135,7 +180,7 @@ export function AppShell(): JSX.Element {
           onSelect={handleSelectConversation}
           collapsed={sidebarCollapsed}
           onToggleCollapsed={handleToggleSidebar}
-          onNewConversation={handleNewConversation}
+          onNewConversation={() => void handleNewConversation()}
         />
         {showEmptyState ? (
           <EmptyProjectsState onCreate={handleOpenCreateProject} />

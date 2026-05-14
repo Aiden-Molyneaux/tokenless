@@ -16,18 +16,23 @@ interface GearState {
   flags: readonly MockCritiqueFlag[]
 }
 
+interface ComposerProps {
+  conversationId: number | null
+}
+
 // Composer is the top half of MainPane. Holds prompt text + 4 config
 // selections + an optional gearState that, when truthy, swaps the rendered
 // view to GearReviewPane. Phase 5 replaces the mock gear data with real
 // Haiku-driven output via IPC.
 
-export function Composer(): JSX.Element {
+export function Composer({ conversationId }: ComposerProps): JSX.Element {
   const [prompt, setPrompt] = useState('')
   const [model, setModel] = useState<string>(MOCK_MODELS[2].value) // opus default
   const [breadth, setBreadth] = useState<string>(MOCK_BREADTHS[1].value) // normal default
   const [format, setFormat] = useState<string>(MOCK_FORMATS[0].value) // prose default
   const [skill, setSkill] = useState<string>(MOCK_SKILLS[0].value) // none default
   const [gearState, setGearState] = useState<GearState | null>(null)
+  const [sending, setSending] = useState(false)
 
   const handleGear = (): void => {
     rendererLogger.info('ui', 'gear-clicked', 'Gear (stub)', { promptLength: prompt.length, model, breadth, format, skill })
@@ -38,9 +43,37 @@ export function Composer(): JSX.Element {
     })
   }
 
-  const handleSend = (): void => {
-    rendererLogger.info('ui', 'send-clicked', 'Send (stub)', { promptLength: prompt.length, model })
-    setPrompt('')
+  const handleSend = async (finalPrompt: string): Promise<void> => {
+    if (conversationId === null) {
+      rendererLogger.warn('ui', 'send-no-conversation', 'Send clicked with no active conversation')
+      return
+    }
+    setSending(true)
+    try {
+      const result = await window.tokenless.cc.send({
+        conversationId,
+        prompt: finalPrompt,
+        model,
+        breadth,
+        format
+      })
+      if (result.ok) {
+        setPrompt('')
+        rendererLogger.info('ui', 'send-success', 'Prompt sent', {
+          conversationId,
+          turnId: result.data.turnId,
+          promptLength: finalPrompt.length
+        })
+      } else {
+        rendererLogger.error('ui', 'send-failed', result.error.message, {
+          conversationId,
+          code: result.error.code,
+          logId: result.error.logId
+        })
+      }
+    } finally {
+      setSending(false)
+    }
   }
 
   const handleCommit = (): void => {
@@ -54,14 +87,12 @@ export function Composer(): JSX.Element {
   }
 
   const handleGearSendOriginal = (): void => {
-    rendererLogger.info('ui', 'send-original', 'Send original (stub)')
-    setPrompt('')
+    void handleSend(gearState?.original ?? prompt)
     setGearState(null)
   }
 
   const handleGearSendGeared = (editedGeared: string): void => {
-    rendererLogger.info('ui', 'send-geared', 'Send geared (stub)', { length: editedGeared.length })
-    setPrompt('')
+    void handleSend(editedGeared)
     setGearState(null)
   }
 
@@ -109,8 +140,9 @@ export function Composer(): JSX.Element {
       />
       <ActionsRow
         promptEmpty={prompt.length === 0}
+        disabled={sending || conversationId === null}
         onGear={handleGear}
-        onSend={handleSend}
+        onSend={() => void handleSend(prompt)}
         onCommit={handleCommit}
         onPush={handlePush}
       />
