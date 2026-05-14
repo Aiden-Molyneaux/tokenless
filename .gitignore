@@ -26,12 +26,6 @@ logs/
 *.log
 *.tsbuildinfo
 
-# electron-vite build output
-out/
-
-# electron-builder output
-release/
-
 # vite cache
 .vite/
 
