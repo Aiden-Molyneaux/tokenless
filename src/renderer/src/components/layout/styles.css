@@ -46,12 +46,10 @@
 
 /* ===== Switcher (shared between Project + Account) ===== */
 
-.project-switcher,
 .account-switcher {
   position: relative;
 }
 
-.project-switcher__trigger,
 .account-switcher__trigger {
   display: flex;
   align-items: center;
@@ -67,12 +65,10 @@
   transition: background var(--tl-transition-fast);
 }
 
-.project-switcher__trigger:hover,
 .account-switcher__trigger:hover {
   background: var(--tl-hover);
 }
 
-.project-switcher__label,
 .account-switcher__label {
   color: var(--tl-mute);
   font-size: var(--tl-text-xs);
@@ -80,18 +76,15 @@
   letter-spacing: 0.05em;
 }
 
-.project-switcher__name,
 .account-switcher__name {
   font-weight: var(--tl-weight-medium);
 }
 
-.project-switcher__caret,
 .account-switcher__caret {
   color: var(--tl-mute);
   font-size: var(--tl-text-xs);
 }
 
-.project-switcher__menu,
 .account-switcher__menu {
   position: absolute;
   top: calc(100% + var(--tl-space-1));
@@ -107,7 +100,6 @@
   z-index: var(--tl-z-dropdown);
 }
 
-.project-switcher__item,
 .account-switcher__item {
   display: flex;
   flex-direction: column;
@@ -121,23 +113,19 @@
   font-size: var(--tl-text-sm);
 }
 
-.project-switcher__item:hover,
 .account-switcher__item:hover {
   background: var(--tl-hover);
 }
 
-.project-switcher__item.is-active,
 .account-switcher__item.is-active {
   background: var(--tl-orange-50);
   color: var(--tl-orange-700);
 }
 
-.project-switcher__item-name,
 .account-switcher__item-name {
   font-weight: var(--tl-weight-medium);
 }
 
-.project-switcher__item-path,
 .account-switcher__item-email {
   color: var(--tl-mute);
   font-size: var(--tl-text-xs);
