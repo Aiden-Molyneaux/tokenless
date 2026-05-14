@@ -25,8 +25,15 @@ export function ClaudeNotFoundModal({ open, onDismiss }: ClaudeNotFoundModalProp
           Claude not found
         </h2>
         <p className="claude-not-found-modal__body">
-          TokenLess could not start Claude because the <code>claude</code> binary was not found
-          on your system. Make sure Claude Code CLI is installed and available in your PATH.
+          TokenLess couldn&apos;t find the <code>claude</code> command. Install Claude Code from{' '}
+          <a href="https://claude.com/code" target="_blank" rel="noreferrer">
+            claude.com/code
+          </a>{' '}
+          and ensure it&apos;s on your PATH, or set <code>TOKENLESS_CLAUDE_BIN</code> to its full
+          path.
+        </p>
+        <p className="claude-not-found-modal__hint">
+          (A Settings → &ldquo;Claude Code path&rdquo; field lands in Phase 8 polish.)
         </p>
         <div className="modal__actions">
           <button

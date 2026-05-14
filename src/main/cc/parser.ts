@@ -15,10 +15,12 @@ const TOOL_CALL_RE = /^tool:\s*([A-Za-z_][A-Za-z0-9_]*)\s*\(\s*(.*?)\s*\)\s*$/
 // but a similar end-of-response signal will be added in Phase 4C.
 const MOCK_RECEIVED_RE = /^\[mock-claude\]\s+received:/
 
-// Prompt patterns — both the mock's "claude-mock>" and a generic ">" alone.
+// Prompt patterns — known prompt strings only.
+// The bare `>` regex from Phase 4B is removed because it false-positives on
+// shell-style continuation output. Phase 4D will calibrate this against real claude output.
 function isPromptLine(line: string): boolean {
   const trimmed = line.replace(/\r/g, '').trimEnd()
-  return /^(?:claude-mock>|>)\s*$/.test(trimmed)
+  return trimmed === 'claude-mock>' || trimmed === 'claude>'
 }
 
 export class CcParser {
