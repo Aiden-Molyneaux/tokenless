@@ -6,6 +6,7 @@ import {
   IPC_LOG_TO_RENDERER,
   IPC_ACCOUNTS_LIST,
   IPC_ACCOUNTS_CREATE,
+  IPC_ACCOUNTS_CHANGED,
   IPC_PROJECTS_LIST,
   IPC_PROJECTS_CREATE,
   IPC_PROJECTS_UPDATE,
@@ -68,6 +69,11 @@ const api = {
     },
     create(req: AccountsCreateRequest): Promise<AccountsCreateResult> {
       return ipcRenderer.invoke(IPC_ACCOUNTS_CREATE, req) as Promise<AccountsCreateResult>
+    },
+    onChanged(fn: () => void): () => void {
+      const listener = (): void => fn()
+      ipcRenderer.on(IPC_ACCOUNTS_CHANGED, listener as never)
+      return () => ipcRenderer.removeListener(IPC_ACCOUNTS_CHANGED, listener as never)
     }
   },
   projects: {

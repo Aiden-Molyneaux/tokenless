@@ -13,28 +13,32 @@ import { withIpcResult } from './with-ipc-result'
 import {
   IPC_ACCOUNTS_LIST,
   IPC_ACCOUNTS_CREATE,
+  IPC_ACCOUNTS_CHANGED,
   type AccountsCreateRequest,
   type AccountsListResult,
   type AccountsCreateResult
 } from '@shared/ipc/accounts'
+
+export type Broadcast = (channel: string, payload: unknown) => void
 
 export class AccountsHandler {
   private installedHandlers: string[] = []
 
   constructor(
     private readonly db: Database,
-    private readonly logger: Logger
+    private readonly logger: Logger,
+    private readonly broadcast: Broadcast
   ) {}
 
   list = async (): Promise<AccountsListResult> =>
-    withIpcResult(this.logger, 'db', 'accounts-list', async () => {
-      const accounts = AccountsDao.listAccounts(this.db)
-      return { accounts }
-    })
+    withIpcResult(this.logger, 'db', 'accounts-list', async () => ({
+      accounts: AccountsDao.listAccounts(this.db)
+    }))
 
   create = async (req: AccountsCreateRequest): Promise<AccountsCreateResult> =>
     withIpcResult(this.logger, 'db', 'accounts-create', async () => {
       const account = AccountsDao.createAccount(this.db, req.input)
+      this.broadcast(IPC_ACCOUNTS_CHANGED, undefined)
       return { account }
     })
 

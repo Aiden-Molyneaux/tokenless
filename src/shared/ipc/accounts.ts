@@ -5,6 +5,7 @@ import type { IpcResult } from './envelope'
 
 export const IPC_ACCOUNTS_LIST = 'accounts:list'
 export const IPC_ACCOUNTS_CREATE = 'accounts:create'
+export const IPC_ACCOUNTS_CHANGED = 'accounts:changed'
 
 export interface AccountsListResponse {
   readonly accounts: readonly Account[]

@@ -30,6 +30,7 @@ export interface TokenlessApi {
   readonly accounts: {
     list(): Promise<AccountsListResult>
     create(req: AccountsCreateRequest): Promise<AccountsCreateResult>
+    onChanged(fn: () => void): () => void
   }
   readonly projects: {
     list(): Promise<ProjectsListResult>

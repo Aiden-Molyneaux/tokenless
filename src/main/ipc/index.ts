@@ -27,7 +27,7 @@ export function registerIpcHandlers(
   const logBridge = new LogBridge(logger, ipcMain, broadcast)
   logBridge.install()
 
-  const accountsHandler = new AccountsHandler(db, logger)
+  const accountsHandler = new AccountsHandler(db, logger, broadcast)
   accountsHandler.install(ipcMain)
 
   const projectsHandler = new ProjectsHandler(db, logger, broadcast)

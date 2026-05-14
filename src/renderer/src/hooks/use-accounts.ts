@@ -37,8 +37,12 @@ export function useAccounts(): UseAccountsReturn {
   useEffect(() => {
     mountedRef.current = true
     void fetchAccounts()
+    const unsubscribe = window.tokenless.accounts.onChanged(() => {
+      void fetchAccounts()
+    })
     return () => {
       mountedRef.current = false
+      unsubscribe()
     }
   }, [fetchAccounts])
 
