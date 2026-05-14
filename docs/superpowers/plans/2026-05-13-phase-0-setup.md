@@ -376,12 +376,19 @@ export default defineConfig({
       }
     }
   },
+  // NOTE: package.json has `"type": "module"`, but Electron's preload loader is
+  // CommonJS-based and cannot require ES modules. Emit the preload as CJS with
+  // a .cjs extension so Electron's loader handles it correctly. See ADR-015.
   preload: {
     plugins: [externalizeDepsPlugin()],
     build: {
       rollupOptions: {
         input: {
           index: resolve('src/preload/index.ts')
+        },
+        output: {
+          format: 'cjs',
+          entryFileNames: '[name].cjs'
         }
       }
     },
@@ -445,7 +452,7 @@ function createWindow(): void {
     autoHideMenuBar: true,
     title: 'TokenLess',
     webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
+      preload: join(__dirname, '../preload/index.cjs'),
       sandbox: false,
       contextIsolation: true,
       nodeIntegration: false
