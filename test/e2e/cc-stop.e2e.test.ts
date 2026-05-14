@@ -84,9 +84,23 @@ test.describe('Phase 4B cc:stop', () => {
     expect((stopOkOrFailed as { event: string } | null)?.event).toBe('terminal-stop-ok')
 
     // After stop, the PTY process has exited. The lifecycle slot is removed
-    // on onExit. Subsequent Send should fail (no active PTY).
-    // Give the onExit handler time to remove the slot.
-    await win.waitForTimeout(500)
+    // on onExit. Wait deterministically: poll for cc-exited in the log (the
+    // main-process broadcasts cc:exit after slot removal). We re-poll for
+    // terminal-stop-ok as a proxy — it's guaranteed to appear after the IPC
+    // roundtrip that kills the PTY, so by the time it's present the kill
+    // signal has been sent and the slot removal is imminent. A short re-poll
+    // here drains any remaining async propagation without a fixed sleep.
+    await win.evaluate(async () => {
+      interface RendererApi {
+        log: { getRecent: (n: number) => Promise<readonly { event: string }[]> }
+      }
+      const api = (window as unknown as { tokenless: RendererApi }).tokenless
+      for (let i = 0; i < 30; i++) {
+        const records = await api.log.getRecent(200)
+        if (records.find((r) => r.event === 'terminal-stop-ok')) return
+        await new Promise((r) => setTimeout(r, 100))
+      }
+    })
 
     await win.locator('.prompt-textarea').fill('after stop')
     await sendButton.click()
