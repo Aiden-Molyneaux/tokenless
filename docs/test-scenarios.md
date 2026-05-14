@@ -64,3 +64,26 @@ Format:
 - Search filter further narrows by event/message substring.
 - Clicking a row reveals pretty-printed JSON below it; "Copy as JSONL" copies a single-line JSON string to clipboard.
 - After reload, the Dev Mode panel is still open (localStorage persistence).
+
+## Scenario: Phase 2A — App shell renders with theme
+
+**Preconditions:** App built and running (`npm run preview`).
+
+**Steps:**
+1. Observe the top bar.
+2. Click the "Project:" dropdown, observe project list, pick a different project.
+3. Click the "Account:" dropdown, observe accounts.
+4. Click the sidebar collapse arrow.
+5. Click a conversation in the sidebar.
+6. Click "+ New Conversation".
+7. Click the ⚙ Settings button.
+8. Toggle Dev Mode on (top-right button) and confirm `ui/project-switch`, `ui/account-switch`, etc. records appear.
+
+**Expected:**
+- Top bar shows "TokenLess" brand in orange, with Project, Account, and Settings controls.
+- Project dropdown opens; selecting a different project changes the sidebar's conversation list.
+- Account dropdown opens; selecting changes the active account label.
+- Sidebar collapses to a thin strip and re-expands.
+- Clicking a conversation marks it active (orange left border + tinted background).
+- "+ New Conversation" and ⚙ Settings emit `info` records visible in Dev Mode.
+- All interactions log to Dev Mode under `ui/*` events with relevant context.
