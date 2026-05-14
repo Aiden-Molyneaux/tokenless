@@ -7,6 +7,8 @@
   padding: var(--tl-space-4);
   gap: var(--tl-space-3);
   background: var(--tl-bg);
+  position: relative;
+  z-index: calc(var(--tl-z-modal) + 10);
 }
 
 .gear-review-pane__header {
