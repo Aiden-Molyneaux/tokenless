@@ -374,3 +374,26 @@ A `.cmd` wrapper (`claude-mock.cmd`) lets Windows spawn the `.cjs` via cmd.exe �
 
 **Discovered:** Phase 4A lifecycle design.
 
+## ADR-028 (2026-05-14) — Output parser is a pure-state line matcher; ANSI strip first, pattern match second
+
+**Context:** Phase 4B introduces a parser over claude's stdout/stderr stream to detect prompts, tool calls, response-complete markers, and token usage. The parser sits between PTY chunks (raw bytes including ANSI) and the renderer's UI state (xterm shows raw chunks, the rest of the UI consumes typed CcEvents).
+
+**Options considered:**
+- A) Parse against raw ANSI-containing text. Brittle — escape sequences can appear inside what looks like a pattern.
+- B) Pre-strip ANSI then run regex/state matchers against clean text. Slightly more compute (each chunk passes through two passes), but matches are reliable.
+- C) Use a parser combinator library. Overkill for ~4 patterns.
+
+**Choice:** B. `AnsiStripper` (CSI + OSC state machine) runs first; `CcParser` runs second over its output. Both are pure state — they hold buffered state across chunks (a partial sequence, a partial line) but emit deterministic output for any given input sequence.
+
+**Patterns recognized in Phase 4B:**
+- `claude-mock>` or `>` alone on a line → `prompt-ready`
+- `[mock-claude] received:` → `response-complete`
+- `tokens: <used>/<total>` → `tokens-used`
+- `tool: <name>(<summary>)` → `tool-call`
+
+These are deliberately conservative — built around the mock-claude's output so the parser can be unit-tested. Phase 4C will calibrate against real claude's output formats (which evolve with the CLI) and add quota / auth / resume-failed patterns from §7.1.
+
+**Reasoning:** ANSI stripping has a stable spec (CSI + OSC are well-defined). Pure-state matchers are trivial to test. The tolerance behavior (unknown lines ignored) means claude CLI updates won't break the parser — they'll just stop emitting some events until we update the patterns. The downside — events emit only when a line completes — is acceptable: token counts and tool calls are line-oriented anyway.
+
+**Discovered:** Phase 4B parser design.
+
