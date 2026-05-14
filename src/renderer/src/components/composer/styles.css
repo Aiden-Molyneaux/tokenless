@@ -1,0 +1,131 @@
+/* Composer + child component styles. Tokens from theme/tokens.css. */
+
+.composer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: var(--tl-space-4);
+  gap: var(--tl-space-3);
+  background: var(--tl-bg);
+}
+
+/* ===== Prompt textarea ===== */
+
+.prompt-textarea {
+  flex: 1;
+  min-height: 100px;
+  padding: var(--tl-space-3);
+  background: white;
+  border: 1px solid var(--tl-rule);
+  border-radius: var(--tl-radius-md);
+  font-family: var(--tl-font-serif);
+  font-size: var(--tl-text-base);
+  line-height: var(--tl-leading-normal);
+  color: var(--tl-fg);
+  resize: none;
+  outline: none;
+  transition: border-color var(--tl-transition-fast);
+}
+
+.prompt-textarea::placeholder {
+  color: var(--tl-mute);
+  font-style: italic;
+}
+
+.prompt-textarea:focus {
+  border-color: var(--tl-orange);
+}
+
+/* ===== Configs row ===== */
+
+.configs-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--tl-space-2);
+  align-items: center;
+}
+
+/* ===== Actions row ===== */
+
+.actions-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--tl-space-3);
+}
+
+.actions-row__primary,
+.actions-row__secondary {
+  display: flex;
+  gap: var(--tl-space-2);
+}
+
+.actions-row__button {
+  padding: var(--tl-space-2) var(--tl-space-4);
+  background: transparent;
+  border: 1px solid var(--tl-rule);
+  border-radius: var(--tl-radius-sm);
+  font-family: var(--tl-font-sans);
+  font-size: var(--tl-text-sm);
+  font-weight: var(--tl-weight-medium);
+  color: var(--tl-fg);
+  cursor: pointer;
+  transition: all var(--tl-transition-fast);
+}
+
+.actions-row__button:hover:not(:disabled) {
+  background: var(--tl-hover);
+}
+
+.actions-row__button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.actions-row__button--gear {
+  background: var(--tl-orange);
+  border-color: var(--tl-orange);
+  color: white;
+}
+
+.actions-row__button--gear:hover:not(:disabled) {
+  background: var(--tl-orange-700);
+  border-color: var(--tl-orange-700);
+}
+
+.actions-row__button--secondary {
+  font-size: var(--tl-text-xs);
+  padding: var(--tl-space-1) var(--tl-space-3);
+  color: var(--tl-mute);
+}
+
+/* ===== Telemetry strip ===== */
+
+.telemetry-strip {
+  display: flex;
+  align-items: center;
+  gap: var(--tl-space-2);
+  padding: var(--tl-space-1) var(--tl-space-2);
+  font-family: var(--tl-font-mono);
+  font-size: var(--tl-text-xs);
+  color: var(--tl-mute);
+}
+
+.telemetry-strip__item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--tl-space-1);
+}
+
+.telemetry-strip__label {
+  color: var(--tl-mute);
+}
+
+.telemetry-strip__value {
+  color: var(--tl-fg);
+  font-weight: var(--tl-weight-medium);
+}
+
+.telemetry-strip__separator {
+  color: var(--tl-rule-strong);
+}
