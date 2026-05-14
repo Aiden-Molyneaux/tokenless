@@ -260,3 +260,19 @@ Phase 2B also needs a tooltip system — per spec §6.4 / brainstorm Q-G, toolti
 - ProjectSwitcher and AccountSwitcher refactor to thin wrappers that pass typed items to `<Dropdown>` (Tasks 5-6 of Phase 2B).
 - ConfigsRow uses 4 `<Dropdown>` instances directly.
 - Tooltips appear on individual config dropdowns and on telemetry strip metrics. For Phase 2B, `contextFn`/`outcomeFn` return static stubs; Phase 5 wires real per-state and per-telemetry data.
+
+## ADR-022 (2026-05-14) — Dedicated `--tl-z-gear-review` token above the dev toggle overlay
+
+**Context:** The Dev Mode toggle button (`.app__dev-toggle` in `src/renderer/src/styles.css`) is `position: fixed` at `z-index: var(--tl-z-modal)` (200) so it floats above the regular shell. When the user clicks "Gear" and the composer transitions into the inline 2-pane GearReviewPane (per ADR-004), the pane sits inside the composer area but visually overlaps the dev toggle's fixed footprint near the top-right. Without an explicit stacking context, the dev toggle painted on top of the gear review header, obscuring the cancel button and disrupting the focused "review then send" flow.
+
+**Options considered:**
+- A) Hide the dev toggle while GearReviewPane is mounted. Couples an unrelated UI primitive to a feature; awkward for users mid-review who want to peek at logs.
+- B) Lower the dev toggle's z-index. Defeats its purpose as a globally-accessible overlay.
+- C) Use `calc(var(--tl-z-modal) + 10)` directly on the pane. Works but is ad-hoc and hides the layering intent.
+- D) Add a dedicated `--tl-z-gear-review` token between `--tl-z-modal` (200) and `--tl-z-toast` (300), and apply it from the pane.
+
+**Choice:** D — `--tl-z-gear-review: 210` in `tokens.css`, referenced from `gear-review/styles.css`.
+
+**Reasoning:** Gear review is a transient, focus-stealing surface that semantically sits *above* the modal/overlay layer (which is where the dev toggle lives) but *below* toasts (which should still surface success/error feedback during a review). A named token makes the stacking order self-documenting and keeps token discipline — no inline `calc()` workarounds drifting through component CSS. Toast remains the top layer; the dev toggle remains globally accessible everywhere except behind the gear review pane, which is the correct trade-off for a review-in-progress.
+
+**Discovered:** Phase 2B during integration of GearReviewPane with the global dev toggle overlay.
