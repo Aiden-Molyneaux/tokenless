@@ -238,3 +238,25 @@ Codified as `getClaudeBinary()` in `src/main/cc/spawner.ts` when Phase 4 lands.
 ## Implementation note (Phase 2A) — @xterm/addon-fit version
 
 The Phase 2A plan migrated `xterm-addon-fit@^0.8` → `@xterm/addon-fit@^0.8`. At install time, no `^0.8` version of the scoped `@xterm/addon-fit` package exists on npm — the migration to scoped names was accompanied by a major version bump and the lowest published version is `0.11.0`. The install resolved to `@xterm/addon-fit@^0.11.0`. The addon API is unchanged across the rebrand, so this is a non-issue for downstream code; logged here so future plans don't waste time reconciling the version difference.
+
+## ADR-021 (2026-05-14) — Cross-cutting UI primitives: generic Dropdown + InfoTooltip
+
+**Context:** Phase 2A introduced two dropdown components (ProjectSwitcher, AccountSwitcher) with structurally identical logic — open/close state, outside-click handling, Escape handling, menu rendering, item ARIA. Phase 2B adds 4+ more (Model, Breadth, Format, Skill in ConfigsRow). Phase 2A's marker comments flagged that a 3rd instance should trigger extraction.
+
+Phase 2B also needs a tooltip system — per spec §6.4 / brainstorm Q-G, tooltips should be context-aware (text changes by current state) and outcome-aware (text cites real telemetry). This is cross-cutting too: every config control, every meaningful button, every metric in the telemetry strip can benefit.
+
+**Choices:**
+
+- **`useDropdown()` hook** owns the open/close state, outside-click listener, and Escape handler. Returns `{ open, setOpen, toggle, rootRef }`. Tested in isolation under happy-dom.
+- **`<Dropdown>` component** is a thin shell on top of the hook. Takes typed `items: { value, label, description? }[]`, an `activeValue`, an `onSelect` callback, and an optional `renderItem` for custom item bodies. Handles menu styling + full ARIA menu pattern (`role="menu"` / `"none"` / `"menuitem"`, `aria-haspopup`, `aria-expanded`).
+- **`<InfoTooltip>` component** wraps children with a focusable `(i)` icon. Always renders `helperText`. Optional `contextFn() => string | null` and `outcomeFn() => string | null` add additional lines when truthy. Open state is internal; hover and focus both trigger it.
+
+**Reasoning:**
+- The 4-instance dropdown explosion in ConfigsRow forced the extraction; deferring further would have meant 4 near-identical copies.
+- Separating the hook from the component lets future Phase 5+ components (search-as-you-type combobox, multi-select chip selector, etc.) reuse the open/close discipline without inheriting the typed-items shape.
+- InfoTooltip's `contextFn` and `outcomeFn` are deliberately simple closures (no DI of state, no observer subscriptions). They're called on every render and should be pure. Phase 5 will pass real telemetry-driven closures from a hook like `useSavingsTelemetry()`.
+
+**Implications for Phase 2B and beyond:**
+- ProjectSwitcher and AccountSwitcher refactor to thin wrappers that pass typed items to `<Dropdown>` (Tasks 5-6 of Phase 2B).
+- ConfigsRow uses 4 `<Dropdown>` instances directly.
+- Tooltips appear on individual config dropdowns and on telemetry strip metrics. For Phase 2B, `contextFn`/`outcomeFn` return static stubs; Phase 5 wires real per-state and per-telemetry data.
