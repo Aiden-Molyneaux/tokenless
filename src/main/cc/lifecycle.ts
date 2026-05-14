@@ -159,12 +159,24 @@ export class CcLifecycle {
   stop(conversationId: number, signal: string = 'SIGINT'): void {
     const slot = this.slots.get(conversationId)
     if (!slot) return
-    slot.pty.kill(signal)
+    // node-pty on Windows does not support signal-based kill — calling
+    // pty.kill(signal) throws "Signals not supported on windows." Use the
+    // no-arg form which terminates the process unconditionally on all platforms.
+    if (process.platform === 'win32') {
+      slot.pty.kill()
+    } else {
+      slot.pty.kill(signal)
+    }
   }
 
   closeAll(): void {
     for (const slot of this.slots.values()) {
-      slot.pty.kill('SIGTERM')
+      // Same Windows compatibility fix as stop() above.
+      if (process.platform === 'win32') {
+        slot.pty.kill()
+      } else {
+        slot.pty.kill('SIGTERM')
+      }
     }
     this.slots.clear()
   }
