@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { rendererLogger } from '../../observability/logger-bridge'
+import { useToast } from '../../hooks/use-toast'
 import { MOCK_BREADTHS, MOCK_FORMATS, MOCK_MODELS, MOCK_SKILLS } from '../../mocks/dropdown-options'
 import { MOCK_CRITIQUE_FLAGS, MOCK_GEARED_PROMPT } from '../../mocks/geared-prompt'
 import type { MockCritiqueFlag } from '../../mocks/geared-prompt'
@@ -33,6 +34,7 @@ export function Composer({ conversationId }: ComposerProps): JSX.Element {
   const [skill, setSkill] = useState<string>(MOCK_SKILLS[0].value) // none default
   const [gearState, setGearState] = useState<GearState | null>(null)
   const [sending, setSending] = useState(false)
+  const { push: pushToast } = useToast()
 
   const handleGear = (): void => {
     rendererLogger.info('ui', 'gear-clicked', 'Gear (stub)', { promptLength: prompt.length, model, breadth, format, skill })
@@ -70,6 +72,12 @@ export function Composer({ conversationId }: ComposerProps): JSX.Element {
           code: result.error.code,
           logId: result.error.logId
         })
+        if (result.error.code === 'PTY_WRITE_FAILED') {
+          pushToast({
+            message: "Couldn't send prompt — PTY connection lost. Restart the conversation.",
+            severity: 'error'
+          })
+        }
       }
     } finally {
       setSending(false)

@@ -3,6 +3,7 @@ import { rendererLogger } from '../../observability/logger-bridge'
 import { useAccounts } from '../../hooks/use-accounts'
 import { useConversations } from '../../hooks/use-conversations'
 import { useProjects } from '../../hooks/use-projects'
+import { useToast } from '../../hooks/use-toast'
 import { ConversationSidebar } from './ConversationSidebar'
 import { CreateProjectModal } from './CreateProjectModal'
 import { EmptyProjectsState } from './EmptyProjectsState'
@@ -40,6 +41,7 @@ export function AppShell(): JSX.Element {
   const [claudeNotFoundOpen, setClaudeNotFoundOpen] = useState(false)
   const [onboardingDismissed, setOnboardingDismissed] = useState<boolean>(readDismissed)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const { push: pushToast } = useToast()
 
   // Pick a sensible active project + account once data lands.
   useEffect(() => {
@@ -53,6 +55,21 @@ export function AppShell(): JSX.Element {
       setActiveAccountId(accounts[0].id)
     }
   }, [accounts, activeAccountId])
+
+  useEffect(() => {
+    const unsubCrashed = window.tokenless.cc.onCrashed((payload) => {
+      rendererLogger.warn('ui', 'cc-crash-toast', 'cc:crashed event received', {
+        conversationId: payload.conversationId,
+        exitCode: payload.exitCode,
+        logId: payload.logId
+      })
+      pushToast({
+        message: `Claude Code crashed (exit ${payload.exitCode}). Conversation saved — try resuming.`,
+        severity: 'error'
+      })
+    })
+    return () => unsubCrashed()
+  }, [pushToast])
 
   const { conversations } = useConversations(activeProjectId)
   const [activeConversationId, setActiveConversationId] = useState<number | null>(null)
@@ -142,6 +159,17 @@ export function AppShell(): JSX.Element {
       })
       if (started.error.code === 'CLAUDE_NOT_FOUND') {
         setClaudeNotFoundOpen(true)
+      }
+      // Cleanup the orphan conversation row — it was created in step 1 but step 2
+      // (cc:start) failed so there's no PTY for it. Phase 4C deletes it; Phase 7's
+      // branching feature may want to keep these around with a status='aborted'
+      // marker — revisit then.
+      const deleted = await window.tokenless.conversations.delete({ id: created.data.conversation.id })
+      if (!deleted.ok) {
+        rendererLogger.warn('ui', 'orphan-conversation-cleanup-failed', deleted.error.message, {
+          conversationId: created.data.conversation.id,
+          code: deleted.error.code
+        })
       }
       return
     }
