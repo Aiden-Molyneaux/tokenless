@@ -239,3 +239,89 @@
   min-height: 0;
   overflow: hidden;
 }
+
+/* ===== Modal — used by CreateProjectModal and future modals ===== */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--tl-z-modal);
+}
+
+.modal {
+  background: var(--tl-bg-base);
+  border: 1px solid var(--tl-rule-subtle);
+  border-radius: 8px;
+  padding: 1.25rem 1.5rem;
+  width: min(420px, 90vw);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.modal__title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.modal__form { display: flex; flex-direction: column; gap: 0.75rem; }
+.modal__field { display: flex; flex-direction: column; gap: 0.25rem; }
+.modal__label { font-size: 0.875rem; color: var(--tl-text-muted); }
+.modal__field input {
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--tl-rule-subtle);
+  border-radius: 4px;
+  background: var(--tl-bg-mute);
+  color: var(--tl-text-base);
+  font-family: inherit;
+  font-size: 0.95rem;
+}
+.modal__error {
+  margin: 0;
+  color: var(--tl-color-danger, #d22);
+  font-size: 0.875rem;
+}
+.modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+.btn {
+  padding: 0.4rem 0.9rem;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  font: inherit;
+  cursor: pointer;
+}
+.btn--primary {
+  background: var(--tl-accent, #4a90e2);
+  color: #fff;
+}
+.btn--primary:disabled { opacity: 0.6; cursor: default; }
+.btn--ghost {
+  background: transparent;
+  border-color: var(--tl-rule-subtle);
+  color: var(--tl-text-base);
+}
+
+/* ===== Empty projects state ===== */
+
+.empty-projects-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 3rem 2rem;
+  text-align: center;
+  color: var(--tl-text-muted);
+}
+.empty-projects-state h2 { margin: 0; color: var(--tl-text-base); }
+.empty-projects-state p { margin: 0; max-width: 32ch; }

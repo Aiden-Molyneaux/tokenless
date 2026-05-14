@@ -44,6 +44,13 @@
   --tl-orange: var(--tl-orange-500);
   --tl-blue: var(--tl-blue-500);
 
+  /* ===== Semantic text + background colors ===== */
+  --tl-text-base: var(--tl-fg);
+  --tl-text-muted: var(--tl-mute);
+  --tl-bg-base: var(--tl-bg);
+  --tl-accent: #4a90e2;
+  --tl-color-danger: #d22;
+
   /* ===== Spacing scale (4px base) ===== */
   --tl-space-1: 4px;
   --tl-space-2: 8px;
