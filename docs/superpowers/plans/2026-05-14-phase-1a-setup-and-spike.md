@@ -18,7 +18,18 @@ Phase 1A only. Phase 1B (Logger service, IPC bridge, Dev Mode panel UI) is a sep
 
 - Phase 0 complete (`v0.1.0-phase-0` tag exists; CI green on main)
 - Working directory: `C:\personal\tokenless\`
-- **`claude` CLI installed and authenticated** on your personal account (`claude --version` should work; `claude login` already done)
+- **`claude` CLI** installed
+- **Personal Claude account authenticated in a dedicated config dir.** The spike scripts default to `~/.claude-personal/` as `CLAUDE_CONFIG_DIR` so they never accidentally consume work-plan tokens. To set this up if you haven't already:
+  ```bash
+  mkdir -p "$HOME/.claude-personal"
+  CLAUDE_CONFIG_DIR="$HOME/.claude-personal" claude login
+  ```
+  This keeps your work account in `~/.claude/` untouched. Verify both configs coexist:
+  ```bash
+  grep -oE '"subscriptionType":"[a-z]+"' "$HOME/.claude/.credentials.json"
+  grep -oE '"subscriptionType":"[a-z]+"' "$HOME/.claude-personal/.credentials.json"
+  ```
+  Each should print the subscription tier for the respective account.
 - **MSBuild toolchain** — node-pty has prebuilt Windows binaries for common Node versions, but if your Node minor/Electron ABI combo isn't covered, native rebuild needs:
   - Visual Studio 2022 Build Tools with C++ workload
   - Python 3.x (auto-installs with VS Build Tools)
@@ -360,12 +371,19 @@ git commit -m "chore(phase-1a): spike scaffolding for cc-pty (tsconfig + README)
 // Goal: validate the basic pipe before we trust the rest of the design.
 
 import * as pty from 'node-pty'
+import { homedir } from 'node:os'
+import { join } from 'node:path'
 import { setTimeout as wait } from 'node:timers/promises'
 
 const TEST_PROMPT = 'Reply with exactly the text: PING-OK'
 const READ_TIMEOUT_MS = 30_000
 
+// Default to the personal config dir so spike runs never consume work-plan tokens.
+// Override with: CLAUDE_CONFIG_DIR=/some/other/path npx tsx spike-spawn.ts
+const CONFIG_DIR = process.env.CLAUDE_CONFIG_DIR ?? join(homedir(), '.claude-personal')
+
 async function main() {
+  console.log(`[spike-spawn] using CLAUDE_CONFIG_DIR=${CONFIG_DIR}`)
   console.log('[spike-spawn] spawning claude...')
 
   const proc = pty.spawn('claude', [], {
@@ -373,7 +391,7 @@ async function main() {
     cols: 100,
     rows: 30,
     cwd: process.cwd(),
-    env: process.env as Record<string, string>
+    env: { ...process.env, CLAUDE_CONFIG_DIR: CONFIG_DIR } as Record<string, string>
   })
 
   let buffer = ''
@@ -457,9 +475,12 @@ git commit -m "spike(phase-1a): spike-spawn validates basic node-pty + claude pi
 //   4. PASS if response contains "7423".
 
 import * as pty from 'node-pty'
+import { homedir } from 'node:os'
+import { join } from 'node:path'
 import { setTimeout as wait } from 'node:timers/promises'
 
 const MAGIC_NUMBER = '7423'
+const CONFIG_DIR = process.env.CLAUDE_CONFIG_DIR ?? join(homedir(), '.claude-personal')
 
 function spawnClaude(args: string[]): pty.IPty {
   return pty.spawn('claude', args, {
@@ -467,7 +488,7 @@ function spawnClaude(args: string[]): pty.IPty {
     cols: 100,
     rows: 30,
     cwd: process.cwd(),
-    env: process.env as Record<string, string>
+    env: { ...process.env, CLAUDE_CONFIG_DIR: CONFIG_DIR } as Record<string, string>
   })
 }
 
@@ -586,12 +607,16 @@ git commit -m "spike(phase-1a): spike-resume validates --resume session-id round
 // Spike: prove `--model claude-haiku-4-5` is accepted and actually routes to Haiku.
 
 import * as pty from 'node-pty'
+import { homedir } from 'node:os'
+import { join } from 'node:path'
 import { setTimeout as wait } from 'node:timers/promises'
 
 const MODEL = 'claude-haiku-4-5'
 const READ_TIMEOUT_MS = 30_000
+const CONFIG_DIR = process.env.CLAUDE_CONFIG_DIR ?? join(homedir(), '.claude-personal')
 
 async function main() {
+  console.log(`[spike-model] CLAUDE_CONFIG_DIR=${CONFIG_DIR}`)
   console.log(`[spike-model] spawning claude with --model ${MODEL}`)
 
   const proc = pty.spawn('claude', ['--model', MODEL], {
@@ -599,7 +624,7 @@ async function main() {
     cols: 100,
     rows: 30,
     cwd: process.cwd(),
-    env: process.env as Record<string, string>
+    env: { ...process.env, CLAUDE_CONFIG_DIR: CONFIG_DIR } as Record<string, string>
   })
 
   let buffer = ''
