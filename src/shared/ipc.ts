@@ -72,6 +72,24 @@ export {
   type ConversationsDeleteResponse
 } from './ipc/conversations'
 
+export {
+  IPC_CC_START,
+  IPC_CC_SEND,
+  IPC_CC_RESIZE,
+  IPC_CC_OUTPUT_CHUNK,
+  IPC_CC_EXIT,
+  type CcStartRequest,
+  type CcStartResponse,
+  type CcStartResult,
+  type CcSendRequest,
+  type CcSendResponse,
+  type CcSendResult,
+  type CcResizeRequest,
+  type CcResizeResult,
+  type CcOutputChunkPayload,
+  type CcExitPayload
+} from './ipc/cc'
+
 export type { IpcResult, IpcOk, IpcError } from './ipc/envelope'
 
 export type IpcChannelName =
@@ -91,3 +109,8 @@ export type IpcChannelName =
   | 'conversations:update'
   | 'conversations:delete'
   | 'conversations:changed'
+  | 'cc:start'
+  | 'cc:send'
+  | 'cc:resize'
+  | 'cc:output-chunk'
+  | 'cc:exit'
