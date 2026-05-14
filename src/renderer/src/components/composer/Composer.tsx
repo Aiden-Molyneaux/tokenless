@@ -82,6 +82,7 @@ export function Composer(): JSX.Element {
   if (gearState) {
     return (
       <GearReviewPane
+        key={gearState.geared}
         original={gearState.original}
         geared={gearState.geared}
         critiqueFlags={gearState.flags}

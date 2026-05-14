@@ -11,8 +11,8 @@ export function CritiqueFlags({ flags }: CritiqueFlagsProps): JSX.Element | null
   if (flags.length === 0) return null
   return (
     <div className="critique-flags">
-      {flags.map((flag, i) => (
-        <div key={i} className={`critique-flags__item critique-flags__item--${flag.severity}`}>
+      {flags.map((flag) => (
+        <div key={flag.message} className={`critique-flags__item critique-flags__item--${flag.severity}`}>
           <span className="critique-flags__icon" aria-hidden="true">
             {flag.severity === 'warn' ? '⚠' : 'ⓘ'}
           </span>
