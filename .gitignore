@@ -25,3 +25,17 @@ Thumbs.db
 logs/
 *.log
 *.tsbuildinfo
+
+# electron-vite build output
+out/
+
+# electron-builder output
+release/
+
+# vite cache
+.vite/
+
+# playwright test artifacts
+test-results/
+playwright-report/
+playwright/.cache/
