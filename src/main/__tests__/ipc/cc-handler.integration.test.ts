@@ -47,7 +47,8 @@ describe('ipc/cc-handler', () => {
       },
       {
         onChunk: (e) => broadcast('cc:output-chunk', e),
-        onExit: (e) => broadcast('cc:exit', e)
+        onExit: (e) => broadcast('cc:exit', e),
+        onEvent: vi.fn()
       }
     )
     handler = new CcHandler(db, makeLogger(), lifecycle)

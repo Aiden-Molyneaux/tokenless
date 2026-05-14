@@ -49,7 +49,8 @@ export function registerIpcHandlers(
 
   const ccLifecycle = new CcLifecycle(productionPtyFactory, {
     onChunk: (e) => broadcast('cc:output-chunk', e),
-    onExit: (e) => broadcast('cc:exit', e)
+    onExit: (e) => broadcast('cc:exit', e),
+    onEvent: (_e) => { /* cc:event broadcast wired in Task 6 */ }
   })
   const ccHandler = new CcHandler(db, logger, ccLifecycle)
   ccHandler.install(ipcMain)

@@ -10,8 +10,11 @@
 
 import { randomUUID } from 'node:crypto'
 
+import type { CcEvent } from '@shared/types/cc-events'
+
 import { spawnClaude } from './spawner'
 import type { PtyHandle, PtySpawnFn } from './types'
+import { CcParser } from './parser'
 
 export interface LifecycleStartOptions {
   readonly conversationId: number
@@ -30,12 +33,14 @@ export interface LifecycleStartResult {
 export interface LifecycleCallbacks {
   onChunk(event: { conversationId: number; chunk: string }): void
   onExit(event: { conversationId: number; exitCode: number; signal?: number }): void
+  onEvent(event: { conversationId: number; event: CcEvent }): void
 }
 
 interface Slot {
   readonly conversationId: number
   readonly sessionId: string
   readonly pty: PtyHandle
+  readonly parser: CcParser
 }
 
 export class CcLifecycle {
@@ -63,10 +68,14 @@ export class CcLifecycle {
       },
       this.ptyFactory
     )
-    const slot: Slot = { conversationId: opts.conversationId, sessionId, pty }
+    const parser = new CcParser((event) => {
+      this.cb.onEvent({ conversationId: opts.conversationId, event })
+    })
+    const slot: Slot = { conversationId: opts.conversationId, sessionId, pty, parser }
     this.slots.set(opts.conversationId, slot)
 
     pty.onData((chunk) => {
+      parser.feed(chunk)
       this.cb.onChunk({ conversationId: opts.conversationId, chunk })
     })
     pty.onExit(({ exitCode, signal }) => {

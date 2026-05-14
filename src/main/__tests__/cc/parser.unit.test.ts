@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 
 import { CcParser } from '../../cc/parser'
 import type { CcEvent } from '@shared/types/cc-events'
