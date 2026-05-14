@@ -1,4 +1,4 @@
-import { test, expect, _electron as electron, type ElectronApplication, type Page } from '@playwright/test'
+import { test, expect, _electron as electron, type ElectronApplication } from '@playwright/test'
 import { existsSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
@@ -10,7 +10,6 @@ import { join, resolve } from 'node:path'
 test.describe('Phase 4A cc send/stream', () => {
   let userDataDir: string
   let app: ElectronApplication
-  let page: Page
 
   test.beforeEach(async () => {
     userDataDir = mkdtempSync(join(tmpdir(), 'tokenless-e2e-'))
@@ -72,7 +71,6 @@ test.describe('Phase 4A cc send/stream', () => {
     // After a successful Send the composer clears the prompt text (setPrompt('')
     // is called only on result.ok). xterm renders to canvas so we can't assert
     // on terminal text directly — the textarea clearing is the cleanest signal.
-    page = win
     await expect(win.locator('.prompt-textarea')).toHaveValue('', { timeout: 10000 })
 
     // Also verify we are back to idle (not stuck in sending=true) by typing

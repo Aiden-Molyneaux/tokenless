@@ -140,7 +140,8 @@ export function Composer({ conversationId }: ComposerProps): JSX.Element {
       />
       <ActionsRow
         promptEmpty={prompt.length === 0}
-        disabled={sending || conversationId === null}
+        disableGear={sending}
+        disableSend={sending || conversationId === null}
         onGear={handleGear}
         onSend={() => void handleSend(prompt)}
         onCommit={handleCommit}
