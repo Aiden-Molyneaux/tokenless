@@ -28,7 +28,7 @@ body {
 
 .app__dev-toggle {
   position: fixed;
-  top: var(--tl-space-2);
+  top: calc(var(--tl-top-bar-height) + var(--tl-space-2));
   right: var(--tl-space-2);
   background: var(--tl-bg);
   border: 1px solid var(--tl-rule);

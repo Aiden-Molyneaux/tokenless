@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 
+import '@testing-library/jest-dom/vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { InfoTooltip } from '../InfoTooltip'
