@@ -48,7 +48,9 @@ describe('ipc/cc-handler', () => {
       {
         onChunk: (e) => broadcast('cc:output-chunk', e),
         onExit: (e) => broadcast('cc:exit', e),
-        onEvent: vi.fn()
+        onEvent: vi.fn(),
+        onCrashed: vi.fn(),
+        onHung: vi.fn()
       }
     )
     handler = new CcHandler(db, makeLogger(), lifecycle)
@@ -246,6 +248,18 @@ describe('ipc/cc-handler', () => {
     expect(resumeResult.data.sessionId).toBe(liveSessionId)
   })
 
+  it('send returns PTY_WRITE_FAILED when pty.write throws', async () => {
+    await handler.start({ conversationId, cwd: 'C:/x', cols: 100, rows: 30, accountId })
+    lastPty!.markDisposed()
+    const result = await handler.send({
+      conversationId,
+      prompt: 'hello',
+      model: null, breadth: null, format: null
+    })
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.error.code).toBe('PTY_WRITE_FAILED')
+  })
+
   it('start returns CLAUDE_NOT_FOUND when the spawner fails with that code', async () => {
     const errLifecycle = new CcLifecycle(
       () => {
@@ -253,7 +267,7 @@ describe('ipc/cc-handler', () => {
         e.code = 'CLAUDE_NOT_FOUND'
         throw e
       },
-      { onChunk: vi.fn(), onExit: vi.fn(), onEvent: vi.fn() }
+      { onChunk: vi.fn(), onExit: vi.fn(), onEvent: vi.fn(), onCrashed: vi.fn(), onHung: vi.fn() }
     )
     const errHandler = new CcHandler(db, makeLogger(), errLifecycle)
     const result = await errHandler.start({
