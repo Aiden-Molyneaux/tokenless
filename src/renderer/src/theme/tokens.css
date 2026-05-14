@@ -1,0 +1,109 @@
+/* TokenLess theme tokens — all CSS custom properties live here.
+   Imported once in main.tsx. Other CSS files reference var(--tl-*) but
+   never redefine these. Adding a new token? Put it here. */
+
+:root {
+  /* ===== Color base ===== */
+  --tl-bg: #FAF7F2;
+  --tl-bg-alt: #F4EFE7;
+  --tl-fg: #2A2624;
+  --tl-fg-dim: rgba(42, 38, 36, 0.72);
+
+  /* ===== Orange (warm accent) ===== */
+  --tl-orange-50: #FDF1EC;
+  --tl-orange-100: #F8DCD0;
+  --tl-orange-300: #E5A790;
+  --tl-orange-500: #D97757;
+  --tl-orange-700: #B85A3C;
+
+  /* ===== Blue (cool accent) ===== */
+  --tl-blue-50: #EEF2F7;
+  --tl-blue-100: #D6DFEC;
+  --tl-blue-300: #8AA2C2;
+  --tl-blue-500: #4A6FA5;
+  --tl-blue-700: #344F76;
+
+  /* ===== Neutrals (alpha-tinted) ===== */
+  --tl-rule: rgba(42, 38, 36, 0.12);
+  --tl-rule-strong: rgba(42, 38, 36, 0.24);
+  --tl-mute: rgba(42, 38, 36, 0.55);
+  --tl-hover: rgba(217, 119, 87, 0.06);
+  --tl-active: rgba(217, 119, 87, 0.12);
+
+  /* ===== Semantic ===== */
+  --tl-error: #C44444;
+  --tl-error-bg: rgba(196, 68, 68, 0.06);
+  --tl-warn: #DD8800;
+  --tl-warn-bg: rgba(221, 136, 0, 0.05);
+  --tl-success: #3F9F5F;
+  --tl-success-bg: rgba(63, 159, 95, 0.06);
+
+  /* ===== Aliases for common uses ===== */
+  --tl-orange: var(--tl-orange-500);
+  --tl-blue: var(--tl-blue-500);
+
+  /* ===== Spacing scale (4px base) ===== */
+  --tl-space-1: 4px;
+  --tl-space-2: 8px;
+  --tl-space-3: 12px;
+  --tl-space-4: 16px;
+  --tl-space-5: 20px;
+  --tl-space-6: 24px;
+  --tl-space-8: 32px;
+  --tl-space-12: 48px;
+  --tl-space-16: 64px;
+
+  /* ===== Type scale ===== */
+  --tl-text-xs: 11px;
+  --tl-text-sm: 12px;
+  --tl-text-md: 14px;
+  --tl-text-base: 15px;
+  --tl-text-lg: 17px;
+  --tl-text-xl: 24px;
+  --tl-text-2xl: 32px;
+  --tl-text-3xl: 42px;
+
+  /* ===== Line heights ===== */
+  --tl-leading-tight: 1.25;
+  --tl-leading-normal: 1.55;
+  --tl-leading-relaxed: 1.7;
+
+  /* ===== Font families ===== */
+  --tl-font-serif: 'Source Serif Pro', 'Tiempos Text', Georgia, serif;
+  --tl-font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --tl-font-mono: 'JetBrains Mono', Consolas, monospace;
+
+  /* ===== Font weights ===== */
+  --tl-weight-regular: 400;
+  --tl-weight-medium: 500;
+  --tl-weight-semibold: 600;
+
+  /* ===== Radii ===== */
+  --tl-radius-sm: 4px;
+  --tl-radius-md: 6px;
+  --tl-radius-lg: 12px;
+  --tl-radius-full: 9999px;
+
+  /* ===== Shadows ===== */
+  --tl-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --tl-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --tl-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+
+  /* ===== Layout dimensions ===== */
+  --tl-top-bar-height: 48px;
+  --tl-sidebar-width: 240px;
+  --tl-sidebar-width-collapsed: 36px;
+
+  /* ===== z-index ===== */
+  --tl-z-sidebar: 10;
+  --tl-z-top-bar: 20;
+  --tl-z-dropdown: 50;
+  --tl-z-dev-mode: 100;
+  --tl-z-modal: 200;
+  --tl-z-toast: 300;
+
+  /* ===== Transitions ===== */
+  --tl-transition-fast: 120ms ease-out;
+  --tl-transition-base: 180ms ease-out;
+  --tl-transition-slow: 320ms ease-out;
+}
