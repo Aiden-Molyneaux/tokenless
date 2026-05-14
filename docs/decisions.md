@@ -234,3 +234,7 @@ Codified as `getClaudeBinary()` in `src/main/cc/spawner.ts` when Phase 4 lands.
 - `LogTableRow.formatTs()` remains unchanged (already local).
 
 **Discovered:** Phase 1B final code review.
+
+## Implementation note (Phase 2A) — @xterm/addon-fit version
+
+The Phase 2A plan migrated `xterm-addon-fit@^0.8` → `@xterm/addon-fit@^0.8`. At install time, no `^0.8` version of the scoped `@xterm/addon-fit` package exists on npm — the migration to scoped names was accompanied by a major version bump and the lowest published version is `0.11.0`. The install resolved to `@xterm/addon-fit@^0.11.0`. The addon API is unchanged across the rebrand, so this is a non-issue for downstream code; logged here so future plans don't waste time reconciling the version difference.
