@@ -16,6 +16,10 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
+      # npm ci installs better-sqlite3 with a prebuild matching the host Node
+      # ABI — vitest runs under host Node so this is the right binary for unit
+      # tests. The e2e job below rebuilds it for Electron's ABI before launching
+      # the packaged app. See ADR-025.
       - name: Type-check
         run: npm run typecheck
       - name: Unit + Integration tests
@@ -31,6 +35,8 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
+      - name: Rebuild better-sqlite3 for Electron's ABI
+        run: npm run rebuild:electron
       - name: Build app
         run: npm run build
       - name: Playwright browsers (none needed for Electron-only E2E)

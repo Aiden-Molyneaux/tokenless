@@ -8,6 +8,14 @@ import {
 } from './observability'
 import type { Broadcast } from './ipc/log-bridge'
 import { registerIpcHandlers } from './ipc'
+import {
+  openDatabase,
+  closeDatabase,
+  runMigrations,
+  MIGRATIONS,
+  seedDefaultAccount,
+  type Database
+} from './db'
 
 // Initialize the Logger as early as possible so even early-startup errors
 // can be captured. Log files live under ~/.tokenless/logs/.
@@ -18,6 +26,16 @@ const logger = new Logger(fileSink, 5000, 'main')
 installUncaughtHandlers(logger)
 
 logger.info('observability', 'logger-online', 'Logger initialized', { logDir })
+
+// Bootstrap: honor TOKENLESS_USER_DATA_DIR for E2E test isolation (Task 27).
+// Must be set BEFORE app.whenReady() — Electron accepts setPath calls before ready.
+const overrideUserData = process.env['TOKENLESS_USER_DATA_DIR']
+if (overrideUserData) {
+  app.setPath('userData', overrideUserData)
+  logger.info('observability', 'userData-override', 'userData path overridden via env', {
+    path: overrideUserData
+  })
+}
 
 // Broadcast records to every renderer window. Inlined here (instead of in
 // log-bridge.ts) so the bridge module stays free of electron imports — tests
@@ -30,7 +48,7 @@ const broadcast: Broadcast = (channel: string, payload: unknown) => {
   }
 }
 
-const ipcRegistration = registerIpcHandlers(ipcMain, logger, broadcast)
+let db: Database | null = null
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
@@ -64,17 +82,44 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
-  logger.info('observability', 'app-ready', 'Electron ready, creating window')
+  logger.info('observability', 'app-ready', 'Electron ready, opening database')
+
+  const dbPath = join(app.getPath('userData'), 'tokenless.db')
+  try {
+    db = openDatabase(dbPath)
+    runMigrations(db, MIGRATIONS)
+    seedDefaultAccount(db)
+    logger.info('db', 'db-online', 'Database opened, migrations applied', { dbPath })
+  } catch (error) {
+    logger.fatal('db', 'db-init-failed', 'Failed to open database', {
+      dbPath,
+      errorString: String(error)
+    })
+    // Without a DB the app cannot function — quit immediately
+    app.quit()
+    return
+  }
+
+  const ipcRegistration = registerIpcHandlers(ipcMain, logger, broadcast, db)
+
   createWindow()
 
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
+
+  app.on('before-quit', () => {
+    logger.info('observability', 'shutdown', 'Before quit, releasing resources')
+    ipcRegistration.uninstallAll()
+    if (db) {
+      closeDatabase(db)
+      db = null
+    }
+  })
 })
 
 app.on('window-all-closed', () => {
   logger.info('observability', 'shutdown', 'All windows closed')
-  ipcRegistration.uninstallAll()
   if (process.platform !== 'darwin') {
     app.quit()
   }

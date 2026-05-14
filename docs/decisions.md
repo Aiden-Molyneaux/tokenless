@@ -293,3 +293,28 @@ Phase 2B also needs a tooltip system — per spec §6.4 / brainstorm Q-G, toolti
 **Why `userData` over the spec's `~/.tokenless/`:** the spec was written platform-agnostically. `app.getPath('userData')` is the Electron convention, gets backed up with the user profile on Windows, and avoids polluting the user's home directory. Log files (Phase 1B) live under `~/.tokenless/logs/` for now — we'll consider migrating them in Phase 8 polish if it matters.
 
 **Reasoning:** better-sqlite3's synchronous API drastically simplifies DAO code (no `await` rabbit hole through every handler), and its per-op latency on small queries is in the microsecond range — well under the IPC roundtrip cost. We accept the native-rebuild cost (mitigated by `postinstall` hook) because the alternative (sql.js) can't durable-write and the async wrapper (node-sqlite3) makes the code harder to test.
+
+## ADR-024 (2026-05-14) — Dual-ABI workflow for better-sqlite3: explicit `rebuild:electron` / `rebuild:node`, no `postinstall` (supersedes ADR-023's postinstall claim)
+
+**Context:** better-sqlite3 is a native module — its compiled `.node` binary is ABI-specific. Electron 32 bundles a Node.js with `NODE_MODULE_VERSION 128` while host Node 20 (used by vitest, `npm ci`) is `MODULE_VERSION 115`. Only one binary can exist on disk at a time. Discovered during Task 16 smoke-testing when the Electron launch failed with: *"compiled against a different Node.js version using NODE_MODULE_VERSION 115. This version of Node.js requires NODE_MODULE_VERSION 128."*
+
+**Options considered:**
+- A) Keep `postinstall: electron-rebuild` → after `npm ci`, binary is for Electron. Tests under host Node fail.
+- B) Run tests inside Electron (electron-mocha / playwright-electron). Heavyweight; slows the inner-loop dramatically.
+- C) Explicit `rebuild:electron` / `rebuild:node` scripts. Developer / CI runs the right one before each task.
+- D) Ship both binaries (rename + dynamic load). Fragile; not supported by better-sqlite3 upstream.
+
+**Choice:** C. Remove `postinstall`. Add two explicit scripts:
+- `npm run rebuild:electron` → `electron-rebuild --force --module-dir node_modules/better-sqlite3`
+- `npm run rebuild:node` → `npm rebuild better-sqlite3`
+
+CI's e2e job runs `rebuild:electron` after `npm ci` and before `npm run build` / `npm run test:e2e`. The unit-and-integration job runs `npm ci` only — the prebuild-install fetched during `npm ci` matches the host Node ABI, which is what vitest needs.
+
+Developers wanting to run `npm run dev` or `npm run test:e2e` locally run `npm run rebuild:electron` once. To switch back to running tests, `npm run rebuild:node`.
+
+**Reasoning:** The dual-ABI cost is real but localized. Making it explicit puts the rebuild step where it belongs (next to the workflow that needs it) and avoids surprising silent ABI mismatches. The alternative — running unit tests inside Electron — would add ~5–10 s per test invocation and complicate vitest's `happy-dom` environment, with no observability/debugging gain. The workflow steps are obvious from the script names (`:electron` vs `:node`).
+
+**Supersedes:** ADR-023's "Native module rebuilt for Electron's ABI via `@electron/rebuild` in `postinstall`" claim. That worked for the spike but breaks once tests reference the same module.
+
+**Discovered:** Phase 3 Task 16, during the post-wiring smoke test.
+

@@ -63,7 +63,7 @@
 - `src/renderer/src/components/layout/ProjectSwitcher.tsx` — use `Project` type from shared
 - `src/renderer/src/components/layout/ConversationList.tsx` + `ConversationListItem.tsx` — use `Conversation` type
 - `src/renderer/src/components/layout/AccountSwitcher.tsx` — use `Account` type
-- `docs/decisions.md` — append ADR-023 + ADR-024
+- `docs/decisions.md` — append ADR-023 + ADR-025
 - `docs/observability.md` — document `db` category usage rows
 - `docs/test-scenarios.md` — append Phase 3 manual scenarios
 - `test/e2e/persistence.e2e.test.ts` — new file
@@ -4058,7 +4058,7 @@ git commit -m "docs(phase-3): document db category events"
 
 ---
 
-## Task 26: Test scenarios + ADR-024 (renderer hook pattern)
+## Task 26: Test scenarios + ADR-025 (renderer hook pattern)
 
 **Files:**
 - Modify: `docs/test-scenarios.md`
@@ -4100,13 +4100,13 @@ Append to `docs/test-scenarios.md`:
 3. **Expect:** Fatal-severity log entry `db-init-failed` in Dev Mode panel (visible if you toggle Dev Mode in the prior session). App quits gracefully (does not white-screen). After making the file writable, restart succeeds.
 ```
 
-- [ ] **Step 2: Append ADR-024**
+- [ ] **Step 2: Append ADR-025**
 
 Add to `docs/decisions.md`:
 
 ```markdown
 
-## ADR-024 (2026-05-14) — Renderer hook pattern for IPC-backed data: fetch on mount, refetch on change-event broadcast
+## ADR-025 (2026-05-14) — Renderer hook pattern for IPC-backed data: fetch on mount, refetch on change-event broadcast
 
 **Context:** The renderer needs project/conversation/account lists with reasonably current data without polling and without overcomplicating with a state library.
 
@@ -4125,7 +4125,7 @@ Add to `docs/decisions.md`:
 
 ```bash
 git add docs/test-scenarios.md docs/decisions.md
-git commit -m "docs(phase-3): manual test scenarios + ADR-024 renderer hook pattern"
+git commit -m "docs(phase-3): manual test scenarios + ADR-025 renderer hook pattern"
 ```
 
 ---
