@@ -1,27 +1,31 @@
-:root {
-  --tl-bg: #FAF7F2;
-  --tl-fg: #2A2624;
-  --tl-orange: #D97757;
-  --tl-blue: #4A6FA5;
-  --tl-rule: rgba(42, 38, 36, 0.12);
-  --tl-mute: rgba(42, 38, 36, 0.55);
-  --tl-font-serif: 'Source Serif Pro', 'Tiempos Text', Georgia, serif;
-  --tl-font-sans: 'Inter', system-ui, -apple-system, sans-serif;
-  --tl-font-mono: 'JetBrains Mono', Consolas, monospace;
+/* Body + global resets only. Theme tokens live in src/renderer/src/theme/tokens.css.
+   Component-specific styles co-locate with their .tsx files. */
+
+* {
+  box-sizing: border-box;
 }
 
-* { box-sizing: border-box; }
-
-html, body, #root { height: 100%; margin: 0; padding: 0; }
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
 
 body {
   background: var(--tl-bg);
   color: var(--tl-fg);
   font-family: var(--tl-font-sans);
-  font-size: 15px;
-  line-height: 1.55;
+  font-size: var(--tl-text-base);
+  line-height: var(--tl-leading-normal);
   -webkit-font-smoothing: antialiased;
 }
+
+/* The Phase 0 stub styles (.app, .app__title, .app__subtitle, .app__version)
+   and the .app__dev-toggle button continue to be used by App.tsx until Task 21
+   replaces the stub with AppShell. Keep them through Task 20 so the app
+   remains functional at every commit. */
 
 .app {
   display: flex;
@@ -29,19 +33,19 @@ body {
   height: 100%;
   max-width: 720px;
   margin: 0 auto;
-  padding: 64px 32px;
+  padding: var(--tl-space-16) var(--tl-space-8);
 }
 
 .app__header {
   border-bottom: 1px solid var(--tl-rule);
-  padding-bottom: 24px;
-  margin-bottom: 32px;
+  padding-bottom: var(--tl-space-6);
+  margin-bottom: var(--tl-space-8);
 }
 
 .app__title {
   font-family: var(--tl-font-serif);
-  font-size: 42px;
-  font-weight: 500;
+  font-size: var(--tl-text-3xl);
+  font-weight: var(--tl-weight-medium);
   letter-spacing: -0.02em;
   margin: 0 0 4px;
   color: var(--tl-orange);
@@ -50,19 +54,21 @@ body {
 .app__subtitle {
   margin: 0;
   color: var(--tl-mute);
-  font-size: 14px;
+  font-size: var(--tl-text-md);
 }
 
 .app__body {
   font-family: var(--tl-font-serif);
-  font-size: 17px;
+  font-size: var(--tl-text-lg);
 }
 
-.app__body p { margin: 0 0 16px; }
+.app__body p {
+  margin: 0 0 var(--tl-space-4);
+}
 
 .app__version {
   font-family: var(--tl-font-sans);
-  font-size: 13px;
+  font-size: var(--tl-text-sm);
   color: var(--tl-mute);
 }
 
@@ -73,20 +79,21 @@ body {
 
 .app__dev-toggle {
   position: absolute;
-  top: 24px;
-  right: 24px;
+  top: var(--tl-space-6);
+  right: var(--tl-space-6);
   background: transparent;
   border: 1px solid var(--tl-rule);
-  border-radius: 4px;
-  padding: 4px 12px;
+  border-radius: var(--tl-radius-sm);
+  padding: var(--tl-space-1) var(--tl-space-3);
   font-family: var(--tl-font-mono);
-  font-size: 12px;
+  font-size: var(--tl-text-sm);
   color: var(--tl-fg);
   cursor: pointer;
+  z-index: var(--tl-z-top-bar);
 }
 
 .app__dev-toggle:hover {
-  background: rgba(217, 119, 87, 0.06);
+  background: var(--tl-hover);
 }
 
 .app__dev-toggle.is-active {
