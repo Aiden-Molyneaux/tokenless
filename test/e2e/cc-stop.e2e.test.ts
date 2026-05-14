@@ -59,10 +59,17 @@ test.describe('Phase 4B cc:stop', () => {
     // Wait for the stop IPC to complete and for cc:stop to log success
     // (lifecycle.stop kills the PTY; onExit fires asynchronously removing the slot)
     const stopOkOrFailed = await win.evaluate(async () => {
+      // The TokenlessApi declaration in src/preload/index.d.ts augments
+      // Window globally for the renderer build, but isn't picked up by
+      // tsconfig.node.json (which compiles e2e tests). Cast inline.
+      interface RendererApi {
+        log: { getRecent: (n: number) => Promise<readonly { event: string }[]> }
+      }
+      const api = (window as unknown as { tokenless: RendererApi }).tokenless
       // Poll the log for 2s until we see a terminal-stop-* entry
       for (let i = 0; i < 20; i++) {
-        const records = await window.tokenless.log.getRecent(200)
-        const found = records.find((r: { event: string }) =>
+        const records = await api.log.getRecent(200)
+        const found = records.find((r) =>
           r.event === 'terminal-stop-ok' || r.event === 'terminal-stop-failed'
         )
         if (found) return found
