@@ -30,7 +30,9 @@ import type {
   CcStopRequest,
   CcStopResult,
   CcResumeRequest,
-  CcResumeResult
+  CcResumeResult,
+  CcCrashedPayload,
+  CcHungPayload
 } from '@shared/ipc'
 
 export interface TokenlessApi {
@@ -68,6 +70,8 @@ export interface TokenlessApi {
     onEvent(fn: (payload: CcEventPayload) => void): () => void
     stop(req: CcStopRequest): Promise<CcStopResult>
     resume(req: CcResumeRequest): Promise<CcResumeResult>
+    onCrashed(fn: (payload: CcCrashedPayload) => void): () => void
+    onHung(fn: (payload: CcHungPayload) => void): () => void
   }
 }
 

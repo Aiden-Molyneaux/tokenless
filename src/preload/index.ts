@@ -25,6 +25,8 @@ import {
   IPC_CC_EVENT,
   IPC_CC_STOP,
   IPC_CC_RESUME,
+  IPC_CC_CRASHED,
+  IPC_CC_HUNG,
   type LogFromRendererPayload,
   type LogGetRecentRequest,
   type LogGetRecentResponse,
@@ -59,7 +61,9 @@ import {
   type CcStopRequest,
   type CcStopResult,
   type CcResumeRequest,
-  type CcResumeResult
+  type CcResumeResult,
+  type CcCrashedPayload,
+  type CcHungPayload
 } from '@shared/ipc'
 
 const api = {
@@ -165,6 +169,16 @@ const api = {
     },
     resume(req: CcResumeRequest): Promise<CcResumeResult> {
       return ipcRenderer.invoke(IPC_CC_RESUME, req) as Promise<CcResumeResult>
+    },
+    onCrashed(fn: (payload: CcCrashedPayload) => void): () => void {
+      const listener = (_e: unknown, payload: CcCrashedPayload): void => fn(payload)
+      ipcRenderer.on(IPC_CC_CRASHED, listener as never)
+      return () => ipcRenderer.removeListener(IPC_CC_CRASHED, listener as never)
+    },
+    onHung(fn: (payload: CcHungPayload) => void): () => void {
+      const listener = (_e: unknown, payload: CcHungPayload): void => fn(payload)
+      ipcRenderer.on(IPC_CC_HUNG, listener as never)
+      return () => ipcRenderer.removeListener(IPC_CC_HUNG, listener as never)
     }
   }
 }
