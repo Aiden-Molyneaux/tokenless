@@ -111,6 +111,12 @@ export {
   type TelemetryTick
 } from './ipc/telemetry'
 
+export {
+  IPC_GEARING_GEAR,
+  type GearingGearRequest,
+  type GearingGearResult
+} from './ipc/gearing'
+
 export type IpcChannelName =
   | typeof IPC_LOG_FROM_RENDERER
   | typeof IPC_LOG_TO_RENDERER
@@ -139,3 +145,4 @@ export type IpcChannelName =
   | 'cc:crashed'
   | 'cc:hung'
   | 'telemetry:tick'
+  | 'gearing:gear'
