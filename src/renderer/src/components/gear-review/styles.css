@@ -1,0 +1,212 @@
+/* GearReviewPane and its sub-component styles. */
+
+.gear-review-pane {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: var(--tl-space-4);
+  gap: var(--tl-space-3);
+  background: var(--tl-bg);
+}
+
+.gear-review-pane__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.gear-review-pane__title {
+  font-family: var(--tl-font-serif);
+  font-size: var(--tl-text-lg);
+  font-weight: var(--tl-weight-medium);
+  margin: 0;
+  color: var(--tl-orange);
+}
+
+.gear-review-pane__cancel {
+  background: transparent;
+  border: none;
+  font-size: var(--tl-text-base);
+  color: var(--tl-mute);
+  cursor: pointer;
+  padding: var(--tl-space-1) var(--tl-space-2);
+  border-radius: var(--tl-radius-sm);
+}
+
+.gear-review-pane__cancel:hover {
+  background: var(--tl-hover);
+  color: var(--tl-fg);
+}
+
+/* ===== Critique flags ===== */
+
+.critique-flags {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tl-space-1);
+}
+
+.critique-flags__item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--tl-space-2);
+  padding: var(--tl-space-2) var(--tl-space-3);
+  border-radius: var(--tl-radius-sm);
+  font-size: var(--tl-text-sm);
+  line-height: var(--tl-leading-normal);
+}
+
+.critique-flags__item--info {
+  background: var(--tl-blue-50);
+  color: var(--tl-blue-700);
+  border-left: 3px solid var(--tl-blue);
+}
+
+.critique-flags__item--warn {
+  background: var(--tl-warn-bg);
+  color: var(--tl-warn);
+  border-left: 3px solid var(--tl-warn);
+}
+
+.critique-flags__icon {
+  font-size: var(--tl-text-base);
+  line-height: var(--tl-leading-tight);
+}
+
+.critique-flags__message {
+  flex: 1;
+}
+
+/* ===== Side-by-side panes ===== */
+
+.gear-review-pane__panes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--tl-space-3);
+  flex: 1;
+  min-height: 0;
+}
+
+.original-pane,
+.geared-pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.original-pane__header,
+.geared-pane__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--tl-space-1);
+}
+
+.original-pane__label,
+.geared-pane__label {
+  font-family: var(--tl-font-sans);
+  font-size: var(--tl-text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--tl-mute);
+  font-weight: var(--tl-weight-medium);
+}
+
+.geared-pane__label {
+  color: var(--tl-orange);
+}
+
+.original-pane__tokens,
+.geared-pane__tokens {
+  font-family: var(--tl-font-mono);
+  font-size: var(--tl-text-xs);
+  color: var(--tl-mute);
+}
+
+.geared-pane__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--tl-space-2);
+}
+
+.geared-pane__savings {
+  font-family: var(--tl-font-mono);
+  font-size: var(--tl-text-xs);
+  color: var(--tl-success);
+  font-weight: var(--tl-weight-medium);
+}
+
+.original-pane__text {
+  flex: 1;
+  margin: 0;
+  padding: var(--tl-space-3);
+  background: var(--tl-bg-alt);
+  border: 1px solid var(--tl-rule);
+  border-radius: var(--tl-radius-md);
+  font-family: var(--tl-font-serif);
+  font-size: var(--tl-text-sm);
+  line-height: var(--tl-leading-normal);
+  color: var(--tl-fg-dim);
+  white-space: pre-wrap;
+  overflow-y: auto;
+}
+
+.geared-pane__textarea {
+  flex: 1;
+  padding: var(--tl-space-3);
+  background: var(--tl-orange-50);
+  border: 1px solid var(--tl-orange-100);
+  border-radius: var(--tl-radius-md);
+  font-family: var(--tl-font-serif);
+  font-size: var(--tl-text-sm);
+  line-height: var(--tl-leading-normal);
+  color: var(--tl-fg);
+  resize: none;
+  outline: none;
+  transition: border-color var(--tl-transition-fast);
+}
+
+.geared-pane__textarea:focus {
+  border-color: var(--tl-orange);
+}
+
+/* ===== Actions ===== */
+
+.gear-review-pane__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--tl-space-2);
+}
+
+.gear-review-pane__button {
+  padding: var(--tl-space-2) var(--tl-space-4);
+  background: transparent;
+  border: 1px solid var(--tl-rule);
+  border-radius: var(--tl-radius-sm);
+  font-family: var(--tl-font-sans);
+  font-size: var(--tl-text-sm);
+  font-weight: var(--tl-weight-medium);
+  color: var(--tl-fg);
+  cursor: pointer;
+  transition: all var(--tl-transition-fast);
+}
+
+.gear-review-pane__button:hover {
+  background: var(--tl-hover);
+}
+
+.gear-review-pane__button--primary {
+  background: var(--tl-orange);
+  border-color: var(--tl-orange);
+  color: white;
+}
+
+.gear-review-pane__button--primary:hover {
+  background: var(--tl-orange-700);
+  border-color: var(--tl-orange-700);
+}
+
+.gear-review-pane__button--secondary {
+  color: var(--tl-mute);
+  font-size: var(--tl-text-xs);
+}

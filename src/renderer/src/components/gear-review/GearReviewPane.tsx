@@ -1,4 +1,9 @@
+import { useState } from 'react'
 import type { MockCritiqueFlag } from '../../mocks/geared-prompt'
+import { CritiqueFlags } from './CritiqueFlags'
+import { GearedPane } from './GearedPane'
+import { OriginalPane } from './OriginalPane'
+import './styles.css'
 
 interface GearReviewPaneProps {
   original: string
@@ -10,7 +15,78 @@ interface GearReviewPaneProps {
   onCancel: () => void
 }
 
-// Phase 2B stub — replaced in Tasks 17-20.
-export function GearReviewPane(_props: GearReviewPaneProps): JSX.Element {
-  return <div>GearReviewPane stub — Task 20 replaces this.</div>
+// Replaces Composer's main view after the user clicks Gear. Shows the
+// original (read-only) next to the geared (editable). Critique flags
+// surface above. The user can re-gear, cancel back to compose, send
+// the original (un-geared), or send the (possibly edited) geared version.
+
+// Rough token estimate (4 chars per token average — close enough for UI).
+function estimateTokens(text: string): number {
+  return Math.ceil(text.length / 4)
+}
+
+export function GearReviewPane({
+  original,
+  geared,
+  critiqueFlags,
+  onSendOriginal,
+  onSendGeared,
+  onReGear,
+  onCancel
+}: GearReviewPaneProps): JSX.Element {
+  const [editedGeared, setEditedGeared] = useState(geared)
+
+  const originalTokens = estimateTokens(original)
+  const gearedTokens = estimateTokens(editedGeared)
+  const saved = originalTokens - gearedTokens
+  const savings = saved > 0 ? `saves ~${saved.toLocaleString()} tok` : ''
+
+  return (
+    <div className="gear-review-pane">
+      <div className="gear-review-pane__header">
+        <h2 className="gear-review-pane__title">Review geared prompt</h2>
+        <button
+          type="button"
+          className="gear-review-pane__cancel"
+          onClick={onCancel}
+          aria-label="Cancel and return to composer"
+        >
+          ✕
+        </button>
+      </div>
+      <CritiqueFlags flags={critiqueFlags} />
+      <div className="gear-review-pane__panes">
+        <OriginalPane text={original} tokenCount={originalTokens} />
+        <GearedPane
+          value={editedGeared}
+          onChange={setEditedGeared}
+          tokenCount={gearedTokens}
+          savings={savings}
+        />
+      </div>
+      <div className="gear-review-pane__actions">
+        <button
+          type="button"
+          className="gear-review-pane__button gear-review-pane__button--secondary"
+          onClick={onReGear}
+        >
+          ↻ Re-gear
+        </button>
+        <button
+          type="button"
+          className="gear-review-pane__button"
+          onClick={onSendOriginal}
+        >
+          Send original
+        </button>
+        <button
+          type="button"
+          className="gear-review-pane__button gear-review-pane__button--primary"
+          onClick={() => onSendGeared(editedGeared)}
+        >
+          Send geared
+        </button>
+      </div>
+    </div>
+  )
 }
