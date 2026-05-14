@@ -331,3 +331,46 @@ Developers wanting to run `npm run dev` or `npm run test:e2e` locally run `npm r
 
 **Reasoning:** The dataset is tiny (projects + conversations measured in dozens), reads are near-free (in-memory SQLite via better-sqlite3), and we have only one window. Adding a cache library here would optimize a cost that doesn't exist. If Phase 7's branching or templates UI develops complex client cache behavior we can revisit.
 
+## ADR-026 (2026-05-14) — Mock-claude binary for CI E2E (TOKENLESS_CLAUDE_BIN override)
+
+**Context:** Phase 4A E2E tests need to verify the cc:start / cc:send / cc:output-chunk loop end-to-end. CI runners don't have `claude` installed, authenticated, or quota — and even if they did, real claude responses are non-deterministic. Without a stand-in, the entire cc subsystem would be untestable in CI.
+
+**Options considered:**
+- A) Mock node-pty at the import level (vi.mock in unit tests). Works for unit tests but not E2E — E2E launches the built Electron app which loads node-pty natively.
+- B) Conditionally skip cc E2E tests in CI. Defeats the purpose of E2E; the integration we most want to verify (spawn → write → read → exit) is the part that gets skipped.
+- C) Spawner reads `TOKENLESS_CLAUDE_BIN` env var. Defaults to `claude.cmd` on Windows / `claude` elsewhere. Tests + CI set this to a deterministic mock binary that mimics the claude protocol surface we care about.
+
+**Choice:** C. `test/doubles/claude-mock.cjs` is a tiny Node script that:
+1. Writes a "claude-mock> " prompt to stdout on startup
+2. Reads stdin line by line; for each non-empty line, writes `[mock-claude] received: <line>` + a fresh prompt
+3. Exits cleanly on stdin close / SIGTERM / SIGINT
+4. Acknowledges the `--session-id <uuid>` arg (so we can verify ADR-016's pre-specification flows through correctly)
+
+A `.cmd` wrapper (`claude-mock.cmd`) lets Windows spawn the `.cjs` via cmd.exe — same dispatch pattern as ADR-017's `claude.cmd`.
+
+**Reasoning:** Keeps the E2E surface honest: the test really does spawn a process, really does write to a PTY, really does read bytes back. The only fakery is the response content — which is the right place to fake, since real claude responses are unstable. Phase 4B's parser tests will use richer mock outputs (tool-call markers, end-of-response indicators) without changing this architecture.
+
+**Discovered:** Phase 4A E2E design.
+
+## ADR-027 (2026-05-14) — PTY lifecycle ownership: CcLifecycle owns the conversationId → PtyHandle map; one PTY per conversation
+
+**Context:** Where does the per-conversation PTY state live? Options range from "stateless — renderer holds it" to "fully encapsulated — main process owns it." The renderer cannot hold PtyHandles (they're not serializable across IPC), so the question is about how the main-process state is shaped.
+
+**Options considered:**
+- A) Per-window/per-renderer map (one PTY per window). Doesn't compose with multi-conversation workflows.
+- B) Per-Conversation map, owned by a single CcLifecycle singleton in main. Each `start` mutates the map; each `stop` / `closeAll` clears it. The IPC handler is a thin wrapper.
+- C) Per-Conversation Actor model (each Conversation is an actor with its own message queue). Overkill for Phase 4A's one-send-at-a-time semantics.
+
+**Choice:** B. CcLifecycle holds a `Map<number, Slot>` where `Slot = { conversationId, sessionId, pty }`. Two conversations can have live PTYs simultaneously (e.g., user has two tabs/projects); one conversation cannot have two PTYs at once (start throws if a slot already exists). PTY data + exit events fan out via constructor callbacks (`onChunk`, `onExit`) — not EventEmitter — for trivial test ergonomics.
+
+**Invariants:**
+- `start(conversationId)` is the only path that adds to the map
+- `stop(conversationId)` and `closeAll()` are the only paths that remove (plus the implicit removal in the onExit handler)
+- The PtyHandle never leaves CcLifecycle — only event payloads + sessionId cross the IPC boundary
+
+**Reasoning:** Single owner = single source of truth. Easy to test (inject a MockPty factory). Easy to reason about shutdown (closeAll in before-quit kills everything synchronously). The "one PTY per conversation" rule prevents the "two sends in flight to the same PTY" failure §7.7 — the renderer can't accidentally create the race because main rejects the second start.
+
+**Future:** Phase 4B's resume flow will distinguish "no live PTY but has stored cc_session_id" (resume path) from "no live PTY ever" (error path). The slot map remains the right place to look this up.
+
+**Discovered:** Phase 4A lifecycle design.
+
