@@ -1,4 +1,4 @@
-﻿# cc-pty Spike Findings
+# cc-pty Spike Findings
 
 **Date run:** 2026-05-14
 **Platform:** Windows 10 Enterprise 25H2, Node v20.19.6, Electron ^32.3.3
