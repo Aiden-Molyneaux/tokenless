@@ -1,0 +1,251 @@
+.dev-mode-panel {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 35vh;
+  background: var(--tl-bg);
+  border-top: 2px solid var(--tl-rule);
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+  overflow: auto;
+  font-family: var(--tl-font-mono);
+  font-size: 12px;
+  z-index: 100;
+}
+
+.dev-mode-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--tl-rule);
+  background: var(--tl-bg);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.dev-mode-panel__title {
+  font-family: var(--tl-font-serif);
+  font-size: 16px;
+  font-weight: 500;
+  margin: 0;
+  color: var(--tl-orange);
+}
+
+.dev-mode-panel__count {
+  color: var(--tl-mute);
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--tl-rule);
+  align-items: center;
+}
+
+.filters__group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.filters__label {
+  color: var(--tl-mute);
+  font-family: var(--tl-font-sans);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-right: 4px;
+}
+
+.filters__chip {
+  background: transparent;
+  border: 1px solid var(--tl-rule);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-family: var(--tl-font-mono);
+  font-size: 11px;
+  cursor: pointer;
+  color: var(--tl-fg);
+}
+
+.filters__chip:hover {
+  background: rgba(217, 119, 87, 0.08);
+}
+
+.filters__chip.is-active {
+  background: var(--tl-orange);
+  color: white;
+  border-color: var(--tl-orange);
+}
+
+.filters__chip--severity-error.is-active,
+.filters__chip--severity-fatal.is-active {
+  background: #c44;
+  border-color: #c44;
+}
+
+.filters__chip--severity-warn.is-active {
+  background: #d80;
+  border-color: #d80;
+}
+
+.filters__search {
+  padding: 4px 8px;
+  border: 1px solid var(--tl-rule);
+  border-radius: 4px;
+  font-family: var(--tl-font-mono);
+  font-size: 12px;
+  background: white;
+  width: 240px;
+}
+
+.log-table-wrap {
+  overflow-x: auto;
+  padding: 0 16px 16px;
+}
+
+.log-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.log-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--tl-bg);
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--tl-rule);
+  cursor: pointer;
+  user-select: none;
+  color: var(--tl-mute);
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+}
+
+.log-row td {
+  padding: 4px 8px;
+  border-bottom: 1px solid rgba(42, 38, 36, 0.04);
+  cursor: pointer;
+}
+
+.log-row:hover td {
+  background: rgba(217, 119, 87, 0.05);
+}
+
+.log-row--error,
+.log-row--fatal {
+  background: rgba(196, 68, 68, 0.06);
+}
+
+.log-row--warn {
+  background: rgba(221, 136, 0, 0.05);
+}
+
+.log-row__severity {
+  font-weight: 600;
+}
+
+.log-row__source {
+  color: var(--tl-mute);
+}
+
+.log-row__message {
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.log-row__context {
+  color: var(--tl-mute);
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.log-row-detail td {
+  background: rgba(74, 111, 165, 0.04);
+  padding: 0;
+}
+
+.log-detail {
+  padding: 8px 16px;
+}
+
+.log-detail__actions {
+  margin-bottom: 4px;
+}
+
+.log-detail__copy {
+  background: var(--tl-blue);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-family: var(--tl-font-mono);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.log-detail__json {
+  background: white;
+  border: 1px solid var(--tl-rule);
+  border-radius: 4px;
+  padding: 8px;
+  font-size: 11px;
+  white-space: pre-wrap;
+  overflow-x: auto;
+  margin: 0;
+}
+
+.log-table__empty {
+  padding: 16px;
+  color: var(--tl-mute);
+  font-style: italic;
+}
+
+.error-boundary {
+  padding: 64px 32px;
+  max-width: 720px;
+  margin: 0 auto;
+  font-family: var(--tl-font-serif);
+}
+
+.error-boundary__title {
+  font-size: 32px;
+  color: var(--tl-orange);
+  margin: 0 0 16px;
+}
+
+.error-boundary__body {
+  font-size: 16px;
+  color: var(--tl-fg);
+}
+
+.error-boundary__detail {
+  font-family: var(--tl-font-mono);
+  font-size: 13px;
+  color: var(--tl-mute);
+  background: rgba(196, 68, 68, 0.08);
+  padding: 8px 12px;
+  border-radius: 4px;
+}
+
+.error-boundary__reload {
+  background: var(--tl-orange);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-family: var(--tl-font-sans);
+  font-size: 14px;
+  cursor: pointer;
+}
