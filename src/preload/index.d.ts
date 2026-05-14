@@ -17,7 +17,15 @@ import type {
   ConversationsUpdateRequest,
   ConversationsUpdateResult,
   ConversationsDeleteRequest,
-  ConversationsDeleteResult
+  ConversationsDeleteResult,
+  CcStartRequest,
+  CcStartResult,
+  CcSendRequest,
+  CcSendResult,
+  CcResizeRequest,
+  CcResizeResult,
+  CcOutputChunkPayload,
+  CcExitPayload
 } from '@shared/ipc'
 
 export interface TokenlessApi {
@@ -45,6 +53,13 @@ export interface TokenlessApi {
     update(req: ConversationsUpdateRequest): Promise<ConversationsUpdateResult>
     delete(req: ConversationsDeleteRequest): Promise<ConversationsDeleteResult>
     onChanged(fn: () => void): () => void
+  }
+  readonly cc: {
+    start(req: CcStartRequest): Promise<CcStartResult>
+    send(req: CcSendRequest): Promise<CcSendResult>
+    resize(req: CcResizeRequest): Promise<CcResizeResult>
+    onOutputChunk(fn: (payload: CcOutputChunkPayload) => void): () => void
+    onExit(fn: (payload: CcExitPayload) => void): () => void
   }
 }
 

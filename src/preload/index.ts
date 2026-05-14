@@ -17,6 +17,11 @@ import {
   IPC_CONVERSATIONS_UPDATE,
   IPC_CONVERSATIONS_DELETE,
   IPC_CONVERSATIONS_CHANGED,
+  IPC_CC_START,
+  IPC_CC_SEND,
+  IPC_CC_RESIZE,
+  IPC_CC_OUTPUT_CHUNK,
+  IPC_CC_EXIT,
   type LogFromRendererPayload,
   type LogGetRecentRequest,
   type LogGetRecentResponse,
@@ -38,7 +43,15 @@ import {
   type ConversationsUpdateRequest,
   type ConversationsUpdateResult,
   type ConversationsDeleteRequest,
-  type ConversationsDeleteResult
+  type ConversationsDeleteResult,
+  type CcStartRequest,
+  type CcStartResult,
+  type CcSendRequest,
+  type CcSendResult,
+  type CcResizeRequest,
+  type CcResizeResult,
+  type CcOutputChunkPayload,
+  type CcExitPayload
 } from '@shared/ipc'
 
 const api = {
@@ -112,6 +125,27 @@ const api = {
       const listener = (): void => fn()
       ipcRenderer.on(IPC_CONVERSATIONS_CHANGED, listener as never)
       return () => ipcRenderer.removeListener(IPC_CONVERSATIONS_CHANGED, listener as never)
+    }
+  },
+  cc: {
+    start(req: CcStartRequest): Promise<CcStartResult> {
+      return ipcRenderer.invoke(IPC_CC_START, req) as Promise<CcStartResult>
+    },
+    send(req: CcSendRequest): Promise<CcSendResult> {
+      return ipcRenderer.invoke(IPC_CC_SEND, req) as Promise<CcSendResult>
+    },
+    resize(req: CcResizeRequest): Promise<CcResizeResult> {
+      return ipcRenderer.invoke(IPC_CC_RESIZE, req) as Promise<CcResizeResult>
+    },
+    onOutputChunk(fn: (payload: CcOutputChunkPayload) => void): () => void {
+      const listener = (_e: unknown, payload: CcOutputChunkPayload): void => fn(payload)
+      ipcRenderer.on(IPC_CC_OUTPUT_CHUNK, listener as never)
+      return () => ipcRenderer.removeListener(IPC_CC_OUTPUT_CHUNK, listener as never)
+    },
+    onExit(fn: (payload: CcExitPayload) => void): () => void {
+      const listener = (_e: unknown, payload: CcExitPayload): void => fn(payload)
+      ipcRenderer.on(IPC_CC_EXIT, listener as never)
+      return () => ipcRenderer.removeListener(IPC_CC_EXIT, listener as never)
     }
   }
 }
