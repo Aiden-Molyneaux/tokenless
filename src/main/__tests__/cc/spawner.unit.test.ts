@@ -110,4 +110,25 @@ describe('cc/spawner', () => {
     }
     expect(binSeen).toBe('C:/path/to/mock-claude.cjs')
   })
+
+  it('on resume, spawns claude with --resume <sessionId> instead of --session-id', () => {
+    let argsSeen: readonly string[] | undefined
+    const factory: PtySpawnFn = (_bin, args, _opts) => {
+      argsSeen = args
+      return new MockPty()
+    }
+    spawnClaude(
+      {
+        conversationId: 1,
+        sessionId: 'abc-def-uuid',
+        resume: true,
+        cwd: 'C:/x',
+        cols: 80,
+        rows: 24,
+        env: { CLAUDE_CONFIG_DIR: 'C:/c' }
+      },
+      factory
+    )
+    expect(argsSeen).toEqual(['--resume', 'abc-def-uuid'])
+  })
 })

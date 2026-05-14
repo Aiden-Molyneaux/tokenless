@@ -17,7 +17,9 @@ function pickClaudeBin(explicit: string | undefined): string {
 
 export function spawnClaude(opts: SpawnOptions, ptyFactory: PtySpawnFn): PtyHandle {
   const bin = pickClaudeBin(opts.claudeBin)
-  const args = ['--session-id', opts.sessionId]
+  const args = opts.resume
+    ? ['--resume', opts.sessionId]
+    : ['--session-id', opts.sessionId]
 
   const baseEnv = filterOutUndefined(process.env)
   // Always remove ANTHROPIC_API_KEY from the base env — it must come only

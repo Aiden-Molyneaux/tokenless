@@ -17,6 +17,9 @@ export interface PtyHandle {
 export interface SpawnOptions {
   readonly conversationId: number
   readonly sessionId: string         // UUID — pre-specified per ADR-016
+  // When true, spawn with `--resume <id>` instead of `--session-id <id>`.
+  // The session ID is the same value either way.
+  readonly resume?: boolean
   readonly cwd: string               // project root
   readonly cols: number
   readonly rows: number

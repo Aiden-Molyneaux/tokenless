@@ -102,4 +102,18 @@ describe('cc/lifecycle', () => {
       event: { kind: 'prompt-ready' }
     })
   })
+
+  it('resume spawns with the provided sessionId and stores it in the slot', () => {
+    const lc = new CcLifecycle(factory, { onChunk, onExit, onEvent: vi.fn() })
+    const r = lc.resume({
+      conversationId: 5,
+      sessionId: 'existing-uuid-here',
+      cwd: 'C:/x',
+      cols: 100,
+      rows: 30,
+      env: { CLAUDE_CONFIG_DIR: 'C:/c' }
+    })
+    expect(r.sessionId).toBe('existing-uuid-here')
+    expect(lc.getSessionId(5)).toBe('existing-uuid-here')
+  })
 })

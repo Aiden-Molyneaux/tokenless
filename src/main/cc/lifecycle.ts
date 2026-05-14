@@ -25,6 +25,16 @@ export interface LifecycleStartOptions {
   readonly claudeBin?: string
 }
 
+export interface LifecycleResumeOptions {
+  readonly conversationId: number
+  readonly sessionId: string
+  readonly cwd: string
+  readonly cols: number
+  readonly rows: number
+  readonly env: { readonly CLAUDE_CONFIG_DIR: string; readonly ANTHROPIC_API_KEY?: string }
+  readonly claudeBin?: string
+}
+
 export interface LifecycleStartResult {
   readonly sessionId: string
   readonly pid: number
@@ -84,6 +94,46 @@ export class CcLifecycle {
     })
 
     return { sessionId, pid: pty.pid }
+  }
+
+  resume(opts: LifecycleResumeOptions): LifecycleStartResult {
+    if (this.slots.has(opts.conversationId)) {
+      throw new Error(`conversation ${opts.conversationId} already active — one PTY per conversation`)
+    }
+    const pty = spawnClaude(
+      {
+        conversationId: opts.conversationId,
+        sessionId: opts.sessionId,
+        resume: true,
+        cwd: opts.cwd,
+        cols: opts.cols,
+        rows: opts.rows,
+        env: opts.env,
+        claudeBin: opts.claudeBin
+      },
+      this.ptyFactory
+    )
+    const parser = new CcParser((event) => {
+      this.cb.onEvent({ conversationId: opts.conversationId, event })
+    })
+    const slot: Slot = {
+      conversationId: opts.conversationId,
+      sessionId: opts.sessionId, // existing — don't generate
+      pty,
+      parser
+    }
+    this.slots.set(opts.conversationId, slot)
+
+    pty.onData((chunk) => {
+      parser.feed(chunk)
+      this.cb.onChunk({ conversationId: opts.conversationId, chunk })
+    })
+    pty.onExit(({ exitCode, signal }) => {
+      this.slots.delete(opts.conversationId)
+      this.cb.onExit({ conversationId: opts.conversationId, exitCode, signal })
+    })
+
+    return { sessionId: opts.sessionId, pid: pty.pid }
   }
 
   get(conversationId: number): PtyHandle | null {
