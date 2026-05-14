@@ -16,7 +16,9 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:e2e": "playwright test",
-    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json"
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "rebuild:native": "electron-rebuild --force",
+    "postinstall": "electron-rebuild --force --which-module node-pty"
   },
   "engines": {
     "node": ">=20.0.0"
@@ -43,6 +45,7 @@
     "electron-builder": "^25.1.8",
     "electron-vite": "^2.3.0",
     "playwright": "1.45",
+    "tsx": "^4.21.1",
     "typescript": "^5.9.3",
     "vite": "^5.4.21",
     "vitest": "^2.1.9"
