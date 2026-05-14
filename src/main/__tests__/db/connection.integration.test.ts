@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, rmSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
@@ -22,6 +22,7 @@ describe('db/connection', () => {
   it('opens a writable database at the given path with WAL + foreign keys', () => {
     const db = openDatabase(join(tmp, 'test.db'))
     expect(db.open).toBe(true)
+    expect(existsSync(join(tmp, 'test.db'))).toBe(true)
     const journalMode = db.pragma('journal_mode', { simple: true })
     const fks = db.pragma('foreign_keys', { simple: true })
     expect(journalMode).toBe('wal')

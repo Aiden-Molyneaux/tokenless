@@ -1,10 +1,21 @@
 -- Initial schema. Mirrors spec §3 exactly. Indexes follow each table.
 -- All TEXT columns use NULL semantics (no NOT NULL unless required by spec).
 
+-- NOTE: This schema strengthens several spec §3 columns from nullable to
+-- NOT NULL. Timestamps (created_at / updated_at / sent_at) and required
+-- foreign keys (conversations.project_id, turns.conversation_id) are
+-- ALWAYS set by the DAOs at insert time — making them NOT NULL surfaces
+-- DAO bugs at the DB layer rather than letting silent NULLs propagate.
+-- If a future use case needs a "draft" row without these fields, lift the
+-- constraint in a new migration; do not edit this one.
+
 CREATE TABLE accounts (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   label TEXT NOT NULL,
   config_dir TEXT NOT NULL,
+  -- api_key_ref: forward-looking per ADR-018 — opaque keychain reference for
+  -- the account's ANTHROPIC_API_KEY. Empty/null until Phase 6 wires real
+  -- key storage.
   api_key_ref TEXT,
   created_at INTEGER NOT NULL
 );
@@ -50,7 +61,7 @@ CREATE TABLE conversations (
   summary TEXT,
   summary_updated_at INTEGER,
   parent_conversation_id INTEGER REFERENCES conversations(id) ON DELETE SET NULL,
-  branched_at_turn_id INTEGER,
+  branched_at_turn_id INTEGER REFERENCES turns(id) ON DELETE SET NULL,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,
   ended_at INTEGER,
