@@ -3,7 +3,7 @@
 // context budget meter, etc.). Raw chunks still flow separately via
 // cc:output-chunk for xterm.js.
 //
-// Phase 4B emits the four basic event types. Phase 4C will add quota / auth /
+// Phase 4B emits the four basic event types. Phase 4D will add quota / auth /
 // resume-failed events from output-pattern matching.
 
 export interface CcEventPromptReady {

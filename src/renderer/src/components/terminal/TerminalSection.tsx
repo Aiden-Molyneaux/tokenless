@@ -17,10 +17,14 @@ interface TerminalSectionProps {
 // above the TerminalPane. Phase 4B: streaming (Stop button enabled) derives
 // from the presence of a live conversation. When conversationId is set, there
 // is a live PTY. When it's null, no PTY exists (either never started or exited).
-// The parser events flow through useCcEvents for Phase 4C to drive the budget
-// meter; for Phase 4B they're subscribed but not acted upon.
-// Phase 4C adds the HungBanner — shown when cc:hung fires for this conversation,
-// cleared on cc:exit.
+// Phase 4C adds:
+//   - The ContextBudgetMeter is driven by useTelemetry (tokens-used events
+//     → main-side coalescing → 3s telemetry:tick broadcasts).
+//   - The HungBanner — shown when cc:hung fires for this conversation,
+//     cleared on cc:exit.
+//   - useCcEvents is subscribed but its callback is a no-op — held for
+//     Phase 4D plumbing (e.g., per-event UI signals not driven by telemetry
+//     coalescing).
 
 export function TerminalSection({ conversationId }: TerminalSectionProps): JSX.Element {
   const [hung, setHung] = useState<{ severity: 'warn' | 'error' } | null>(null)

@@ -391,7 +391,7 @@ A `.cmd` wrapper (`claude-mock.cmd`) lets Windows spawn the `.cjs` via cmd.exe �
 - `tokens: <used>/<total>` → `tokens-used`
 - `tool: <name>(<summary>)` → `tool-call`
 
-These are deliberately conservative — built around the mock-claude's output so the parser can be unit-tested. Phase 4C will calibrate against real claude's output formats (which evolve with the CLI) and add quota / auth / resume-failed patterns from §7.1.
+These are deliberately conservative — built around the mock-claude's output so the parser can be unit-tested. Phase 4D will calibrate against real claude's output formats (which evolve with the CLI) and add quota / auth / resume-failed patterns from §7.1.
 
 **Reasoning:** ANSI stripping has a stable spec (CSI + OSC are well-defined). Pure-state matchers are trivial to test. The tolerance behavior (unknown lines ignored) means claude CLI updates won't break the parser — they'll just stop emitting some events until we update the patterns. The downside — events emit only when a line completes — is acceptable: token counts and tool calls are line-oriented anyway.
 
