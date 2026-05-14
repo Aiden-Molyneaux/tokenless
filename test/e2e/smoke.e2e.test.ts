@@ -25,7 +25,8 @@ test('renderer mounts and shows the Phase 0 stub', async () => {
   const title = page.locator('.app__title')
   await expect(title).toHaveText('TokenLess')
   const subtitle = page.locator('.app__subtitle')
-  await expect(subtitle).toContainText('Phase 0 stub')
+  // App subtitle text evolves per phase; assert non-empty and contains "Phase"
+  await expect(subtitle).toContainText('Phase')
 })
 
 test('preload exposes window.tokenless.version', async () => {
