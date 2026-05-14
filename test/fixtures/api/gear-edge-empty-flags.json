@@ -1,0 +1,10 @@
+{
+  "description": "Edge case: critique_flags array is empty (Haiku found nothing to flag).",
+  "response": {
+    "text": "{\"geared_prompt\":\"Add a unit test for the parseConfig() function covering: valid input, missing keys, invalid type. Use vitest.\",\"critique_flags\":[],\"rationale\":\"Already well-scoped; minimal compression.\"}",
+    "inputTokens": 95,
+    "outputTokens": 65,
+    "stopReason": "end_turn",
+    "model": "claude-3-5-haiku-latest"
+  }
+}

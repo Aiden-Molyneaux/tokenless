@@ -1,0 +1,10 @@
+{
+  "description": "Hand-synthesized fixture for the canonical gear test. Use scripts/record-fixtures.ts (Phase 5B) to regenerate against the live API.",
+  "response": {
+    "text": "{\"geared_prompt\":\"Refactor src/auth/middleware.ts to flatten nested conditionals in the token validation flow. Handle the edge case where the refresh token has expired but the access token is still valid — currently this leaks into downstream API errors. Output: diff only, no preamble.\",\"critique_flags\":[{\"severity\":\"info\",\"message\":\"Original was 100+ words for a focused refactor — typical compression: 80-90%.\"},{\"severity\":\"warn\",\"message\":\"Original mentions 'other improvements while you're in there' — open-ended scope. Geared version drops this. If you want broader review, switch breadth to Thorough.\"}],\"rationale\":\"Trimmed conversational filler. Made the file path explicit. Specified diff-only output to suppress claude's prose preamble.\"}",
+    "inputTokens": 412,
+    "outputTokens": 187,
+    "stopReason": "end_turn",
+    "model": "claude-3-5-haiku-latest"
+  }
+}
