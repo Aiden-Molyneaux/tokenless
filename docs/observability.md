@@ -35,3 +35,55 @@ Adding one requires:
 1. Append to the enum in `src/main/observability/categories.ts`.
 2. Add a row to the table in this file.
 3. Update any switch statements that depend on the enum's exhaustiveness.
+
+---
+
+## Usage
+
+### Main-process logging
+
+Every main-process module receives a `Logger` instance (Phase 1B: the singleton in `src/main/index.ts`; later phases pass it via constructor injection).
+
+```typescript
+import { logger } from '../observability'  // import from your module's perspective
+
+logger.info('observability', 'startup', 'Module initialized', { config })
+logger.warn('api', 'retry', '429 — retrying', { attempt: 2 })
+logger.error('db', 'constraint-violation', 'UNIQUE conflict on projects.name', { name }, error.stack)
+```
+
+### Renderer-process logging
+
+Renderer code uses `rendererLogger` which ships records to main over IPC:
+
+```typescript
+import { rendererLogger } from '@renderer/observability/logger-bridge'
+
+rendererLogger.info('ui', 'mount', 'Component mounted')
+rendererLogger.error('ui', 'click-handler-failed', err.message, { buttonId: id }, err.stack)
+```
+
+### Error boundaries
+
+Wrap risky operations in `errorBoundary` (sync) or `asyncErrorBoundary` (async). Both catch throws, log, and return `undefined`:
+
+```typescript
+import { errorBoundary, asyncErrorBoundary } from '../observability'
+
+const content = errorBoundary(logger, 'fs', 'read-file', () => fs.readFileSync(path, 'utf8'))
+if (content === undefined) return // logged; caller decides what to do
+
+const response = await asyncErrorBoundary(logger, 'api', 'fetch', () => anthropicClient.complete(...))
+```
+
+The React `<AppErrorBoundary>` at the App root catches any uncaught render error and logs to `ui/react-error-boundary`.
+
+### Inspecting logs
+
+- **Dev Mode panel:** click "Show Dev Mode" in the app. Live sortable JSON table with filters.
+- **Log files:** `~/.tokenless/logs/tokenless-YYYY-MM-DD.jsonl`. Parseable with `jq`:
+  ```bash
+  jq 'select(.severity == "error")' ~/.tokenless/logs/tokenless-*.jsonl
+  ```
+- **Programmatic (main):** `logger.getRecent(n)` returns the last N records from the ring buffer.
+- **Programmatic (renderer):** `await window.tokenless.log.getRecent(n)` returns the same via IPC.
