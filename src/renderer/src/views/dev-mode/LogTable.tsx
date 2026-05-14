@@ -52,11 +52,71 @@ export function LogTable({ records }: LogTableProps): JSX.Element {
       <table className="log-table">
         <thead>
           <tr>
-            <th onClick={() => handleHeader('ts')}>TS{arrow('ts')}</th>
-            <th onClick={() => handleHeader('severity')}>Severity{arrow('severity')}</th>
-            <th onClick={() => handleHeader('category')}>Category{arrow('category')}</th>
-            <th onClick={() => handleHeader('event')}>Event{arrow('event')}</th>
-            <th onClick={() => handleHeader('source')}>Source{arrow('source')}</th>
+            <th
+              role="button"
+              tabIndex={0}
+              onClick={() => handleHeader('ts')}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  handleHeader('ts')
+                }
+              }}
+            >
+              TS{arrow('ts')}
+            </th>
+            <th
+              role="button"
+              tabIndex={0}
+              onClick={() => handleHeader('severity')}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  handleHeader('severity')
+                }
+              }}
+            >
+              Severity{arrow('severity')}
+            </th>
+            <th
+              role="button"
+              tabIndex={0}
+              onClick={() => handleHeader('category')}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  handleHeader('category')
+                }
+              }}
+            >
+              Category{arrow('category')}
+            </th>
+            <th
+              role="button"
+              tabIndex={0}
+              onClick={() => handleHeader('event')}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  handleHeader('event')
+                }
+              }}
+            >
+              Event{arrow('event')}
+            </th>
+            <th
+              role="button"
+              tabIndex={0}
+              onClick={() => handleHeader('source')}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  handleHeader('source')
+                }
+              }}
+            >
+              Source{arrow('source')}
+            </th>
             <th>Message</th>
             <th>Context</th>
           </tr>
