@@ -140,7 +140,7 @@ export function AppShell(): JSX.Element {
         {showEmptyState ? (
           <EmptyProjectsState onCreate={handleOpenCreateProject} />
         ) : (
-          <MainPane />
+          <MainPane conversationId={activeConversationId} />
         )}
       </div>
       <CreateProjectModal

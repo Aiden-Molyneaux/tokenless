@@ -4,12 +4,16 @@ import { TerminalPane } from './TerminalPane'
 import { TerminalToolbar } from './TerminalToolbar'
 import './styles.css'
 
+interface TerminalSectionProps {
+  conversationId: number | null
+}
+
 // TerminalSection is the bottom half of MainPane. Holds the TerminalToolbar
 // above the TerminalPane. Phase 2B's "streaming" is the mock stream's
 // playback duration; setting streaming = false enables the Stop button
 // to no-op (Phase 4 wires real SIGINT to a claude subprocess via IPC).
 
-export function TerminalSection(): JSX.Element {
+export function TerminalSection({ conversationId }: TerminalSectionProps): JSX.Element {
   const [streaming, setStreaming] = useState(true)
 
   const handleStop = (): void => {
@@ -20,7 +24,7 @@ export function TerminalSection(): JSX.Element {
   return (
     <div className="terminal-section">
       <TerminalToolbar onStop={handleStop} streaming={streaming} />
-      <TerminalPane />
+      <TerminalPane conversationId={conversationId} />
     </div>
   )
 }

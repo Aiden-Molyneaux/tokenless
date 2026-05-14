@@ -1,16 +1,24 @@
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import '@xterm/xterm/css/xterm.css'
-import { MOCK_TERMINAL_STREAM } from '../../mocks/terminal-stream'
 
-// xterm.js Terminal mounted in a container div. Phase 2B writes
-// MOCK_TERMINAL_STREAM line-by-line every 80ms to simulate streaming.
-// Phase 4 replaces the source with real PTY output from a spawned claude
-// subprocess via IPC.
+import { useCcSubscription } from '../../hooks/use-cc-subscription'
 
-export function TerminalPane(): JSX.Element {
+interface TerminalPaneProps {
+  conversationId: number | null
+}
+
+// xterm.js-backed pane. Phase 4A: live PTY output from the cc subprocess via
+// useCcSubscription. The xterm instance is created once on mount; chunks are
+// written directly into terminal.write() with no transformation — ANSI escape
+// sequences pass through, which is what we want for fidelity with claude's
+// rendered output.
+
+export function TerminalPane({ conversationId }: TerminalPaneProps): JSX.Element {
   const containerRef = useRef<HTMLDivElement>(null)
+  const terminalRef = useRef<Terminal | null>(null)
+  const fitAddonRef = useRef<FitAddon | null>(null)
 
   useEffect(() => {
     if (!containerRef.current) return undefined
@@ -25,39 +33,52 @@ export function TerminalPane(): JSX.Element {
       fontSize: 12,
       cursorBlink: false,
       disableStdin: true,
-      rows: 30,
-      cols: 100,
-      scrollback: 1000
+      scrollback: 5000
     })
+    terminalRef.current = terminal
 
     const fitAddon = new FitAddon()
+    fitAddonRef.current = fitAddon
     terminal.loadAddon(fitAddon)
     terminal.open(containerRef.current)
     fitAddon.fit()
 
-    // Write canned stream line-by-line with a streaming feel
-    let i = 0
-    const interval = setInterval(() => {
-      if (i >= MOCK_TERMINAL_STREAM.length) {
-        clearInterval(interval)
-        return
-      }
-      terminal.writeln(MOCK_TERMINAL_STREAM[i])
-      i++
-    }, 80)
-
-    // Resize on window resize
     const handleResize = (): void => {
-      fitAddon.fit()
+      try {
+        fitAddon.fit()
+        if (conversationId !== null) {
+          void window.tokenless.cc.resize({
+            conversationId,
+            cols: terminal.cols,
+            rows: terminal.rows
+          })
+        }
+      } catch {
+        // Ignore — terminal may be torn down concurrently
+      }
     }
     window.addEventListener('resize', handleResize)
 
     return () => {
-      clearInterval(interval)
       window.removeEventListener('resize', handleResize)
       terminal.dispose()
+      terminalRef.current = null
+      fitAddonRef.current = null
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Forward chunks into xterm. The callback is stable per render via useCallback
+  // so useCcSubscription's effect dep array doesn't re-subscribe constantly.
+  const handleChunk = useCallback((chunk: string) => {
+    terminalRef.current?.write(chunk)
+  }, [])
+
+  const handleExit = useCallback((event: { exitCode: number }) => {
+    terminalRef.current?.writeln(`\r\n[claude exited with code ${event.exitCode}]`)
+  }, [])
+
+  useCcSubscription(conversationId, { onChunk: handleChunk, onExit: handleExit })
 
   return <div className="terminal-pane" ref={containerRef} />
 }
