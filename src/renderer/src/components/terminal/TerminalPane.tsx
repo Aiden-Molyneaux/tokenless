@@ -72,6 +72,9 @@ export function TerminalPane({ conversationId }: TerminalPaneProps): JSX.Element
       terminalRef.current = null
       fitAddonRef.current = null
     }
+    // Mount effect runs once per (re)mount. Since TerminalPane is keyed by
+    // conversationId in its parent (TerminalSection), a conversation switch
+    // remounts this whole component — refreshing the closure capture above.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

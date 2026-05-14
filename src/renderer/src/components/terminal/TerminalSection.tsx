@@ -24,7 +24,7 @@ export function TerminalSection({ conversationId }: TerminalSectionProps): JSX.E
   return (
     <div className="terminal-section">
       <TerminalToolbar onStop={handleStop} streaming={streaming} />
-      <TerminalPane conversationId={conversationId} />
+      <TerminalPane key={conversationId ?? 'none'} conversationId={conversationId} />
     </div>
   )
 }
