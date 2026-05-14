@@ -215,3 +215,22 @@ Codified as `getClaudeBinary()` in `src/main/cc/spawner.ts` when Phase 4 lands.
 - `errorBoundary` discipline: see "Choices" above. Caller-explicit handling matches the CLAUDE.md cornerstone directive that every error path has a user-facing recovery path.
 
 **Discovered:** Phase 1B implementation. See `src/main/observability/` for the code, `docs/observability.md` for the usage manual.
+
+## ADR-020 (2026-05-14) — Date strategy: local time for both log files and Dev Mode display
+
+**Context:** Phase 1B's final review caught a mismatch — `FileSink.dateString()` used `getUTCFullYear`/`getUTCMonth`/`getUTCDate` to produce filenames like `tokenless-2026-05-14.jsonl`, while `LogTableRow.formatTs()` used local-time getters for the Dev Mode panel display. A user in UTC+10 logging at 23:00 UTC would see the row labeled `09:00` (next-day local) but find it in a UTC-dated file from the prior day — a mental-model mismatch.
+
+**Options:**
+- A) All UTC. Aligns with backend logging conventions; predictable across timezones. But every user has to do timezone math when correlating a Dev Mode row to a file.
+- B) All local time. Aligns with user mental model. Filenames and row labels match. Cross-timezone correlation (e.g., sharing a log file with someone in another zone) requires noting the originating timezone, but that's a niche case.
+
+**Choice:** B — local time everywhere.
+
+**Reasoning:** TokenLess is a single-user developer tool. The user looks at Dev Mode rows and at their `~/.tokenless/logs/` directory through the same mental model: "what was happening on Tuesday afternoon?" Both should agree on what counts as Tuesday. Cross-zone log sharing is rare; when it happens, the JSON `ts` field (epoch ms) carries timezone-independent truth.
+
+**Implications:**
+- `FileSink.dateString()` switches from `getUTC*` to local-time getters.
+- File-sink tests use local-time constructors (`new Date(2026, 4, 14, 23, 0, 0)`) so assertions hold in any test machine's timezone.
+- `LogTableRow.formatTs()` remains unchanged (already local).
+
+**Discovered:** Phase 1B final code review.
