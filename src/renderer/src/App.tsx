@@ -3,6 +3,7 @@ import { AppErrorBoundary } from './observability/error-boundary'
 import { AppShell } from './components/layout/AppShell'
 import { DevModePanel } from './views/dev-mode/DevModePanel'
 import { rendererLogger } from './observability/logger-bridge'
+import { ToastProvider } from './hooks/use-toast'
 
 const LS_KEY = 'tokenless.devMode'
 
@@ -58,7 +59,9 @@ function AppContent(): JSX.Element {
 export default function App(): JSX.Element {
   return (
     <AppErrorBoundary>
-      <AppContent />
+      <ToastProvider>
+        <AppContent />
+      </ToastProvider>
     </AppErrorBoundary>
   )
 }

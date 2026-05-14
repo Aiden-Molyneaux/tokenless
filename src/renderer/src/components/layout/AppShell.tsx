@@ -10,6 +10,7 @@ import { MainPane } from './MainPane'
 import { TopBar } from './TopBar'
 import { OnboardingBanner } from '../onboarding/OnboardingBanner'
 import { ClaudeNotFoundModal } from '../notifications/ClaudeNotFoundModal'
+import { ToastHost } from '../notifications/ToastHost'
 import './styles.css'
 
 const ONBOARDING_DISMISSED_KEY = 'tokenless.onboardingDismissed'
@@ -227,6 +228,7 @@ export function AppShell(): JSX.Element {
         open={claudeNotFoundOpen}
         onDismiss={() => setClaudeNotFoundOpen(false)}
       />
+      <ToastHost />
     </div>
   )
 }
