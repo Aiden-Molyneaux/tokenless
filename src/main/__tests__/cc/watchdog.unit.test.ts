@@ -10,14 +10,14 @@ describe('cc/watchdog', () => {
   function makeClock() {
     let now = 0
     const queued: { fireAt: number; fn: () => void; cancelled: boolean }[] = []
-    const setTimeoutFn: typeof setTimeout = ((fn: () => void, ms: number) => {
+    const setTimeoutFn = ((fn: () => void, ms: number) => {
       const entry = { fireAt: now + ms, fn, cancelled: false }
       queued.push(entry)
       return entry as unknown as ReturnType<typeof setTimeout>
-    }) as never
-    const clearTimeoutFn: typeof clearTimeout = ((timer: { cancelled: boolean }) => {
+    }) as unknown as typeof setTimeout
+    const clearTimeoutFn = ((timer: { cancelled: boolean }) => {
       timer.cancelled = true
-    }) as never
+    }) as unknown as (timer: unknown) => void
     return {
       advance(ms: number): void {
         now += ms
