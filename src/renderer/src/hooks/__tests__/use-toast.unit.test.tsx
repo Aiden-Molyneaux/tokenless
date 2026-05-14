@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { act } from '@testing-library/react'
 
@@ -54,5 +54,49 @@ describe('hooks/use-toast', () => {
       screen.getByRole('button', { name: /dismiss toast/i }).click()
     })
     expect(screen.queryByText('dismiss me')).not.toBeInTheDocument()
+  })
+})
+
+describe('hooks/use-toast — auto-dismiss', () => {
+  beforeEach(() => vi.useFakeTimers())
+  afterEach(() => vi.useRealTimers())
+
+  it('info toasts auto-dismiss after 5s', () => {
+    render(
+      <ToastProvider>
+        <ToastHost />
+        <ConsumerButton label="info" severity="info" />
+      </ToastProvider>
+    )
+    act(() => screen.getByRole('button', { name: /push/i }).click())
+    expect(screen.getByText('info')).toBeInTheDocument()
+    act(() => { vi.advanceTimersByTime(5000) })
+    expect(screen.queryByText('info')).not.toBeInTheDocument()
+  })
+
+  it('warn toasts auto-dismiss after 8s', () => {
+    render(
+      <ToastProvider>
+        <ToastHost />
+        <ConsumerButton label="warn" severity="warn" />
+      </ToastProvider>
+    )
+    act(() => screen.getByRole('button', { name: /push/i }).click())
+    act(() => { vi.advanceTimersByTime(7999) })
+    expect(screen.getByText('warn')).toBeInTheDocument()
+    act(() => { vi.advanceTimersByTime(1) })
+    expect(screen.queryByText('warn')).not.toBeInTheDocument()
+  })
+
+  it('error toasts stay until manually dismissed', () => {
+    render(
+      <ToastProvider>
+        <ToastHost />
+        <ConsumerButton label="error" severity="error" />
+      </ToastProvider>
+    )
+    act(() => screen.getByRole('button', { name: /push/i }).click())
+    act(() => { vi.advanceTimersByTime(60_000) })
+    expect(screen.getByText('error')).toBeInTheDocument()
   })
 })

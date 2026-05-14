@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
 export type ToastSeverity = 'info' | 'warn' | 'error'
 
@@ -18,6 +18,7 @@ export interface ToastInput {
   readonly message: string
   readonly severity: ToastSeverity
   readonly action?: Toast['action']
+  readonly durationMs?: number | null
 }
 
 interface ToastContextValue {
@@ -36,15 +37,41 @@ function generateId(): string {
 
 export function ToastProvider({ children }: { children: ReactNode }): JSX.Element {
   const [toasts, setToasts] = useState<readonly Toast[]>([])
+  const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>())
 
   const push = useCallback((input: ToastInput): string => {
     const id = generateId()
+    const duration = input.durationMs !== undefined
+      ? input.durationMs
+      : input.severity === 'info' ? 5000
+      : input.severity === 'warn' ? 8000
+      : null  // 'error' — manual-only
     setToasts((cur) => [...cur, { id, ...input }])
+    if (duration !== null) {
+      const timer = setTimeout(() => {
+        timers.current.delete(id)
+        setToasts((cur) => cur.filter((t) => t.id !== id))
+      }, duration)
+      timers.current.set(id, timer)
+    }
     return id
   }, [])
 
   const dismiss = useCallback((id: string): void => {
+    const timer = timers.current.get(id)
+    if (timer) {
+      clearTimeout(timer)
+      timers.current.delete(id)
+    }
     setToasts((cur) => cur.filter((t) => t.id !== id))
+  }, [])
+
+  // Clean up all pending timers on unmount
+  useEffect(() => {
+    return () => {
+      timers.current.forEach((timer) => clearTimeout(timer))
+      timers.current.clear()
+    }
   }, [])
 
   const value = useMemo<ToastContextValue>(() => ({ toasts, push, dismiss }), [toasts, push, dismiss])

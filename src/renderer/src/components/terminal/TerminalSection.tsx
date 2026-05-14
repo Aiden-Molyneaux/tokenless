@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 
-import { useCcEvents } from '../../hooks/use-cc-events'
 import { useTelemetry } from '../../hooks/use-telemetry'
 import { rendererLogger } from '../../observability/logger-bridge'
 import { HungBanner } from './HungBanner'
@@ -22,16 +21,9 @@ interface TerminalSectionProps {
 //     → main-side coalescing → 3s telemetry:tick broadcasts).
 //   - The HungBanner — shown when cc:hung fires for this conversation,
 //     cleared on cc:exit.
-//   - useCcEvents is subscribed but its callback is a no-op — held for
-//     Phase 4D plumbing (e.g., per-event UI signals not driven by telemetry
-//     coalescing).
 
 export function TerminalSection({ conversationId }: TerminalSectionProps): JSX.Element {
   const [hung, setHung] = useState<{ severity: 'warn' | 'error' } | null>(null)
-
-  useCcEvents(conversationId, () => {
-    /* Phase 4D: drive budget meter from tokens-used events */
-  })
 
   const tick = useTelemetry(conversationId)
   const contextBudget: ContextBudget | null = tick && tick.contextUsed !== null && tick.contextTotal !== null && tick.contextPercent !== null
