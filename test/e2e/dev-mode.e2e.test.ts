@@ -16,8 +16,8 @@ test.afterAll(async () => {
 
 test.beforeEach(async () => {
   // Reset localStorage to clear any state persisted from prior tests
-  const window = await app.firstWindow()
-  await window.evaluate(() => {
+  const page = await app.firstWindow()
+  await page.evaluate(() => {
     window.localStorage.clear()
   })
 })

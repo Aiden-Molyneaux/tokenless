@@ -48,7 +48,8 @@ function fakeIpcMain() {
     handle: vi.fn((channel: string, fn: (...args: unknown[]) => unknown) => {
       invokeHandlers[channel] = fn
     }),
-    removeAllListeners: vi.fn()
+    removeAllListeners: vi.fn(),
+    removeHandler: vi.fn()
   }
   return { ipc, handlers, invokeHandlers }
 }
@@ -124,6 +125,7 @@ describe('LogBridge', () => {
     // After uninstall, dispatched records should NOT be broadcast
     logger.ingestFromRenderer(makeRecord({ event: 'after-uninstall' }))
     expect(sent.length).toBe(0)
-    expect(ipc.removeAllListeners).toHaveBeenCalled()
+    expect(ipc.removeHandler).toHaveBeenCalledWith('log:get-recent')
+    expect(ipc.removeAllListeners).toHaveBeenCalledWith('log:event-from-renderer')
   })
 })

@@ -60,7 +60,7 @@ export class LogBridge {
 
   uninstall(): void {
     this.ipcMain.removeAllListeners(IPC_LOG_FROM_RENDERER)
-    this.ipcMain.removeAllListeners(IPC_LOG_GET_RECENT)
+    this.ipcMain.removeHandler(IPC_LOG_GET_RECENT)
     if (this.unsubscribe) {
       this.unsubscribe()
       this.unsubscribe = null
