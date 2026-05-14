@@ -9,6 +9,16 @@
 
 'use strict'
 
+// CRASH_MODE: if env TOKENLESS_MOCK_CRASH_AFTER_MS is set, exit with code 1
+// after that many milliseconds WITHOUT writing any output. This keeps
+// sawGracefulPrompt=false in lifecycle so onCrashed fires correctly.
+// Crash-mode is exclusive of normal-mode behavior — used by Phase 4C
+// cc-crash E2E test. All normal-mode logic is in the else branch below.
+if (process.env.TOKENLESS_MOCK_CRASH_AFTER_MS) {
+  const ms = parseInt(process.env.TOKENLESS_MOCK_CRASH_AFTER_MS, 10)
+  setTimeout(() => process.exit(1), ms)
+} else {
+
 process.stdout.write('claude-mock> ')
 
 const argv = process.argv.slice(2)
@@ -44,3 +54,5 @@ process.stdin.on('end', () => process.exit(0))
 
 process.on('SIGTERM', () => process.exit(0))
 process.on('SIGINT', () => process.exit(0))
+
+} // end else (normal mode)
