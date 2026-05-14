@@ -418,3 +418,26 @@ These are deliberately conservative — built around the mock-claude's output so
 
 **Discovered:** Phase 4C telemetry wiring.
 
+## ADR-030 (2026-05-14) — Anthropic SDK wrapper: typed errors, transparent retry for 429/5xx, recorded fixtures for tests
+
+**Context:** Phase 5A integrates the Anthropic Messages API for gearing. The raw SDK throws strongly-typed errors but is awkward to test (real API calls) and doesn't retry by default. Spec §7.2 prescribes specific recovery for 401, 429, 5xx, network, malformed JSON.
+
+**Options considered:**
+- A) Use the SDK directly inside the gearing engine. Simple but couples gearing to retry / fixture-replay logic.
+- B) Thin wrapper that exposes `complete(request)` returning a discriminated union `OK | typed error`. Wrapper owns retry + classification. Tests inject a `MockAnthropicClient` that implements the same interface.
+- C) Full HTTP client abstraction. Overkill — the SDK already handles HTTP.
+
+**Choice:** B. `AnthropicClient` class with one method: `complete(request): Promise<Result<MessageResponse, ApiError>>`. Internally retries 429 and 5xx with exponential backoff + jitter (3 attempts total). Classifies errors:
+- `API_AUTH_FAILED` (HTTP 401) — non-retried
+- `API_RATE_LIMITED` (HTTP 429) — retried, exposed if exhausted
+- `API_SERVER_ERROR` (HTTP 5xx) — retried, exposed if exhausted
+- `API_NETWORK_DOWN` (fetch reject before any HTTP response) — non-retried
+- `API_TIMEOUT` (request timeout — default 30s) — non-retried in Phase 5A; Phase 5B may add retry
+- `API_UNKNOWN` (anything else) — non-retried
+
+**Fixture pattern:** `test/fixtures/api/<scenario>.json` stores a complete `MessageResponse` shape. `MockAnthropicClient` is constructed with a mapping `Map<string, MessageResponse>` and routes by a request signature (model + first 200 chars of system + first 200 chars of user). Initial fixtures are hand-synthesized to match the Haiku output shape; `npm run fixtures:record` (added in Phase 5B) regenerates them against the real API.
+
+**Reasoning:** A thin wrapper keeps the engine pure (deterministic given client output) and makes the failure surface explicit at the type level. Transparent retry for 429/5xx mirrors what users expect from a robust client — the UI only sees the final outcome, not the intermediate attempts. Recorded fixtures keep tests fast, deterministic, and free of API costs.
+
+**Discovered:** Phase 5A API design.
+
