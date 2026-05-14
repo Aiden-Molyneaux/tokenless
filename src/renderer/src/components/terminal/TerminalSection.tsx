@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 
 import { useCcEvents } from '../../hooks/use-cc-events'
+import { useTelemetry } from '../../hooks/use-telemetry'
 import { rendererLogger } from '../../observability/logger-bridge'
 import { HungBanner } from './HungBanner'
 import { TerminalPane } from './TerminalPane'
 import { TerminalToolbar } from './TerminalToolbar'
+import type { ContextBudget } from './TerminalToolbar'
 import './styles.css'
 
 interface TerminalSectionProps {
@@ -26,6 +28,15 @@ export function TerminalSection({ conversationId }: TerminalSectionProps): JSX.E
   useCcEvents(conversationId, () => {
     /* Phase 4D: drive budget meter from tokens-used events */
   })
+
+  const tick = useTelemetry(conversationId)
+  const contextBudget: ContextBudget | null = tick && tick.contextUsed !== null && tick.contextTotal !== null && tick.contextPercent !== null
+    ? {
+        usedTokens: tick.contextUsed,
+        totalTokens: tick.contextTotal,
+        percentUsed: tick.contextPercent
+      }
+    : null
 
   // Subscribe to cc.onHung for this conversation. Clear on cc.onExit (a stop
   // or successful response always clears the banner).
@@ -67,7 +78,7 @@ export function TerminalSection({ conversationId }: TerminalSectionProps): JSX.E
 
   return (
     <section className="terminal-section">
-      <TerminalToolbar onStop={() => void handleStop()} streaming={conversationId !== null} />
+      <TerminalToolbar onStop={() => void handleStop()} streaming={conversationId !== null} contextBudget={contextBudget} />
       <HungBanner visible={hung !== null} severity={hung?.severity ?? 'warn'} onStop={() => void handleStop()} />
       <TerminalPane key={conversationId ?? 'none'} conversationId={conversationId} />
     </section>

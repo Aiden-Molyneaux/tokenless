@@ -1,21 +1,28 @@
 import { InfoTooltip } from '../common/InfoTooltip'
-import { MOCK_CONTEXT_BUDGET } from '../../mocks/telemetry'
+
+export interface ContextBudget {
+  readonly usedTokens: number
+  readonly totalTokens: number
+  readonly percentUsed: number
+}
 
 interface TerminalToolbarProps {
   onStop: () => void
   streaming: boolean
+  contextBudget: ContextBudget | null
 }
 
 // Top of TerminalSection. Houses the Stop button (sends SIGINT in Phase 4)
-// and the context-budget meter. Phase 2B uses MOCK_CONTEXT_BUDGET; Phase 4
-// wires real values parsed from Claude Code output stream.
+// and the context-budget meter. Phase 2B used MOCK_CONTEXT_BUDGET; Phase 4C
+// wires real values parsed from Claude Code output stream via useTelemetry.
 
-export function TerminalToolbar({ onStop, streaming }: TerminalToolbarProps): JSX.Element {
-  const { usedTokens, totalTokens, percentUsed } = MOCK_CONTEXT_BUDGET
+export function TerminalToolbar({ onStop, streaming, contextBudget }: TerminalToolbarProps): JSX.Element {
   const meterClass =
-    percentUsed >= 80
+    contextBudget === null
+      ? 'terminal-toolbar__meter--idle'
+      : contextBudget.percentUsed >= 80
       ? 'terminal-toolbar__meter--warn'
-      : percentUsed >= 60
+      : contextBudget.percentUsed >= 60
       ? 'terminal-toolbar__meter--info'
       : 'terminal-toolbar__meter--ok'
 
@@ -34,20 +41,27 @@ export function TerminalToolbar({ onStop, streaming }: TerminalToolbarProps): JS
       <InfoTooltip
         helperText="Context window usage for the current Claude Code session"
         contextFn={() => {
-          if (percentUsed >= 80) return 'Approaching capacity — consider starting a fresh conversation.'
+          if (contextBudget === null) return 'No active session yet.'
+          if (contextBudget.percentUsed >= 80) return 'Approaching capacity — consider starting a fresh conversation.'
           return null
         }}
-        outcomeFn={() => `${usedTokens.toLocaleString()} of ${totalTokens.toLocaleString()} tokens used`}
+        outcomeFn={() =>
+          contextBudget === null
+            ? 'no tokens used yet'
+            : `${contextBudget.usedTokens.toLocaleString()} of ${contextBudget.totalTokens.toLocaleString()} tokens used`
+        }
       >
         <div className={`terminal-toolbar__meter ${meterClass}`}>
           <span className="terminal-toolbar__meter-label">Context:</span>
           <div className="terminal-toolbar__meter-bar">
             <div
               className="terminal-toolbar__meter-fill"
-              style={{ width: `${percentUsed}%` }}
+              style={{ width: `${contextBudget?.percentUsed ?? 0}%` }}
             />
           </div>
-          <span className="terminal-toolbar__meter-value">{percentUsed}%</span>
+          <span className="terminal-toolbar__meter-value">
+            {contextBudget !== null ? `${contextBudget.percentUsed}%` : '—'}
+          </span>
         </div>
       </InfoTooltip>
     </div>

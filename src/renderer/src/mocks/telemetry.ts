@@ -1,6 +1,6 @@
-// Mock telemetry values for TelemetryStrip + ContextBudgetMeter. Phase 5
-// replaces with real Anthropic-SDK-driven cost estimates; Phase 4 replaces
-// the context budget with real values parsed from Claude Code's output.
+// Mock telemetry values for cost previews. Phase 5 replaces with real
+// Anthropic-SDK-driven cost estimates. Phase 4C replaced context budget with
+// real values parsed from Claude Code's output via useTelemetry.
 
 export interface MockCostPreview {
   expectedDollars: number
@@ -14,16 +14,4 @@ export const MOCK_COST_PREVIEW: MockCostPreview = {
   expectedInputTokens: 3_000,
   expectedOutputTokens: 1_000,
   modelLabel: 'Opus 4.7'
-}
-
-export interface MockContextBudget {
-  usedTokens: number
-  totalTokens: number
-  percentUsed: number
-}
-
-export const MOCK_CONTEXT_BUDGET: MockContextBudget = {
-  usedTokens: 84_000,
-  totalTokens: 200_000,
-  percentUsed: 42
 }

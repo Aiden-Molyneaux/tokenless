@@ -75,6 +75,10 @@
   background: var(--tl-error);
 }
 
+.terminal-toolbar__meter--idle .terminal-toolbar__meter-fill {
+  background: var(--tl-rule-subtle);
+}
+
 .terminal-toolbar__meter-value {
   font-weight: var(--tl-weight-medium);
   min-width: 32px;
