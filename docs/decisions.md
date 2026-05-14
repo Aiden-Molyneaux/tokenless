@@ -131,3 +131,13 @@ Format per entry: date · context · options considered · choice · reasoning. 
 **Choice:** Refresh after every completed assistant turn, in the background, non-blocking.
 
 **Reasoning:** Cost is trivial; quality benefit is real (next Gear call sees an up-to-date summary instead of N-1-turns-stale).
+
+## ADR-015 (2026-05-13) — Preload emits CJS in an ESM package
+
+**Context:** TokenLess uses `"type": "module"` in `package.json` (ESM throughout). Electron's preload script loader is CommonJS-based — it `require()`s the preload, which fails on an ES module (`require() of ES Module`). The first E2E test in Phase 0 surfaced this by silently swallowing the preload and leaving `window.tokenless` undefined.
+
+**Choice:** Configure electron-vite's preload build to emit CommonJS with `.cjs` extension (`output: { format: 'cjs', entryFileNames: '[name].cjs' }`). Update `webPreferences.preload` in `src/main/index.ts` to reference `index.cjs`.
+
+**Reasoning:** Canonical fix in the Electron ecosystem. Electron's preload loader does not support full ESM as of Electron 32+, and forcing it would require workarounds that don't carry their weight. CJS preload with an explicit `.cjs` extension bypasses Node's package-type resolution and works reliably across platforms.
+
+**Discovered:** Phase 0, Task 16 (E2E smoke test). Documenting here so Phase 1+ workers don't re-derive the lesson.
