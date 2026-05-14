@@ -100,7 +100,7 @@
   margin: 0;
   padding: var(--tl-space-1) 0;
   list-style: none;
-  background: white;
+  background: var(--tl-bg);
   border: 1px solid var(--tl-rule);
   border-radius: var(--tl-radius-md);
   box-shadow: var(--tl-shadow-md);
@@ -247,7 +247,7 @@
 }
 
 .conversation-item {
-  border-bottom: 1px solid rgba(42, 38, 36, 0.04);
+  border-bottom: 1px solid var(--tl-rule-subtle);
 }
 
 .conversation-item__button {
@@ -309,7 +309,7 @@
 }
 
 .conversation-item__model--haiku {
-  background: rgba(42, 38, 36, 0.06);
+  background: var(--tl-bg-mute);
   color: var(--tl-mute);
 }
 

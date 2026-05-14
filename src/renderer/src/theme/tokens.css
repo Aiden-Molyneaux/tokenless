@@ -26,6 +26,8 @@
   /* ===== Neutrals (alpha-tinted) ===== */
   --tl-rule: rgba(42, 38, 36, 0.12);
   --tl-rule-strong: rgba(42, 38, 36, 0.24);
+  --tl-rule-subtle: rgba(42, 38, 36, 0.04);
+  --tl-bg-mute: rgba(42, 38, 36, 0.06);
   --tl-mute: rgba(42, 38, 36, 0.55);
   --tl-hover: rgba(217, 119, 87, 0.06);
   --tl-active: rgba(217, 119, 87, 0.12);
