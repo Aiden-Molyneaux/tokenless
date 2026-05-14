@@ -139,3 +139,79 @@ Format:
 **Expected:**
 - The Dev Mode toggle floats below the TopBar in the top-right corner, NOT overlapping the Settings icon.
 - Settings click is unobstructed; emits `ui/settings-clicked` log.
+
+## Phase 3 — Database + persistence
+
+### S-3.1 First-run welcome
+
+**Preconditions:** Delete `%APPDATA%/tokenless/tokenless.db` (or run on a clean machine).
+
+**Steps:**
+1. Launch the app.
+2. Observe the UI state.
+
+**Expected:**
+- TopBar shows "No project" in the ProjectSwitcher.
+- Onboarding banner "👋 New here? Create your first project…" visible.
+- EmptyProjectsState shows "Create your first project" CTA.
+- Sidebar empty.
+
+### S-3.2 Create first project
+
+**Preconditions:** Fresh first-run state from S-3.1.
+
+**Steps:**
+1. Click "Create your first project."
+2. CreateProjectModal opens with focus on the Name field.
+3. Type a name and root path; click Create.
+4. Observe modal closure and ProjectSwitcher update.
+5. Click "Later" on the banner.
+6. Reload (Ctrl+R).
+
+**Expected:**
+- Modal closes.
+- Onboarding banner remains visible until dismissed.
+- ProjectSwitcher now shows the new project as active.
+- EmptyProjectsState is replaced by the Composer.
+- After clicking "Later" and reloading, banner does not return.
+
+### S-3.3 Persistence across restart
+
+**Preconditions:** Complete S-3.2 (project created and banner dismissed).
+
+**Steps:**
+1. Fully quit the app (Ctrl+Q).
+2. Relaunch.
+
+**Expected:**
+- The created project still appears in the ProjectSwitcher.
+- Default account ("Personal") still in the AccountSwitcher.
+
+### S-3.4 Multi-project switch
+
+**Preconditions:** Completed S-3.3 (one project persisted).
+
+**Steps:**
+1. Create a second project via the UI ("Add project" affordance — can be invoked from Dev Mode or via SQL if not surfaced).
+2. Click the ProjectSwitcher dropdown.
+3. Select the other project.
+
+**Expected:**
+- ProjectSwitcher dropdown lists both projects.
+- Selecting either refreshes the (empty) ConversationList.
+
+### S-3.5 DB failure recovery
+
+**Preconditions:** App has launched at least once (DB exists).
+
+**Steps:**
+1. Set `%APPDATA%/tokenless/tokenless.db` read-only (via file properties or `attrib +r`).
+2. Launch the app.
+3. Observe logs in Dev Mode panel.
+4. Make the file writable again.
+5. Restart the app.
+
+**Expected:**
+- Fatal-severity log entry `db-init-failed` visible in Dev Mode panel.
+- App quits gracefully (does not white-screen or hang).
+- After making the file writable, restart succeeds.

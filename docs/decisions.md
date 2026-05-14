@@ -318,3 +318,16 @@ Developers wanting to run `npm run dev` or `npm run test:e2e` locally run `npm r
 
 **Discovered:** Phase 3 Task 16, during the post-wiring smoke test.
 
+## ADR-025 (2026-05-14) — Renderer hook pattern for IPC-backed data: fetch on mount, refetch on change-event broadcast
+
+**Context:** The renderer needs project/conversation/account lists with reasonably current data without polling and without overcomplicating with a state library.
+
+**Options considered:**
+- A) React Query / SWR (rich cache, devtools, but adds 8–12 KB gzipped + a dependency)
+- B) Zustand / Jotai global store (manual cache invalidation)
+- C) Hand-rolled hooks: fetch on mount, refetch when main emits `<channel>:changed`
+
+**Choice:** C — `useProjects`, `useConversations`, `useAccounts`. Each subscribes to its own `*:changed` IPC event. The mutation methods (`create/update/delete`) don't optimistically update — they return after the broadcast triggers a fresh fetch.
+
+**Reasoning:** The dataset is tiny (projects + conversations measured in dozens), reads are near-free (in-memory SQLite via better-sqlite3), and we have only one window. Adding a cache library here would optimize a cost that doesn't exist. If Phase 7's branching or templates UI develops complex client cache behavior we can revisit.
+
