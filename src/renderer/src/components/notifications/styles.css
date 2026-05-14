@@ -23,3 +23,47 @@
   padding: 1px 4px;
   border-radius: var(--tl-radius-sm, 4px);
 }
+
+.toast-host {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  z-index: var(--tl-z-toast);
+  max-width: 28rem;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  font-size: 0.9rem;
+  background: var(--tl-bg-base);
+  border-left: 4px solid var(--tl-rule-subtle);
+}
+.toast--info  { border-left-color: var(--tl-accent); }
+.toast--warn  { border-left-color: #d4a017; }
+.toast--error { border-left-color: var(--tl-color-danger); }
+.toast__message { flex: 1; }
+.toast__action {
+  background: transparent;
+  border: 1px solid var(--tl-rule-subtle);
+  border-radius: 4px;
+  padding: 0.2rem 0.55rem;
+  font: inherit;
+  cursor: pointer;
+}
+.toast__dismiss {
+  background: transparent;
+  border: none;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--tl-text-muted);
+}
+.toast__dismiss:hover { color: var(--tl-text-base); }
