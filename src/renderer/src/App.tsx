@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { AppErrorBoundary } from './observability/error-boundary'
+import { AppShell } from './components/layout/AppShell'
 import { DevModePanel } from './views/dev-mode/DevModePanel'
 import { rendererLogger } from './observability/logger-bridge'
 
@@ -41,28 +42,14 @@ function AppContent(): JSX.Element {
 
   return (
     <>
-      <main className="app">
-        <header className="app__header">
-          <h1 className="app__title">TokenLess</h1>
-          <p className="app__subtitle">Phase 1B — Logger + Dev Mode</p>
-          <button
-            type="button"
-            className={`app__dev-toggle ${devMode ? 'is-active' : ''}`}
-            onClick={toggleDevMode}
-          >
-            {devMode ? 'Hide Dev Mode' : 'Show Dev Mode'}
-          </button>
-        </header>
-        <section className="app__body">
-          <p>
-            The Logger is online and the IPC bridge ships records from renderer to main.
-            Toggle Dev Mode to inspect the live log stream.
-          </p>
-          <p className="app__version">
-            preload.version = <code>{window.tokenless?.version ?? 'not loaded'}</code>
-          </p>
-        </section>
-      </main>
+      <AppShell />
+      <button
+        type="button"
+        className={`app__dev-toggle ${devMode ? 'is-active' : ''}`}
+        onClick={toggleDevMode}
+      >
+        {devMode ? 'Hide Dev Mode' : 'Show Dev Mode'}
+      </button>
       {devMode && <DevModePanel />}
     </>
   )
