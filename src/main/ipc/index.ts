@@ -1,12 +1,14 @@
 // Single registration point for all IPC handlers. The DB-backed handlers
 // receive the live Database connection from main/index.ts.
 
+import { randomUUID } from 'node:crypto'
+
 import type { IpcMain } from 'electron'
 import type { Database } from 'better-sqlite3'
 import type { Logger } from '@main/observability'
 import * as pty from 'node-pty'
 
-import { IPC_CC_EVENT } from '@shared/ipc/cc'
+import { IPC_CC_EVENT, IPC_CC_CRASHED, IPC_CC_HUNG } from '@shared/ipc/cc'
 import { LogBridge, type Broadcast } from './log-bridge'
 import { AccountsHandler } from './accounts-handler'
 import { ProjectsHandler } from './projects-handler'
@@ -51,7 +53,25 @@ export function registerIpcHandlers(
   const ccLifecycle = new CcLifecycle(productionPtyFactory, {
     onChunk: (e) => broadcast('cc:output-chunk', e),
     onExit: (e) => broadcast('cc:exit', e),
-    onEvent: (e) => broadcast(IPC_CC_EVENT, e)
+    onEvent: (e) => broadcast(IPC_CC_EVENT, e),
+    onCrashed: (e) => {
+      const logId = randomUUID()
+      logger.error('cc', 'cc-crashed', `claude exited non-zero (code=${e.exitCode})`, {
+        conversationId: e.conversationId,
+        exitCode: e.exitCode,
+        signal: e.signal,
+        logId
+      })
+      broadcast(IPC_CC_CRASHED, { ...e, logId })
+    },
+    onHung: (e) => {
+      logger.warn('cc', 'cc-hung', `claude idle for ${e.idleMs}ms (${e.severity})`, {
+        conversationId: e.conversationId,
+        idleMs: e.idleMs,
+        severity: e.severity
+      })
+      broadcast(IPC_CC_HUNG, e)
+    }
   })
   const ccHandler = new CcHandler(db, logger, ccLifecycle)
   ccHandler.install(ipcMain)
