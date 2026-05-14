@@ -15,6 +15,7 @@ import {
   IPC_CC_SEND,
   IPC_CC_RESIZE,
   IPC_CC_STOP,
+  IPC_CC_RESUME,
   type CcStartRequest,
   type CcStartResult,
   type CcSendRequest,
@@ -22,7 +23,9 @@ import {
   type CcResizeRequest,
   type CcResizeResult,
   type CcStopRequest,
-  type CcStopResult
+  type CcStopResult,
+  type CcResumeRequest,
+  type CcResumeResult
 } from '@shared/ipc/cc'
 
 interface NotFoundError extends Error {
@@ -133,6 +136,46 @@ export class CcHandler {
       return { ok: true as const }
     })
 
+  resume = async (req: CcResumeRequest): Promise<CcResumeResult> =>
+    withIpcResult(this.logger, 'cc', 'cc-resume', async () => {
+      const account = AccountsDao.getAccountById(this.db, req.accountId)
+      if (!account) throw notFound(`account ${req.accountId} not found`)
+      const conv = ConversationsDao.getConversationById(this.db, req.conversationId)
+      if (!conv) throw notFound(`conversation ${req.conversationId} not found`)
+      if (!conv.ccSessionId) {
+        throw notFound(`conversation ${req.conversationId} has no stored cc_session_id`)
+      }
+
+      try {
+        const { sessionId, pid } = this.lifecycle.resume({
+          conversationId: req.conversationId,
+          sessionId: conv.ccSessionId,
+          cwd: req.cwd,
+          cols: req.cols,
+          rows: req.rows,
+          env: {
+            CLAUDE_CONFIG_DIR: account.configDir,
+            ...(account.apiKeyRef ? { ANTHROPIC_API_KEY: account.apiKeyRef } : {})
+          }
+        })
+        this.logger.info('cc', 'cc-resume', 'Resumed claude subprocess', {
+          conversationId: req.conversationId,
+          sessionId,
+          pid
+        })
+        return { sessionId, pid }
+      } catch (err) {
+        if (err instanceof Error && err.message.includes('already active')) {
+          const handle = this.lifecycle.get(req.conversationId)
+          const existingSessionId = this.lifecycle.getSessionId(req.conversationId)
+          if (handle && existingSessionId) {
+            return { sessionId: existingSessionId, pid: handle.pid }
+          }
+        }
+        throw err
+      }
+    })
+
   install(ipcMain: IpcMain): void {
     ipcMain.handle(IPC_CC_START, async (_e: IpcMainInvokeEvent, req: CcStartRequest) =>
       this.start(req)
@@ -150,6 +193,10 @@ export class CcHandler {
       this.stop(req)
     )
     this.installedHandlers.push(IPC_CC_STOP)
+    ipcMain.handle(IPC_CC_RESUME, async (_e: IpcMainInvokeEvent, req: CcResumeRequest) =>
+      this.resume(req)
+    )
+    this.installedHandlers.push(IPC_CC_RESUME)
   }
 
   uninstall(ipcMain: IpcMain): void {

@@ -24,6 +24,7 @@ import {
   IPC_CC_EXIT,
   IPC_CC_EVENT,
   IPC_CC_STOP,
+  IPC_CC_RESUME,
   type LogFromRendererPayload,
   type LogGetRecentRequest,
   type LogGetRecentResponse,
@@ -56,7 +57,9 @@ import {
   type CcExitPayload,
   type CcEventPayload,
   type CcStopRequest,
-  type CcStopResult
+  type CcStopResult,
+  type CcResumeRequest,
+  type CcResumeResult
 } from '@shared/ipc'
 
 const api = {
@@ -159,6 +162,9 @@ const api = {
     },
     stop(req: CcStopRequest): Promise<CcStopResult> {
       return ipcRenderer.invoke(IPC_CC_STOP, req) as Promise<CcStopResult>
+    },
+    resume(req: CcResumeRequest): Promise<CcResumeResult> {
+      return ipcRenderer.invoke(IPC_CC_RESUME, req) as Promise<CcResumeResult>
     }
   }
 }

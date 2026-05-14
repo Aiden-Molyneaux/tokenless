@@ -174,4 +174,41 @@ describe('ipc/cc-handler', () => {
     const result = await handler.stop({ conversationId: 99999 })
     expect(result.ok).toBe(true)
   })
+
+  it('resume looks up cc_session_id + delegates to lifecycle.resume', async () => {
+    // First start a conversation so cc_session_id is persisted
+    await handler.start({ conversationId, cwd: 'C:/x', cols: 100, rows: 30, accountId })
+    const conv = ConversationsDao.getConversationById(db, conversationId)
+    const storedSession = conv?.ccSessionId
+    expect(storedSession).toBeTruthy()
+    // Close so we can resume
+    await handler.stop({ conversationId })
+    await new Promise((r) => queueMicrotask(() => r(undefined)))
+
+    // Now resume
+    const result = await handler.resume({
+      conversationId,
+      cwd: 'C:/x',
+      cols: 100,
+      rows: 30,
+      accountId
+    })
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.data.sessionId).toBe(storedSession)
+    }
+  })
+
+  it('resume returns NOT_FOUND when conversation has no stored cc_session_id', async () => {
+    // Fresh conversation without a start
+    const result = await handler.resume({
+      conversationId,
+      cwd: 'C:/x',
+      cols: 100,
+      rows: 30,
+      accountId
+    })
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.error.code).toBe('NOT_FOUND')
+  })
 })

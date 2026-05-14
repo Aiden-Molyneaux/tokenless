@@ -28,7 +28,9 @@ import type {
   CcExitPayload,
   CcEventPayload,
   CcStopRequest,
-  CcStopResult
+  CcStopResult,
+  CcResumeRequest,
+  CcResumeResult
 } from '@shared/ipc'
 
 export interface TokenlessApi {
@@ -65,6 +67,7 @@ export interface TokenlessApi {
     onExit(fn: (payload: CcExitPayload) => void): () => void
     onEvent(fn: (payload: CcEventPayload) => void): () => void
     stop(req: CcStopRequest): Promise<CcStopResult>
+    resume(req: CcResumeRequest): Promise<CcResumeResult>
   }
 }
 

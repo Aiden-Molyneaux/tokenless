@@ -80,6 +80,7 @@ export {
   IPC_CC_EXIT,
   IPC_CC_EVENT,
   IPC_CC_STOP,
+  IPC_CC_RESUME,
   type CcStartRequest,
   type CcStartResponse,
   type CcStartResult,
@@ -92,7 +93,10 @@ export {
   type CcExitPayload,
   type CcEventPayload,
   type CcStopRequest,
-  type CcStopResult
+  type CcStopResult,
+  type CcResumeRequest,
+  type CcResumeResponse,
+  type CcResumeResult
 } from './ipc/cc'
 
 export type { IpcResult, IpcOk, IpcError } from './ipc/envelope'
@@ -121,3 +125,4 @@ export type IpcChannelName =
   | 'cc:exit'
   | 'cc:event'
   | 'cc:stop'
+  | 'cc:resume'

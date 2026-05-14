@@ -17,6 +17,7 @@ export const IPC_CC_OUTPUT_CHUNK = 'cc:output-chunk'
 export const IPC_CC_EXIT = 'cc:exit'
 export const IPC_CC_EVENT = 'cc:event'
 export const IPC_CC_STOP = 'cc:stop'
+export const IPC_CC_RESUME = 'cc:resume'
 
 export interface CcStartRequest {
   readonly conversationId: number
@@ -72,7 +73,21 @@ export interface CcStopRequest {
   readonly conversationId: number
 }
 
+export interface CcResumeRequest {
+  readonly conversationId: number
+  readonly cwd: string
+  readonly cols: number
+  readonly rows: number
+  readonly accountId: number
+}
+
+export interface CcResumeResponse {
+  readonly sessionId: string
+  readonly pid: number
+}
+
 export type CcStartResult = IpcResult<CcStartResponse>
 export type CcSendResult = IpcResult<CcSendResponse>
 export type CcResizeResult = IpcResult<{ ok: true }>
 export type CcStopResult = IpcResult<{ ok: true }>
+export type CcResumeResult = IpcResult<CcResumeResponse>
