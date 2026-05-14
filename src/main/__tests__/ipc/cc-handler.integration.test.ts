@@ -80,6 +80,18 @@ describe('ipc/cc-handler', () => {
     if (!result.ok) expect(result.error.code).toBe('NOT_FOUND')
   })
 
+  it('start with an unknown conversationId returns NOT_FOUND', async () => {
+    const result = await handler.start({
+      conversationId: 99999,
+      cwd: 'C:/x',
+      cols: 100,
+      rows: 30,
+      accountId
+    })
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.error.code).toBe('NOT_FOUND')
+  })
+
   it('send writes a turn row + pipes prompt to PTY stdin', async () => {
     await handler.start({ conversationId, cwd: 'C:/x', cols: 100, rows: 30, accountId })
     const result = await handler.send({

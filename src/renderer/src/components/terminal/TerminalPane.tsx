@@ -3,6 +3,7 @@ import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import '@xterm/xterm/css/xterm.css'
 
+import { rendererLogger } from '../../observability/logger-bridge'
 import { useCcSubscription } from '../../hooks/use-cc-subscription'
 
 interface TerminalPaneProps {
@@ -53,8 +54,14 @@ export function TerminalPane({ conversationId }: TerminalPaneProps): JSX.Element
             rows: terminal.rows
           })
         }
-      } catch {
-        // Ignore — terminal may be torn down concurrently
+      } catch (err) {
+        // Concurrent teardown can land between fit() and resize() — this is
+        // expected during unmount but logging at debug level keeps it visible
+        // in Dev Mode if it ever escalates.
+        rendererLogger.debug('ui', 'terminal-resize-failed', 'TerminalPane resize raced with teardown', {
+          conversationId,
+          errorString: String(err)
+        })
       }
     }
     window.addEventListener('resize', handleResize)
