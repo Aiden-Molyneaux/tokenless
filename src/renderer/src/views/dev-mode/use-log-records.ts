@@ -14,6 +14,14 @@ interface UseLogRecordsOptions {
 // Hook that returns the current set of log records seen by the Dev Mode panel.
 // Subscribes to the live IPC stream on mount and unsubscribes on unmount.
 // Optionally seeds with mock records for dev/test workflows.
+//
+// IMPORTANT: `mockRecords` is captured by the useState and useRef initializers
+// only on mount. Passing a new array reference after mount does NOT update the
+// internal seen-ids dedup set, so callers cannot dynamically swap mock sets at
+// runtime. Phase 1B's only caller (DevModePanel) passes the module-level
+// MOCK_RECORDS constant which has stable identity; Phase 2A keeps this pattern.
+// If a future caller needs dynamic mocks, this hook needs to be reworked to
+// track mockRecords as a useEffect dependency.
 
 export function useLogRecords({ mockRecords = [], mockOnly = false }: UseLogRecordsOptions = {}): readonly LogRecord[] {
   const [records, setRecords] = useState<readonly LogRecord[]>(() => mockRecords)
