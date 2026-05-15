@@ -1,0 +1,62 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # All four gates must pass before we build a release artifact.
+      # Mirrors .github/workflows/ci.yml's job split so a tag that wouldn't
+      # pass CI can't produce a Release zip.
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Unit + Integration tests
+        run: npm run test:run
+
+      - name: Rebuild native modules for Electron
+        run: npm run rebuild:electron
+
+      - name: Build renderer + main
+        run: npm run build
+
+      - name: E2E tests
+        run: npm run test:e2e
+
+      - name: Build unpacked app
+        run: npm run build:unpack
+
+      - name: Zip unpacked artifact
+        shell: pwsh
+        run: |
+          $tagName = "${{ github.ref_name }}"
+          $zipName = "TokenLess-$tagName-win-x64.zip"
+          Compress-Archive -Path dist\win-unpacked\* -DestinationPath "dist\$zipName"
+          Write-Host "Created dist\$zipName"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/TokenLess-${{ github.ref_name }}-win-x64.zip
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
