@@ -76,7 +76,9 @@ import type {
   CcResumeRequest,
   CcResumeResult,
   CcCrashedPayload,
-  CcHungPayload
+  CcHungPayload,
+  CcInputRequest,
+  CcInputResult
 } from '@shared/ipc'
 
 export interface TokenlessApi {
@@ -139,6 +141,7 @@ export interface TokenlessApi {
     resume(req: CcResumeRequest): Promise<CcResumeResult>
     onCrashed(fn: (payload: CcCrashedPayload) => void): () => void
     onHung(fn: (payload: CcHungPayload) => void): () => void
+    input(req: CcInputRequest): Promise<CcInputResult>
   }
   readonly telemetry: {
     onTick(fn: (tick: TelemetryTick) => void): () => void

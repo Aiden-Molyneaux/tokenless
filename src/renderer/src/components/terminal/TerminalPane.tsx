@@ -33,7 +33,7 @@ export function TerminalPane({ conversationId }: TerminalPaneProps): JSX.Element
       fontFamily: '"JetBrains Mono", Consolas, monospace',
       fontSize: 12,
       cursorBlink: false,
-      disableStdin: true,
+      disableStdin: false,
       scrollback: 5000
     })
     terminalRef.current = terminal
@@ -43,6 +43,27 @@ export function TerminalPane({ conversationId }: TerminalPaneProps): JSX.Element
     terminal.loadAddon(fitAddon)
     terminal.open(containerRef.current)
     fitAddon.fit()
+
+    // Route raw keystrokes to the PTY — used for Y/N confirmation prompts and
+    // any other interactive input. No turn row is written; cc:input is
+    // fire-and-forget for the renderer.
+    const dataDisposable = terminal.onData((data) => {
+      if (conversationId === null) return
+      void window.tokenless.cc.input({ conversationId, data })
+    })
+
+    // Ctrl+Shift+C copies selection. Ctrl+C alone is reserved for SIGINT,
+    // which xterm forwards to the PTY — we must not intercept it.
+    terminal.attachCustomKeyEventHandler((event) => {
+      if (event.type === 'keydown' && event.ctrlKey && event.shiftKey && event.key === 'C') {
+        const selection = terminal.getSelection()
+        if (selection) {
+          void navigator.clipboard.writeText(selection)
+        }
+        return false  // prevent xterm from processing this combo further
+      }
+      return true
+    })
 
     const handleResize = (): void => {
       try {
@@ -67,6 +88,7 @@ export function TerminalPane({ conversationId }: TerminalPaneProps): JSX.Element
     window.addEventListener('resize', handleResize)
 
     return () => {
+      dataDisposable.dispose()
       window.removeEventListener('resize', handleResize)
       terminal.dispose()
       terminalRef.current = null
@@ -88,7 +110,17 @@ export function TerminalPane({ conversationId }: TerminalPaneProps): JSX.Element
     terminalRef.current?.writeln(`\r\n[claude exited with code ${event.exitCode}]`)
   }, [])
 
+  // Right-click copies the current selection to the clipboard. When nothing is
+  // selected the OS default context menu is allowed to appear instead.
+  const handleContextMenu = useCallback((e: React.MouseEvent): void => {
+    if (!terminalRef.current) return
+    const selection = terminalRef.current.getSelection()
+    if (!selection) return  // let the OS default menu appear when there's no selection
+    e.preventDefault()
+    void navigator.clipboard.writeText(selection)
+  }, [])
+
   useCcSubscription(conversationId, { onChunk: handleChunk, onExit: handleExit })
 
-  return <div className="terminal-pane" ref={containerRef} />
+  return <div className="terminal-pane" ref={containerRef} onContextMenu={handleContextMenu} />
 }

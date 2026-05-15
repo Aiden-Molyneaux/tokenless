@@ -114,3 +114,14 @@ export interface CcHungPayload {
   readonly idleMs: number
   readonly severity: 'warn' | 'error'
 }
+
+export const IPC_CC_INPUT = 'cc:input'
+
+export interface CcInputRequest {
+  readonly conversationId: number
+  // Raw bytes typically from xterm.onData (one keystroke, or a multi-char
+  // paste). No newline appended — xterm sends \r when the user presses Enter.
+  readonly data: string
+}
+export interface CcInputResponse { readonly ok: true }
+export type CcInputResult = IpcResult<CcInputResponse>

@@ -95,6 +95,7 @@ export {
   IPC_CC_RESUME,
   IPC_CC_CRASHED,
   IPC_CC_HUNG,
+  IPC_CC_INPUT,
   type CcStartRequest,
   type CcStartResponse,
   type CcStartResult,
@@ -112,7 +113,10 @@ export {
   type CcResumeResponse,
   type CcResumeResult,
   type CcCrashedPayload,
-  type CcHungPayload
+  type CcHungPayload,
+  type CcInputRequest,
+  type CcInputResponse,
+  type CcInputResult
 } from './ipc/cc'
 
 export type { IpcResult, IpcOk, IpcError } from './ipc/envelope'
@@ -256,6 +260,7 @@ export type IpcChannelName =
   | 'cc:resume'
   | 'cc:crashed'
   | 'cc:hung'
+  | 'cc:input'
   | 'telemetry:tick'
   | 'telemetry:get-summary'
   | 'gearing:gear'

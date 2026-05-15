@@ -30,6 +30,7 @@ import {
   IPC_CC_RESUME,
   IPC_CC_CRASHED,
   IPC_CC_HUNG,
+  IPC_CC_INPUT,
   IPC_TELEMETRY_TICK,
   IPC_TELEMETRY_GET_SUMMARY,
   type TelemetryTick,
@@ -78,6 +79,8 @@ import {
   type CcResumeResult,
   type CcCrashedPayload,
   type CcHungPayload,
+  type CcInputRequest,
+  type CcInputResult,
   IPC_GEARING_GEAR,
   type GearingGearRequest,
   type GearingGearResult,
@@ -311,6 +314,9 @@ const api = {
       const listener = (_e: unknown, payload: CcHungPayload): void => fn(payload)
       ipcRenderer.on(IPC_CC_HUNG, listener as never)
       return () => ipcRenderer.removeListener(IPC_CC_HUNG, listener as never)
+    },
+    input(req: CcInputRequest): Promise<CcInputResult> {
+      return ipcRenderer.invoke(IPC_CC_INPUT, req) as Promise<CcInputResult>
     }
   },
   telemetry: {

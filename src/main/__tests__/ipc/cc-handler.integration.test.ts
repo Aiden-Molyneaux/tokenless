@@ -302,6 +302,31 @@ describe('ipc/cc-handler', () => {
     if (!result.ok) expect(result.error.code).toBe('PTY_WRITE_FAILED')
   })
 
+  it('input writes raw bytes to the PTY without a turn-table write', async () => {
+    await handler.start({ conversationId, cwd: 'C:/x', cols: 100, rows: 30, accountId })
+
+    const beforeCount = db.prepare('SELECT COUNT(*) AS n FROM turns WHERE conversation_id = ?')
+      .get(conversationId) as { n: number }
+    const before = beforeCount.n
+
+    const r = await handler.input({ conversationId, data: 'y\r' })
+    expect(r.ok).toBe(true)
+
+    // Verify the mock PTY received the raw bytes (no extra \r appended)
+    expect(lastPty!.writes).toContain('y\r')
+
+    // Verify NO new turn row was created
+    const afterCount = db.prepare('SELECT COUNT(*) AS n FROM turns WHERE conversation_id = ?')
+      .get(conversationId) as { n: number }
+    expect(afterCount.n).toBe(before)
+  })
+
+  it('input returns NOT_FOUND when there is no active PTY for the conversation', async () => {
+    const r = await handler.input({ conversationId: 99999, data: 'y' })
+    expect(r.ok).toBe(false)
+    if (!r.ok) expect(r.error.code).toBe('NOT_FOUND')
+  })
+
   it('start returns CLAUDE_NOT_FOUND when the spawner fails with that code', async () => {
     const errLifecycle = new CcLifecycle(
       () => {

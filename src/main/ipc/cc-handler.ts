@@ -16,6 +16,7 @@ import {
   IPC_CC_RESIZE,
   IPC_CC_STOP,
   IPC_CC_RESUME,
+  IPC_CC_INPUT,
   type CcStartRequest,
   type CcStartResult,
   type CcSendRequest,
@@ -25,7 +26,9 @@ import {
   type CcStopRequest,
   type CcStopResult,
   type CcResumeRequest,
-  type CcResumeResult
+  type CcResumeResult,
+  type CcInputRequest,
+  type CcInputResult
 } from '@shared/ipc/cc'
 
 interface NotFoundError extends Error {
@@ -103,6 +106,20 @@ export class CcHandler {
         .run(Date.now(), req.conversationId)
 
       return { turnId }
+    })
+
+  input = async (req: CcInputRequest): Promise<CcInputResult> =>
+    withIpcResult(this.logger, 'cc', 'cc-input', async () => {
+      const handle = this.lifecycle.get(req.conversationId)
+      if (!handle) {
+        const e = new Error(`no active PTY for conversation ${req.conversationId}`) as Error & { code?: string }
+        e.code = 'NOT_FOUND'
+        throw e
+      }
+      // Write raw bytes directly to the PTY without appending \r — xterm
+      // onData already includes \r when the user presses Enter.
+      handle.write(req.data)
+      return { ok: true as const }
     })
 
   resize = async (req: CcResizeRequest): Promise<CcResizeResult> =>
@@ -196,6 +213,10 @@ export class CcHandler {
       this.resume(req)
     )
     this.installedHandlers.push(IPC_CC_RESUME)
+    ipcMain.handle(IPC_CC_INPUT, async (_e: IpcMainInvokeEvent, req: CcInputRequest) =>
+      this.input(req)
+    )
+    this.installedHandlers.push(IPC_CC_INPUT)
   }
 
   uninstall(ipcMain: IpcMain): void {
