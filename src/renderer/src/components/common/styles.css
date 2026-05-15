@@ -189,3 +189,8 @@
   font-family: var(--tl-font-mono);
   opacity: 0.85;
 }
+
+/* ===== ConfirmModal ===== */
+
+.confirm-modal { max-width: 420px; }
+.confirm-modal__message { margin: 0 0 var(--tl-space-3) 0; color: var(--tl-fg); line-height: var(--tl-leading-normal); }
