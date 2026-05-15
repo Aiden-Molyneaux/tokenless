@@ -66,10 +66,12 @@ export {
   IPC_CONVERSATIONS_UPDATE,
   IPC_CONVERSATIONS_DELETE,
   IPC_CONVERSATIONS_CHANGED,
+  IPC_CONVERSATIONS_BRANCH,
   type ConversationsListResult,
   type ConversationsCreateResult,
   type ConversationsUpdateResult,
   type ConversationsDeleteResult,
+  type ConversationsBranchResult,
   type ConversationsListRequest,
   type ConversationsListResponse,
   type ConversationsCreateRequest,
@@ -77,7 +79,9 @@ export {
   type ConversationsUpdateRequest,
   type ConversationsUpdateResponse,
   type ConversationsDeleteRequest,
-  type ConversationsDeleteResponse
+  type ConversationsDeleteResponse,
+  type ConversationsBranchRequest,
+  type ConversationsBranchResponse
 } from './ipc/conversations'
 
 export {
@@ -241,6 +245,7 @@ export type IpcChannelName =
   | 'conversations:update'
   | 'conversations:delete'
   | 'conversations:changed'
+  | 'conversations:branch'
   | 'cc:start'
   | 'cc:send'
   | 'cc:resize'
