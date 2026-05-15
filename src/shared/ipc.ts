@@ -137,6 +137,17 @@ export {
   type DraftsClearResult
 } from './ipc/drafts'
 
+export {
+  IPC_SETTINGS_GET,
+  IPC_SETTINGS_SET,
+  type SettingsGetRequest,
+  type SettingsGetResponse,
+  type SettingsGetResult,
+  type SettingsSetRequest,
+  type SettingsSetResponse,
+  type SettingsSetResult
+} from './ipc/settings'
+
 export type IpcChannelName =
   | typeof IPC_LOG_FROM_RENDERER
   | typeof IPC_LOG_TO_RENDERER
@@ -170,3 +181,5 @@ export type IpcChannelName =
   | 'drafts:save'
   | 'drafts:get'
   | 'drafts:clear'
+  | 'settings:get'
+  | 'settings:set'
