@@ -3,6 +3,7 @@
 import type { Database } from 'better-sqlite3'
 
 import { createAccount, listAccounts } from './dao/accounts'
+import { seedBuiltinTemplates } from './seed-templates'
 
 export function seedDefaultAccount(db: Database): void {
   const existing = listAccounts(db)
@@ -12,4 +13,9 @@ export function seedDefaultAccount(db: Database): void {
     configDir: '',
     apiKey: null
   })
+}
+
+export function seedBuiltinData(db: Database): void {
+  seedDefaultAccount(db)
+  seedBuiltinTemplates(db)
 }

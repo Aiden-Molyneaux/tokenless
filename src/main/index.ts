@@ -14,7 +14,7 @@ import {
   closeDatabase,
   runMigrations,
   MIGRATIONS,
-  seedDefaultAccount,
+  seedBuiltinData,
   type Database
 } from './db'
 
@@ -89,7 +89,7 @@ app.whenReady().then(() => {
   try {
     db = openDatabase(dbPath)
     runMigrations(db, MIGRATIONS)
-    seedDefaultAccount(db)
+    seedBuiltinData(db)
     logger.info('db', 'db-online', 'Database opened, migrations applied', { dbPath })
   } catch (error) {
     logger.fatal('db', 'db-init-failed', 'Failed to open database', {
