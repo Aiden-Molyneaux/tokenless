@@ -13,7 +13,9 @@ import type {
   SettingsGetRequest,
   SettingsGetResult,
   SettingsSetRequest,
-  SettingsSetResult
+  SettingsSetResult,
+  PathsCheckDirRequest,
+  PathsCheckDirResult
 } from '@shared/ipc'
 import type {
   AccountsListResult,
@@ -112,6 +114,9 @@ export interface TokenlessApi {
   readonly settings: {
     get(req: SettingsGetRequest): Promise<SettingsGetResult>
     set(req: SettingsSetRequest): Promise<SettingsSetResult>
+  }
+  readonly paths: {
+    checkDir(req: PathsCheckDirRequest): Promise<PathsCheckDirResult>
   }
 }
 

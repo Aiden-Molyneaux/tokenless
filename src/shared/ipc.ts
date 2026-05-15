@@ -156,6 +156,13 @@ export {
   type SettingsSetResult
 } from './ipc/settings'
 
+export {
+  IPC_PATHS_CHECK_DIR,
+  type PathsCheckDirRequest,
+  type PathsCheckDirResponse,
+  type PathsCheckDirResult
+} from './ipc/paths'
+
 export type IpcChannelName =
   | typeof IPC_LOG_FROM_RENDERER
   | typeof IPC_LOG_TO_RENDERER
@@ -193,3 +200,4 @@ export type IpcChannelName =
   | 'drafts:clear'
   | 'settings:get'
   | 'settings:set'
+  | 'paths:check-dir'

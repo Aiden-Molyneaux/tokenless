@@ -91,7 +91,10 @@ import {
   type SettingsGetRequest,
   type SettingsGetResult,
   type SettingsSetRequest,
-  type SettingsSetResult
+  type SettingsSetResult,
+  IPC_PATHS_CHECK_DIR,
+  type PathsCheckDirRequest,
+  type PathsCheckDirResult
 } from '@shared/ipc'
 
 const api = {
@@ -251,6 +254,11 @@ const api = {
     },
     set(req: SettingsSetRequest): Promise<SettingsSetResult> {
       return ipcRenderer.invoke(IPC_SETTINGS_SET, req) as Promise<SettingsSetResult>
+    }
+  },
+  paths: {
+    checkDir(req: PathsCheckDirRequest): Promise<PathsCheckDirResult> {
+      return ipcRenderer.invoke(IPC_PATHS_CHECK_DIR, req) as Promise<PathsCheckDirResult>
     }
   }
 }
