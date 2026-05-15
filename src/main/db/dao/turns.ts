@@ -1,0 +1,148 @@
+import type { Database } from 'better-sqlite3'
+
+import type { Turn, TurnRole, TurnStatus, Feedback, FeedbackSummary, GearMeta } from '@shared/types/turns'
+
+interface TurnRow {
+  id: number
+  conversation_id: number
+  role: string
+  original_prompt: string | null
+  geared_prompt: string | null
+  response_text: string | null
+  original_tokens: number | null
+  geared_tokens: number | null
+  response_tokens: number | null
+  haiku_meta_tokens: number | null
+  model_used: string | null
+  feedback: string | null
+  critique_flags_json: string | null
+  status: string
+  sent_at: number
+}
+
+function rowToTurn(r: TurnRow): Turn {
+  return {
+    id: r.id,
+    conversationId: r.conversation_id,
+    role: r.role as TurnRole,
+    originalPrompt: r.original_prompt,
+    gearedPrompt: r.geared_prompt,
+    responseText: r.response_text,
+    originalTokens: r.original_tokens,
+    gearedTokens: r.geared_tokens,
+    responseTokens: r.response_tokens,
+    haikuMetaTokens: r.haiku_meta_tokens,
+    modelUsed: r.model_used,
+    feedback: r.feedback === null ? null : (r.feedback as Feedback),
+    critiqueFlagsJson: r.critique_flags_json,
+    status: r.status as TurnStatus,
+    sentAt: r.sent_at
+  }
+}
+
+export interface CreateUserTurnInput {
+  readonly conversationId: number
+  readonly originalPrompt: string
+  readonly modelUsed: string | null
+  readonly gearMeta: GearMeta | null
+}
+
+export function createUserTurn(db: Database, input: CreateUserTurnInput): Turn {
+  const now = Date.now()
+  // Store null instead of "[]" for empty critiqueFlags — keeps telemetry readable.
+  const critiqueFlagsJson = input.gearMeta && input.gearMeta.critiqueFlags.length > 0
+    ? JSON.stringify(input.gearMeta.critiqueFlags)
+    : null
+  const result = db.prepare(`
+    INSERT INTO turns (
+      conversation_id, role, original_prompt, geared_prompt,
+      original_tokens, geared_tokens, haiku_meta_tokens,
+      model_used, critique_flags_json, status, sent_at
+    ) VALUES (?, 'user', ?, ?, ?, ?, ?, ?, ?, 'complete', ?)
+  `).run(
+    input.conversationId,
+    input.gearMeta?.originalPrompt ?? input.originalPrompt,
+    input.gearMeta?.gearedPrompt ?? null,
+    input.gearMeta?.originalTokens ?? null,
+    input.gearMeta?.gearedTokens ?? null,
+    input.gearMeta?.haikuMetaTokens ?? null,
+    input.modelUsed,
+    critiqueFlagsJson,
+    now
+  )
+  const created = getById(db, Number(result.lastInsertRowid))
+  if (!created) throw new Error('createUserTurn: SELECT after INSERT returned no row')
+  return created
+}
+
+export interface CreateAssistantTurnInput {
+  readonly conversationId: number
+  readonly responseText: string
+  readonly responseTokens: number | null
+  readonly modelUsed: string | null
+}
+
+export function createAssistantTurn(db: Database, input: CreateAssistantTurnInput): Turn {
+  const now = Date.now()
+  const result = db.prepare(`
+    INSERT INTO turns (
+      conversation_id, role, response_text, response_tokens, model_used, status, sent_at
+    ) VALUES (?, 'assistant', ?, ?, ?, 'complete', ?)
+  `).run(input.conversationId, input.responseText, input.responseTokens, input.modelUsed, now)
+  const created = getById(db, Number(result.lastInsertRowid))
+  if (!created) throw new Error('createAssistantTurn: SELECT after INSERT returned no row')
+  return created
+}
+
+// Constrained to role = 'assistant' — guards against accidentally writing feedback on user turns.
+export function updateFeedback(db: Database, id: number, feedback: Feedback): boolean {
+  const r = db.prepare("UPDATE turns SET feedback = ? WHERE id = ? AND role = 'assistant'").run(feedback, id)
+  return r.changes > 0
+}
+
+export function getById(db: Database, id: number): Turn | null {
+  const row = db.prepare<[number], TurnRow>('SELECT * FROM turns WHERE id = ?').get(id)
+  return row ? rowToTurn(row) : null
+}
+
+export function getLastByConversation(db: Database, conversationId: number): Turn | null {
+  const row = db
+    .prepare<[number], TurnRow>(
+      'SELECT * FROM turns WHERE conversation_id = ? ORDER BY sent_at DESC, id DESC LIMIT 1'
+    )
+    .get(conversationId)
+  return row ? rowToTurn(row) : null
+}
+
+export function listByConversation(db: Database, conversationId: number): readonly Turn[] {
+  const rows = db
+    .prepare<[number], TurnRow>(
+      'SELECT * FROM turns WHERE conversation_id = ? ORDER BY sent_at ASC, id ASC'
+    )
+    .all(conversationId)
+  return rows.map(rowToTurn)
+}
+
+interface FeedbackSummaryRow {
+  up: number
+  down: number
+  shrug: number
+  unrated: number
+}
+
+export function getFeedbackSummary(db: Database): FeedbackSummary {
+  const row = db.prepare<[], FeedbackSummaryRow>(`
+    SELECT
+      SUM(CASE WHEN feedback = 'up' THEN 1 ELSE 0 END) AS up,
+      SUM(CASE WHEN feedback = 'down' THEN 1 ELSE 0 END) AS down,
+      SUM(CASE WHEN feedback = 'shrug' THEN 1 ELSE 0 END) AS shrug,
+      SUM(CASE WHEN feedback IS NULL THEN 1 ELSE 0 END) AS unrated
+    FROM turns WHERE role = 'assistant'
+  `).get()
+  return {
+    up: row?.up ?? 0,
+    down: row?.down ?? 0,
+    shrug: row?.shrug ?? 0,
+    unrated: row?.unrated ?? 0
+  }
+}
