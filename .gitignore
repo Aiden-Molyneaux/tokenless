@@ -17,6 +17,9 @@ build/
 .DS_Store
 Thumbs.db
 
+# Build artifacts
+resources/icon.ico
+
 # Editor
 .vscode/settings.json
 .idea/

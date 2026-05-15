@@ -1,5 +1,6 @@
 import { app, BrowserWindow, ipcMain, shell } from 'electron'
 import { join } from 'node:path'
+import { existsSync } from 'node:fs'
 import {
   FileSink,
   installUncaughtHandlers,
@@ -52,11 +53,13 @@ const broadcast: Broadcast = (channel: string, payload: unknown) => {
 let db: Database | null = null
 
 function createWindow(): void {
+  const iconPath = join(app.getAppPath(), 'resources', 'icon.ico')
   const mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
     minWidth: 900,
     minHeight: 600,
+    ...(existsSync(iconPath) ? { icon: iconPath } : {}),
     show: false,
     autoHideMenuBar: true,
     title: 'TokenLess',

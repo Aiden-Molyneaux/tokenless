@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <rect width="256" height="256" rx="48" fill="#FAF7F2"/>
+  <text x="128" y="170"
+        font-family="'Source Serif Pro', Georgia, serif"
+        font-size="160"
+        font-weight="700"
+        text-anchor="middle"
+        fill="#D97757">TL</text>
+</svg>
