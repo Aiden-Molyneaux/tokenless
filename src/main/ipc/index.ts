@@ -18,6 +18,9 @@ import { ConversationsHandler } from './conversations-handler'
 import { CcHandler } from './cc-handler'
 import { CcLifecycle } from '@main/cc'
 import type { PtySpawnFn, PtyHandle } from '@main/cc'
+import type { AnthropicClientLike } from '@main/api'
+import { GearingEngine } from '@main/gearing'
+import { GearingHandler } from './gearing-handler'
 
 export interface IpcRegistration {
   logBridge: LogBridge
@@ -26,6 +29,7 @@ export interface IpcRegistration {
   conversationsHandler: ConversationsHandler
   ccHandler: CcHandler
   ccLifecycle: CcLifecycle
+  gearingHandler: GearingHandler
   uninstallAll: () => void
 }
 
@@ -38,7 +42,8 @@ export function registerIpcHandlers(
   ipcMain: IpcMain,
   logger: Logger,
   broadcast: Broadcast,
-  db: Database
+  db: Database,
+  anthropicClient: AnthropicClientLike
 ): IpcRegistration {
   const logBridge = new LogBridge(logger, ipcMain, broadcast)
   logBridge.install()
@@ -90,6 +95,10 @@ export function registerIpcHandlers(
   const ccHandler = new CcHandler(db, logger, ccLifecycle)
   ccHandler.install(ipcMain)
 
+  const gearingEngine = new GearingEngine(anthropicClient)
+  const gearingHandler = new GearingHandler(gearingEngine, logger)
+  gearingHandler.install(ipcMain)
+
   return {
     logBridge,
     accountsHandler,
@@ -97,6 +106,7 @@ export function registerIpcHandlers(
     conversationsHandler,
     ccHandler,
     ccLifecycle,
+    gearingHandler,
     uninstallAll: () => {
       logBridge.uninstall()
       accountsHandler.uninstall(ipcMain)
@@ -105,6 +115,7 @@ export function registerIpcHandlers(
       ccHandler.uninstall(ipcMain)
       ccLifecycle.closeAll()
       telemetryEmitter.stop()
+      gearingHandler.uninstall(ipcMain)
     }
   }
 }

@@ -1,5 +1,5 @@
 import type { LogRecord } from '@shared/observability'
-import type { TelemetryTick } from '@shared/ipc'
+import type { TelemetryTick, GearingGearRequest, GearingGearResult } from '@shared/ipc'
 import type {
   AccountsListResult,
   AccountsCreateRequest,
@@ -76,6 +76,9 @@ export interface TokenlessApi {
   }
   readonly telemetry: {
     onTick(fn: (tick: TelemetryTick) => void): () => void
+  }
+  readonly gearing: {
+    gear(req: GearingGearRequest): Promise<GearingGearResult>
   }
 }
 

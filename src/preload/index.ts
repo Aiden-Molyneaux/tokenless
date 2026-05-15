@@ -65,7 +65,10 @@ import {
   type CcResumeRequest,
   type CcResumeResult,
   type CcCrashedPayload,
-  type CcHungPayload
+  type CcHungPayload,
+  IPC_GEARING_GEAR,
+  type GearingGearRequest,
+  type GearingGearResult
 } from '@shared/ipc'
 
 const api = {
@@ -188,6 +191,11 @@ const api = {
       const listener = (_e: unknown, payload: { tick: TelemetryTick }): void => fn(payload.tick)
       ipcRenderer.on(IPC_TELEMETRY_TICK, listener as never)
       return () => ipcRenderer.removeListener(IPC_TELEMETRY_TICK, listener as never)
+    }
+  },
+  gearing: {
+    gear(req: GearingGearRequest): Promise<GearingGearResult> {
+      return ipcRenderer.invoke(IPC_GEARING_GEAR, req) as Promise<GearingGearResult>
     }
   }
 }
