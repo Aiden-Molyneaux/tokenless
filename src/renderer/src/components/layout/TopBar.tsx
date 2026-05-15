@@ -9,6 +9,7 @@ interface TopBarProps {
   activeProjectId: number | null
   onSelectProject: (id: number) => void
   onCreateProject: () => void
+  onEditProject: () => void
   accounts: readonly Account[]
   activeAccountId: number | null
   onSelectAccount: (id: number) => void
@@ -24,6 +25,7 @@ export function TopBar({
   activeProjectId,
   onSelectProject,
   onCreateProject,
+  onEditProject,
   accounts,
   activeAccountId,
   onSelectAccount,
@@ -35,7 +37,7 @@ export function TopBar({
     <header className="top-bar">
       <div className="top-bar__brand">TokenLess</div>
       <nav className="top-bar__nav">
-        <ProjectSwitcher projects={projects} activeProjectId={activeProjectId} onSelect={onSelectProject} onCreate={onCreateProject} />
+        <ProjectSwitcher projects={projects} activeProjectId={activeProjectId} onSelect={onSelectProject} onCreate={onCreateProject} onEdit={onEditProject} />
         <AccountSwitcher accounts={accounts} activeAccountId={activeAccountId} onSelect={onSelectAccount} onCreate={onCreateAccount} onEdit={onEditAccount} />
         <SettingsButton onClick={onOpenSettings} />
       </nav>

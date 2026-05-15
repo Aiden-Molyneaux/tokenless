@@ -6,19 +6,15 @@ interface ProjectSwitcherProps {
   activeProjectId: number | null
   onSelect: (id: number) => void
   onCreate: () => void
+  onEdit: () => void
 }
-
-// Thin wrapper around <Dropdown> with a "+" affordance for adding additional
-// projects. Phase 3 only allowed the first project via the empty-state CTA;
-// the "+" button is the missing path for creating subsequent projects.
-// Converts number IDs to strings for Dropdown's value prop and back to number
-// in the onSelect callback.
 
 export function ProjectSwitcher({
   projects,
   activeProjectId,
   onSelect,
-  onCreate
+  onCreate,
+  onEdit
 }: ProjectSwitcherProps): JSX.Element {
   const items: readonly DropdownItem[] = projects.map((p) => ({
     value: String(p.id),
@@ -42,6 +38,16 @@ export function ProjectSwitcher({
       >
         +
       </button>
+      {activeProjectId !== null && (
+        <button
+          type="button"
+          className="project-switcher__edit"
+          onClick={onEdit}
+          aria-label="Edit active project"
+        >
+          ✎
+        </button>
+      )}
     </div>
   )
 }

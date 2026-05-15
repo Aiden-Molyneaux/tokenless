@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { rendererLogger } from '../../observability/logger-bridge'
 import type { UpdateAccountInput } from '@shared/types/accounts'
+import type { UpdateProjectInput } from '@shared/types/projects'
 import { useAccounts } from '../../hooks/use-accounts'
 import { useConversations } from '../../hooks/use-conversations'
 import { useProjects } from '../../hooks/use-projects'
@@ -9,6 +10,7 @@ import { ConversationSidebar } from './ConversationSidebar'
 import { CreateAccountModal } from './CreateAccountModal'
 import { EditAccountModal } from './EditAccountModal'
 import { CreateProjectModal } from './CreateProjectModal'
+import { EditProjectModal } from './EditProjectModal'
 import { EmptyProjectsState } from './EmptyProjectsState'
 import { MainPane } from './MainPane'
 import { TopBar } from './TopBar'
@@ -36,13 +38,14 @@ function writeDismissed(v: boolean): void {
 }
 
 export function AppShell(): JSX.Element {
-  const { projects, loading: projectsLoading, create: createProject } = useProjects()
+  const { projects, loading: projectsLoading, create: createProject, update: updateProject, remove: removeProject } = useProjects()
   const { accounts, create: createAccount, update: updateAccount, remove: removeAccount } = useAccounts()
   const [activeProjectId, setActiveProjectId] = useState<number | null>(null)
   const [activeAccountId, setActiveAccountId] = useState<number | null>(null)
   const [createProjectOpen, setCreateProjectOpen] = useState(false)
   const [createAccountOpen, setCreateAccountOpen] = useState(false)
   const [editAccountOpen, setEditAccountOpen] = useState(false)
+  const [editProjectOpen, setEditProjectOpen] = useState(false)
   const [claudeNotFoundOpen, setClaudeNotFoundOpen] = useState(false)
   const [onboardingDismissed, setOnboardingDismissed] = useState<boolean>(readDismissed)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
@@ -229,6 +232,28 @@ export function AppShell(): JSX.Element {
     setEditAccountOpen(true)
   }
 
+  const handleEditProject = (): void => {
+    setEditProjectOpen(true)
+  }
+
+  const handleUpdateProject = async (input: UpdateProjectInput): Promise<void> => {
+    const updated = await updateProject(input)
+    if (updated) {
+      rendererLogger.info('ui', 'project-update', 'Project updated', { projectId: updated.id })
+    }
+  }
+
+  const handleDeleteProject = async (id: number): Promise<void> => {
+    const removed = await removeProject(id)
+    if (removed) {
+      rendererLogger.info('ui', 'project-delete', 'Project deleted', { projectId: id })
+      if (activeProjectId === id) {
+        const fallback = projects.find((p) => p.id !== id)?.id ?? null
+        setActiveProjectId(fallback)
+      }
+    }
+  }
+
   const handleUpdateAccount = async (input: UpdateAccountInput): Promise<void> => {
     const updated = await updateAccount(input)
     if (updated) {
@@ -253,6 +278,7 @@ export function AppShell(): JSX.Element {
   }
 
   const activeAccount = accounts.find((a) => a.id === activeAccountId) ?? null
+  const activeProject = projects.find((p) => p.id === activeProjectId) ?? null
 
   const showOnboarding = projects.length === 0 && !onboardingDismissed && !projectsLoading
   const showEmptyState = projects.length === 0 && !projectsLoading
@@ -264,6 +290,7 @@ export function AppShell(): JSX.Element {
         activeProjectId={activeProjectId}
         onSelectProject={handleSelectProject}
         onCreateProject={handleOpenCreateProject}
+        onEditProject={handleEditProject}
         accounts={accounts}
         activeAccountId={activeAccountId}
         onSelectAccount={handleSelectAccount}
@@ -307,6 +334,13 @@ export function AppShell(): JSX.Element {
         onClose={() => setEditAccountOpen(false)}
         onUpdate={handleUpdateAccount}
         onDelete={handleDeleteAccount}
+      />
+      <EditProjectModal
+        open={editProjectOpen}
+        project={activeProject}
+        onClose={() => setEditProjectOpen(false)}
+        onUpdate={handleUpdateProject}
+        onDelete={handleDeleteProject}
       />
       <ClaudeNotFoundModal
         open={claudeNotFoundOpen}
