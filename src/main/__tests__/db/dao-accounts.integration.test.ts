@@ -5,7 +5,9 @@ import { createTestDb } from '../../../../test/doubles/test-db'
 import {
   createAccount,
   getAccountById,
-  listAccounts
+  listAccounts,
+  updateAccount,
+  deleteAccount
 } from '../../db/dao/accounts'
 
 // Purpose: AccountsDao creates rows with createdAt set, retrieves by id, and
@@ -47,5 +49,33 @@ describe('db/dao/accounts', () => {
   it('createAccount stores null apiKey when omitted', () => {
     const a = createAccount(db, { label: 'Personal', configDir: '/p' })
     expect(a.apiKey).toBeNull()
+  })
+
+  it('updateAccount patches only specified fields, preserves others', () => {
+    const a = createAccount(db, { label: 'Personal', configDir: '/p', apiKey: 'k1' })
+    const updated = updateAccount(db, { id: a.id, label: 'Renamed' })
+    expect(updated?.label).toBe('Renamed')
+    expect(updated?.configDir).toBe('/p')
+    expect(updated?.apiKey).toBe('k1')
+  })
+
+  it('updateAccount can set apiKey to null', () => {
+    const a = createAccount(db, { label: 'X', configDir: '/x', apiKey: 'k' })
+    const updated = updateAccount(db, { id: a.id, apiKey: null })
+    expect(updated?.apiKey).toBeNull()
+  })
+
+  it('updateAccount returns null for unknown id', () => {
+    expect(updateAccount(db, { id: 99999, label: 'X' })).toBeNull()
+  })
+
+  it('deleteAccount removes the row', () => {
+    const a = createAccount(db, { label: 'Doomed', configDir: '/d' })
+    expect(deleteAccount(db, a.id)).toBe(true)
+    expect(getAccountById(db, a.id)).toBeNull()
+  })
+
+  it('deleteAccount returns false for unknown id', () => {
+    expect(deleteAccount(db, 99999)).toBe(false)
   })
 })

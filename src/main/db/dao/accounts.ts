@@ -4,7 +4,7 @@
 
 import type { Database } from 'better-sqlite3'
 
-import type { Account, CreateAccountInput } from '@shared/types/accounts'
+import type { Account, CreateAccountInput, UpdateAccountInput } from '@shared/types/accounts'
 
 interface AccountRow {
   id: number
@@ -44,4 +44,23 @@ export function listAccounts(db: Database): readonly Account[] {
     .prepare<[], AccountRow>('SELECT * FROM accounts ORDER BY id ASC')
     .all()
   return rows.map(rowToAccount)
+}
+
+export function updateAccount(db: Database, input: UpdateAccountInput): Account | null {
+  const current = getAccountById(db, input.id)
+  if (!current) return null
+  const next = {
+    label: input.label ?? current.label,
+    configDir: input.configDir ?? current.configDir,
+    apiKey: input.apiKey !== undefined ? input.apiKey : current.apiKey
+  }
+  db.prepare(
+    'UPDATE accounts SET label = ?, config_dir = ?, api_key_ref = ? WHERE id = ?'
+  ).run(next.label, next.configDir, next.apiKey, input.id)
+  return getAccountById(db, input.id)
+}
+
+export function deleteAccount(db: Database, id: number): boolean {
+  const result = db.prepare('DELETE FROM accounts WHERE id = ?').run(id)
+  return result.changes > 0
 }

@@ -1,6 +1,6 @@
 // IPC channels for accounts CRUD.
 
-import type { Account, CreateAccountInput } from '../types/accounts'
+import type { Account, CreateAccountInput, UpdateAccountInput } from '../types/accounts'
 import type { IpcResult } from './envelope'
 
 export const IPC_ACCOUNTS_LIST = 'accounts:list'
@@ -21,3 +21,22 @@ export interface AccountsCreateResponse {
 
 export type AccountsListResult = IpcResult<AccountsListResponse>
 export type AccountsCreateResult = IpcResult<AccountsCreateResponse>
+
+export const IPC_ACCOUNTS_UPDATE = 'accounts:update'
+export const IPC_ACCOUNTS_DELETE = 'accounts:delete'
+
+export interface AccountsUpdateRequest {
+  readonly input: UpdateAccountInput
+}
+export interface AccountsUpdateResponse {
+  readonly account: Account
+}
+export interface AccountsDeleteRequest {
+  readonly id: number
+}
+export interface AccountsDeleteResponse {
+  readonly id: number
+}
+
+export type AccountsUpdateResult = IpcResult<AccountsUpdateResponse>
+export type AccountsDeleteResult = IpcResult<AccountsDeleteResponse>

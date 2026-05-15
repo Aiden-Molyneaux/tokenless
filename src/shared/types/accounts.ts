@@ -14,3 +14,10 @@ export interface CreateAccountInput {
   readonly configDir: string
   readonly apiKey?: string | null  // renamed from apiKeyRef
 }
+
+export interface UpdateAccountInput {
+  readonly id: number
+  readonly label?: string
+  readonly configDir?: string
+  readonly apiKey?: string | null
+}

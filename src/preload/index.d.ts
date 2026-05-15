@@ -19,6 +19,10 @@ import type {
   AccountsListResult,
   AccountsCreateRequest,
   AccountsCreateResult,
+  AccountsUpdateRequest,
+  AccountsUpdateResult,
+  AccountsDeleteRequest,
+  AccountsDeleteResult,
   ProjectsListResult,
   ProjectsCreateRequest,
   ProjectsCreateResult,
@@ -61,6 +65,8 @@ export interface TokenlessApi {
   readonly accounts: {
     list(): Promise<AccountsListResult>
     create(req: AccountsCreateRequest): Promise<AccountsCreateResult>
+    update(req: AccountsUpdateRequest): Promise<AccountsUpdateResult>
+    delete(req: AccountsDeleteRequest): Promise<AccountsDeleteResult>
     onChanged(fn: () => void): () => void
   }
   readonly projects: {

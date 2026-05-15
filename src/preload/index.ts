@@ -6,6 +6,8 @@ import {
   IPC_LOG_TO_RENDERER,
   IPC_ACCOUNTS_LIST,
   IPC_ACCOUNTS_CREATE,
+  IPC_ACCOUNTS_UPDATE,
+  IPC_ACCOUNTS_DELETE,
   IPC_ACCOUNTS_CHANGED,
   IPC_PROJECTS_LIST,
   IPC_PROJECTS_CREATE,
@@ -36,6 +38,10 @@ import {
   type AccountsListResult,
   type AccountsCreateRequest,
   type AccountsCreateResult,
+  type AccountsUpdateRequest,
+  type AccountsUpdateResult,
+  type AccountsDeleteRequest,
+  type AccountsDeleteResult,
   type ProjectsListResult,
   type ProjectsCreateRequest,
   type ProjectsCreateResult,
@@ -116,6 +122,12 @@ const api = {
     },
     create(req: AccountsCreateRequest): Promise<AccountsCreateResult> {
       return ipcRenderer.invoke(IPC_ACCOUNTS_CREATE, req) as Promise<AccountsCreateResult>
+    },
+    update(req: AccountsUpdateRequest): Promise<AccountsUpdateResult> {
+      return ipcRenderer.invoke(IPC_ACCOUNTS_UPDATE, req) as Promise<AccountsUpdateResult>
+    },
+    delete(req: AccountsDeleteRequest): Promise<AccountsDeleteResult> {
+      return ipcRenderer.invoke(IPC_ACCOUNTS_DELETE, req) as Promise<AccountsDeleteResult>
     },
     onChanged(fn: () => void): () => void {
       const listener = (): void => fn()

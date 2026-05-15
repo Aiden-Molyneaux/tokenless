@@ -25,12 +25,20 @@ export interface LogGetRecentResponse {
 export {
   IPC_ACCOUNTS_LIST,
   IPC_ACCOUNTS_CREATE,
+  IPC_ACCOUNTS_UPDATE,
+  IPC_ACCOUNTS_DELETE,
   IPC_ACCOUNTS_CHANGED,
   type AccountsListResult,
   type AccountsCreateResult,
+  type AccountsUpdateResult,
+  type AccountsDeleteResult,
   type AccountsListResponse,
   type AccountsCreateRequest,
-  type AccountsCreateResponse
+  type AccountsCreateResponse,
+  type AccountsUpdateRequest,
+  type AccountsUpdateResponse,
+  type AccountsDeleteRequest,
+  type AccountsDeleteResponse
 } from './ipc/accounts'
 
 export {
@@ -154,6 +162,8 @@ export type IpcChannelName =
   | typeof IPC_LOG_GET_RECENT
   | 'accounts:list'
   | 'accounts:create'
+  | 'accounts:update'
+  | 'accounts:delete'
   | 'accounts:changed'
   | 'projects:list'
   | 'projects:create'
