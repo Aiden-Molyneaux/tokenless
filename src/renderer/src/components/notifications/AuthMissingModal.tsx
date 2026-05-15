@@ -1,3 +1,5 @@
+import { useEffect, useRef } from 'react'
+
 import './styles.css'
 
 interface AuthMissingModalProps {
@@ -7,6 +9,21 @@ interface AuthMissingModalProps {
 }
 
 export function AuthMissingModal({ open, onDismiss, accountLabel }: AuthMissingModalProps): JSX.Element | null {
+  const dismissRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    if (open) setTimeout(() => dismissRef.current?.focus(), 0)
+  }, [open])
+
+  useEffect(() => {
+    if (!open) return undefined
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') onDismiss()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [open, onDismiss])
+
   if (!open) return null
 
   const headline = accountLabel
@@ -52,7 +69,7 @@ export function AuthMissingModal({ open, onDismiss, accountLabel }: AuthMissingM
           </>
         )}
         <div className="modal__actions">
-          <button type="button" className="btn btn--primary" onClick={onDismiss}>
+          <button ref={dismissRef} type="button" className="btn btn--primary" onClick={onDismiss}>
             Got it
           </button>
         </div>

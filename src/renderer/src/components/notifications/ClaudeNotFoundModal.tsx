@@ -1,3 +1,5 @@
+import { useEffect, useRef } from 'react'
+
 import './styles.css'
 
 interface ClaudeNotFoundModalProps {
@@ -6,6 +8,21 @@ interface ClaudeNotFoundModalProps {
 }
 
 export function ClaudeNotFoundModal({ open, onDismiss }: ClaudeNotFoundModalProps): JSX.Element | null {
+  const dismissRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    if (open) setTimeout(() => dismissRef.current?.focus(), 0)
+  }, [open])
+
+  useEffect(() => {
+    if (!open) return undefined
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') onDismiss()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [open, onDismiss])
+
   if (!open) return null
 
   return (
@@ -37,6 +54,7 @@ export function ClaudeNotFoundModal({ open, onDismiss }: ClaudeNotFoundModalProp
         </p>
         <div className="modal__actions">
           <button
+            ref={dismissRef}
             type="button"
             className="btn btn--primary"
             onClick={onDismiss}
