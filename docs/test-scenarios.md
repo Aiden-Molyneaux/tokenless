@@ -754,3 +754,59 @@ Hard to trigger manually (Haiku usually obeys). The parser handles this via Zod.
 1. Complete the wizard once.
 2. Open Settings. Click "Run onboarding again".
 3. **Expect:** Wizard reappears at step 1. The previously-created account + project still exist (the wizard doesn't delete them — it just re-runs the flow).
+
+## Phase 8B — Release prep
+
+### S-8B.1 `npm run build:unpack` produces a runnable .exe
+1. Fresh checkout. `npm install && npm run rebuild:electron && npm run build:unpack`.
+2. **Expect:** `dist/win-unpacked/TokenLess.exe` exists. Double-click it — TokenLess launches; DB persists at `%APPDATA%/tokenless/tokenless.db`; logs at `%APPDATA%/tokenless/logs/`.
+
+### S-8B.2 Icon fallback when .ico is absent
+1. Ensure `resources/icon.ico` is NOT present.
+2. `npm run build:unpack` — should log a warning ("default Electron icon will be used"). Build still succeeds.
+3. The built `.exe`'s taskbar/Alt-Tab icon is the Electron default.
+
+### S-8B.3 Icon applies when .ico is present
+1. Convert `resources/icon.svg` → `resources/icon.ico` (per resources/icon-design.md).
+2. `npm run build:unpack`.
+3. The built `.exe`'s taskbar/Alt-Tab icon shows the TL monogram.
+
+### S-8B.4 Privacy notice appears on first launch
+1. Delete `%APPDATA%/tokenless/`. Launch the app.
+2. **Expect:** Privacy notice modal appears FIRST (before the Onboarding wizard). The "I understand" button is focused. Pressing Enter accepts.
+
+### S-8B.5 Privacy notice does not reappear after ack
+1. Continuing from S-8B.4: after clicking "I understand", restart the app.
+2. **Expect:** Privacy notice does NOT reappear. The Onboarding wizard appears directly (if not already completed).
+
+### S-8B.6 About dialog shows correct version
+1. Settings → "About TokenLess" footer link.
+2. **Expect:** Modal opens. "Version" row shows the package.json's current version. "Platform" notes ADR-002. Close button works; Escape closes; backdrop click closes.
+
+### S-8B.7 DB backup created when a migration applies
+1. Launch the app once on a fresh `%APPDATA%/tokenless/`. Check `%APPDATA%/tokenless/backups/` — empty (no backup on first run because there's no existing DB to back up).
+2. Bump the migrations list (e.g., add a dummy migration 003 in `src/main/db/migrations/index.ts` for testing only). Restart the app.
+3. **Expect:** A backup file appears at `%APPDATA%/tokenless/backups/tokenless-pre-v2-to-v3-{timestamp}.db`.
+
+### S-8B.8 Old backups pruned after 5+
+1. Force-create 7 backups (manually or by repeated migration bumps).
+2. Trigger one more migration.
+3. **Expect:** `%APPDATA%/tokenless/backups/` contains only the 5 most recent (by mtime).
+
+### S-8B.9 Crash reporter modal on main-process crash
+1. Trigger a synthetic crash in the main process (e.g., a temporary `process.nextTick(() => { throw new Error('test crash') })` added to the IPC index, then back out).
+2. **Expect:** The crash reporter modal appears. Shows "Main process crash" tag, the error message, the (truncated) stack. Continue button is NOT shown (main crashes can't be continued). Restart button works.
+
+### S-8B.10 Crash report Copy button writes JSON to clipboard
+1. With the modal open, click "Copy report".
+2. **Expect:** Button changes to "Copied ✓" for ~2s. Paste into a text editor — the clipboard contains a valid JSON object with `source`, `message`, `stack`, `timestamp`, `recentLogs` (array of last 100), and `system` (platform/electron/node/app versions).
+
+### S-8B.11 Crash reporter modal on renderer React error
+1. Trigger a synthetic crash in the renderer (e.g., throw from a component during render — backdoor a `if (Math.random() < 0.5) throw` in App.tsx temporarily).
+2. **Expect:** The crash reporter modal appears. Shows "Renderer error" tag. Continue button IS shown (it'll re-mount the component tree on click).
+3. Click Continue. The app might recover, or might re-crash if the error condition persists.
+
+### S-8B.12 Release workflow runs all gates and uploads asset
+1. Commit + tag + push `v0.99.0-test-release` (or similar non-conflicting tag).
+2. Watch `.github/workflows/release.yml` run in Actions. Verify all steps pass (typecheck → tests → e2e → build → build:unpack → zip → release upload).
+3. **Expect:** A new Release at `github.com/.../releases` with `TokenLess-v0.99.0-test-release-win-x64.zip` attached. Release notes auto-generated from commits since the previous tag.
