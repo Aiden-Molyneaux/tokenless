@@ -574,3 +574,40 @@ Hard to trigger manually (Haiku usually obeys). The parser handles this via Zod.
 ### S-6D.8 Popover refreshes after a feedback click too (acceptable per ADR-038)
 1. With popover open, click a turn-feedback button (👍/👎/🤷).
 2. **Expect:** The popover refetches (same broadcast). Numbers stay the same — feedback doesn't affect cost. Slight visual blink is acceptable for v1.
+
+## Phase 7D — Templates picker
+
+### S-7D.1 Templates button visible in ActionsRow
+1. Open the app; create a project + conversation.
+2. **Expect:** A "Templates ▾" button appears in the actions row's secondary group (before Commit + Push).
+
+### S-7D.2 Built-ins seeded on first launch
+1. Fresh install. Click "Templates ▾".
+2. **Expect:** Popover opens with 8 built-in templates grouped by category (refactor / docs / tests / review / explain / debug / git). Names: "Refactor for clarity", "Add JSDoc", "Write tests", "Code review", "Explain this code", "Debug this error", "Commit message", "Pull request description".
+
+### S-7D.3 Insert into empty composer
+1. With composer empty, click Templates → click "Refactor for clarity".
+2. **Expect:** The popover closes. Composer textarea now contains the template body verbatim ("Refactor the highlighted code for clarity. ...").
+
+### S-7D.4 Append behavior with existing prompt
+1. Type "fix the auth bug — " into the composer.
+2. Open Templates → click "Code review".
+3. **Expect:** Composer now contains:
+   ```
+   fix the auth bug —
+   Review the pending changes. ...
+   ```
+   The existing text was preserved, with a `\n` before the appended body.
+
+### S-7D.5 Built-in protection — direct IPC denies update/delete
+1. Open Dev Mode. Run via the IPC: `window.tokenless.templates.delete({ id: <builtin-id> })`.
+2. **Expect:** Result is `{ ok: false, error: { code: 'BUILTIN_PROTECTED', ... } }`. The row still exists in the DB.
+3. Same for `templates.update` on a builtin: returns `BUILTIN_PROTECTED`.
+
+### S-7D.6 Re-seed idempotency
+1. Launch the app.
+2. Quit and relaunch.
+3. **Expect:** Still exactly 8 builtin templates (no duplicates). DB inspection: `SELECT COUNT(*) FROM templates WHERE builtin = 1` returns 8.
+
+### S-7D.7 Templates seed survives across schema migrations
+(Future-proofing — covered by the idempotency contract in ADR-039.)
