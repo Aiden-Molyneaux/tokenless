@@ -12,7 +12,7 @@ describe('gearing/builder', () => {
     })
     // The user's selected model (opus) goes INTO the prompt context, not as the
     // gearing-call model. The gearing call itself is always Haiku.
-    expect(req.model).toBe('claude-3-5-haiku-latest')
+    expect(req.model).toBe('claude-haiku-4-5-20251001')
   })
 
   it('embeds the user prompt as the user message', () => {

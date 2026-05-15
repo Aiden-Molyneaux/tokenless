@@ -236,6 +236,7 @@ export function AppShell(): JSX.Element {
         projects={projects}
         activeProjectId={activeProjectId}
         onSelectProject={handleSelectProject}
+        onCreateProject={handleOpenCreateProject}
         accounts={accounts}
         activeAccountId={activeAccountId}
         onSelectAccount={handleSelectAccount}
