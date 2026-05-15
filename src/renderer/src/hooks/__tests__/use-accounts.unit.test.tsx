@@ -10,7 +10,7 @@ import { useAccounts } from '../use-accounts'
 // and refetches when accounts:changed fires.
 
 function makeAccount(id: number, label: string): Account {
-  return { id, label, configDir: `/c${id}`, apiKeyRef: null, createdAt: 0 }
+  return { id, label, configDir: `/c${id}`, apiKey: null, createdAt: 0 }
 }
 
 function setMockTokenless(mock: unknown): void {

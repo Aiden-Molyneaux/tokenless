@@ -61,7 +61,7 @@ export class CcHandler {
         rows: req.rows,
         env: {
           CLAUDE_CONFIG_DIR: account.configDir,
-          ...(account.apiKeyRef ? { ANTHROPIC_API_KEY: account.apiKeyRef } : {})
+          ...(account.apiKey ? { ANTHROPIC_API_KEY: account.apiKey } : {})
         }
       })
 
@@ -155,7 +155,7 @@ export class CcHandler {
           rows: req.rows,
           env: {
             CLAUDE_CONFIG_DIR: account.configDir,
-            ...(account.apiKeyRef ? { ANTHROPIC_API_KEY: account.apiKeyRef } : {})
+            ...(account.apiKey ? { ANTHROPIC_API_KEY: account.apiKey } : {})
           }
         })
         this.logger.info('cc', 'cc-resume', 'Resumed claude subprocess', {

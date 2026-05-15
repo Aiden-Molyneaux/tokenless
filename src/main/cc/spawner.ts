@@ -23,7 +23,7 @@ export function spawnClaude(opts: SpawnOptions, ptyFactory: PtySpawnFn): PtyHand
 
   const baseEnv = filterOutUndefined(process.env)
   // Always remove ANTHROPIC_API_KEY from the base env — it must come only
-  // from the account's explicit apiKeyRef (opts.env.ANTHROPIC_API_KEY).
+  // from the account's explicit apiKey (opts.env.ANTHROPIC_API_KEY).
   // This prevents a leaked env var from silently overriding the account config.
   delete baseEnv['ANTHROPIC_API_KEY']
 

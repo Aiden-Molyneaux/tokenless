@@ -19,7 +19,7 @@ function rowToAccount(r: AccountRow): Account {
     id: r.id,
     label: r.label,
     configDir: r.config_dir,
-    apiKeyRef: r.api_key_ref,
+    apiKey: r.api_key_ref,
     createdAt: r.created_at
   }
 }
@@ -29,7 +29,7 @@ export function createAccount(db: Database, input: CreateAccountInput): Account 
   const stmt = db.prepare(
     'INSERT INTO accounts (label, config_dir, api_key_ref, created_at) VALUES (?, ?, ?, ?)'
   )
-  const result = stmt.run(input.label, input.configDir, input.apiKeyRef ?? null, now)
+  const result = stmt.run(input.label, input.configDir, input.apiKey ?? null, now)
   const id = Number(result.lastInsertRowid)
   return getAccountById(db, id) as Account
 }

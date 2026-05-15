@@ -10,6 +10,6 @@ export function seedDefaultAccount(db: Database): void {
   createAccount(db, {
     label: 'Personal',
     configDir: '',
-    apiKeyRef: null
+    apiKey: null
   })
 }
