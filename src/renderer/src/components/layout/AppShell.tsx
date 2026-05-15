@@ -6,6 +6,12 @@ import { useAccounts } from '../../hooks/use-accounts'
 import { useConversations } from '../../hooks/use-conversations'
 import { useProjects } from '../../hooks/use-projects'
 import { useToast } from '../../hooks/use-toast'
+import {
+  readSetting,
+  writeSetting,
+  SETTING_LAST_ACTIVE_ACCOUNT_ID,
+  SETTING_LAST_ACTIVE_PROJECT_ID
+} from '../../hooks/use-settings'
 import { ConversationSidebar } from './ConversationSidebar'
 import { CreateAccountModal } from './CreateAccountModal'
 import { EditAccountModal } from './EditAccountModal'
@@ -51,6 +57,30 @@ export function AppShell(): JSX.Element {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const { push: pushToast } = useToast()
 
+  // On-mount restore: read last-active ids from settings and pre-select them if
+  // they still exist in the current lists. Uses functional setter form so we
+  // never clobber a value the user has already chosen since mount.
+  useEffect(() => {
+    let cancelled = false
+    void Promise.all([
+      readSetting(SETTING_LAST_ACTIVE_ACCOUNT_ID),
+      readSetting(SETTING_LAST_ACTIVE_PROJECT_ID)
+    ]).then(([accStr, projStr]) => {
+      if (cancelled) return
+      const accId = accStr !== null ? Number(accStr) : null
+      const projId = projStr !== null ? Number(projStr) : null
+      if (accId !== null && accounts.some((a) => a.id === accId)) {
+        setActiveAccountId((current) => current ?? accId)
+      }
+      if (projId !== null && projects.some((p) => p.id === projId)) {
+        setActiveProjectId((current) => current ?? projId)
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [accounts, projects])
+
   // Pick a sensible active project + account once data lands.
   useEffect(() => {
     if (activeProjectId === null && projects.length > 0) {
@@ -63,6 +93,29 @@ export function AppShell(): JSX.Element {
       setActiveAccountId(accounts[0].id)
     }
   }, [accounts, activeAccountId])
+
+  // Persist active account/project to settings so they can be restored on next launch.
+  useEffect(() => {
+    if (activeAccountId !== null) {
+      void writeSetting(SETTING_LAST_ACTIVE_ACCOUNT_ID, String(activeAccountId)).catch((err) => {
+        rendererLogger.warn('ui', 'settings-write-failed', 'Failed to persist lastActiveAccountId', {
+          accountId: activeAccountId,
+          errorString: err instanceof Error ? err.message : String(err)
+        })
+      })
+    }
+  }, [activeAccountId])
+
+  useEffect(() => {
+    if (activeProjectId !== null) {
+      void writeSetting(SETTING_LAST_ACTIVE_PROJECT_ID, String(activeProjectId)).catch((err) => {
+        rendererLogger.warn('ui', 'settings-write-failed', 'Failed to persist lastActiveProjectId', {
+          projectId: activeProjectId,
+          errorString: err instanceof Error ? err.message : String(err)
+        })
+      })
+    }
+  }, [activeProjectId])
 
   useEffect(() => {
     const unsubCrashed = window.tokenless.cc.onCrashed((payload) => {
