@@ -38,7 +38,7 @@ body {
   font-size: var(--tl-text-xs);
   color: var(--tl-mute);
   cursor: pointer;
-  z-index: var(--tl-z-modal);
+  z-index: var(--tl-z-dev-mode);
   box-shadow: var(--tl-shadow-sm);
 }
 
