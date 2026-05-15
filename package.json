@@ -19,7 +19,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "rebuild:electron": "electron-rebuild --force --module-dir node_modules/better-sqlite3 && electron-rebuild --force --module-dir node_modules/node-pty",
     "rebuild:node": "npm rebuild better-sqlite3 node-pty",
-    "rebuild:native": "electron-rebuild --force"
+    "rebuild:native": "electron-rebuild --force",
+    "fixtures:record": "tsx scripts/record-fixtures.ts"
   },
   "engines": {
     "node": ">=20.0.0"
