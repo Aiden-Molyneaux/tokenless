@@ -658,3 +658,29 @@ B) Plaintext in the existing `api_key_ref` column of the SQLite DB. Simple, no n
 
 **Discovered:** Phase 7D implementation.
 
+
+## ADR-040 (2026-05-15) — Branching MVP: "branch from latest turn" only (no per-turn picker); fresh PTY; inherit rolling summary for context continuity
+
+**Context:** Phase 7C ships the branching feature per spec §2. The schema columns (`parent_conversation_id`, `branched_at_turn_id`) have existed since Phase 3 but have never been written. Phase 7B's turn capture means there's now real data to point `branched_at_turn_id` at.
+
+**Decisions:**
+
+1. **Branch from latest turn ONLY for v1.** The renderer has no turn-level interaction surface — xterm.js renders the PTY stream opaquely. Building a turn-picker means building a transcript / replay view, which is a separate feature roughly the size of Phase 7C itself. Deferred to Phase 8 polish.
+
+2. **Fresh PTY for the branch.** We do NOT resume the parent's claude session. Claude wouldn't see the prior turns anyway (its in-process context is per-session). Instead, the branch INHERITS the parent's rolling `summary` field (Phase 5B), so when the user fires their first gear+send on the branch, Haiku sees the summary in the gearing-context system prompt. Sufficient for v1 continuity.
+
+3. **Title prefix: `↳ {parent.title ?? 'Untitled'}`.** Plus a CSS-based indent on the sidebar item (`.conversation-item.is-branch`). True tree-rendered sidebar is Phase 8.
+
+4. **`BRANCH_EMPTY_CONVERSATION` for branches with no prior turns.** Can't branch what doesn't exist; the IPC handler reads `TurnsDao.getLastByConversation` first and returns the error code if there's nothing. The UI surfaces a non-blocking toast.
+
+5. **No "un-branch" or re-parent.** Users can delete the branched conversation if they regret it (Phase 6B's delete works through the existing IPC). Re-parenting is YAGNI.
+
+6. **Translate DAO `PARENT_NOT_FOUND` to handler `NOT_FOUND`.** The DAO uses a specific error code so its tests can assert on it. The IPC handler translates to the project's standard `NOT_FOUND` business code so renderer error-handling is consistent across resources.
+
+**Trade-offs:**
+- The first gearing call on a branched conversation sends the inherited summary, but later gearing calls update the branch's OWN summary (Phase 5B's refresher writes per-conversation). The branch and parent diverge from there. Fine — that's the point of branching.
+- A branched conversation's `parent_conversation_id` is `ON DELETE SET NULL`. If the parent is deleted, the branch keeps existing but loses its lineage indicator. Acceptable; the title still has "↳" so the user sees the visual cue, and the indent will go away on next refresh (no parent → not a branch in the eyes of the sidebar component).
+- The "Branch" button is enabled whenever there's an active conversation, even if it has no turns. The toast on empty-branch is the safety net rather than a disable-condition. Trade-off: one more click → toast vs. fetching turns in the Composer just to set a button state.
+
+**Discovered:** Phase 7C implementation; the per-turn picker complexity surfaced during scope planning.
+
