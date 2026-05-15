@@ -4,6 +4,7 @@ import { Filters, applyFilters, emptyFilterState } from './Filters'
 import { LogTable } from './LogTable'
 import { useLogRecords } from './use-log-records'
 import { MOCK_RECORDS } from './mock-records'
+import { useFeedbackSummary } from '../../hooks/use-turns'
 import './styles.css'
 
 interface DevModePanelProps {
@@ -21,6 +22,7 @@ export function DevModePanel({ useMockRecords = false, mockOnly = false }: DevMo
   })
   const [filters, setFilters] = useState(emptyFilterState)
   const visible = applyFilters(records, filters) as readonly LogRecord[]
+  const feedbackSummary = useFeedbackSummary()
 
   return (
     <div className="dev-mode-panel">
@@ -32,6 +34,18 @@ export function DevModePanel({ useMockRecords = false, mockOnly = false }: DevMo
       </div>
       <Filters state={filters} onChange={setFilters} />
       <LogTable records={visible} />
+      {feedbackSummary && (
+        <div className="dev-mode-panel__feedback-summary">
+          <span>Feedback:</span>
+          <span>👍 {feedbackSummary.up}</span>
+          <span>·</span>
+          <span>👎 {feedbackSummary.down}</span>
+          <span>·</span>
+          <span>🤷 {feedbackSummary.shrug}</span>
+          <span>·</span>
+          <span>❓ {feedbackSummary.unrated} unrated</span>
+        </div>
+      )}
     </div>
   )
 }
