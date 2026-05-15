@@ -217,6 +217,13 @@
   color: var(--tl-mute);
 }
 
+.conversation-item.is-branch {
+  padding-left: var(--tl-space-4);
+}
+.conversation-item.is-branch .conversation-item__title {
+  color: var(--tl-text-muted);
+}
+
 /* ===== Main pane ===== */
 
 .main-pane {

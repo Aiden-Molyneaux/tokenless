@@ -21,8 +21,9 @@ function relativeTime(ts: number | null): string {
 
 export function ConversationListItem({ conversation, isActive, onSelect }: ConversationListItemProps): JSX.Element {
   const model = conversation.model ?? 'sonnet'
+  const isBranch = conversation.parentConversationId !== null
   return (
-    <li className={`conversation-item ${isActive ? 'is-active' : ''}`}>
+    <li className={`conversation-item ${isActive ? 'is-active' : ''} ${isBranch ? 'is-branch' : ''}`}>
       <button
         type="button"
         className="conversation-item__button"
