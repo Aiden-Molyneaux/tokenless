@@ -539,3 +539,38 @@ Hard to trigger manually (Haiku usually obeys). The parser handles this via Zod.
 1. While Claude is mid-response, close the app.
 2. Relaunch + resume the conversation.
 3. **Expect:** No assistant row for the truncated response. The NEXT user prompt + response captures normally. (Phase 8 may add a "scrape backlog" feature.)
+
+## Phase 6D — Telemetry summary view
+
+### S-6D.1 Pill hidden when turns table is empty
+1. Fresh install, no conversations.
+2. **Expect:** No TelemetryPill in the TopBar (the `haikuMetaTokens === 0 && responseOutputTokens === 0` guard).
+
+### S-6D.2 Pill shows "Saved $0.00 this week" after a tiny non-geared send (placeholder math)
+1. Start a conversation, send "hi" (no gearing). Wait for response-complete.
+2. **Expect:** Pill appears showing "Saved $0.00 this week" (response tokens > 0 even if savings are zero — there was a turn so the pill mounts).
+
+### S-6D.3 Pill shows green "Saved $X" after a substantial geared send
+1. Type a long prompt (~500 chars). Click Gear → Send Geared.
+2. **Expect:** Pill renders green with "Saved $X.XX this week" where X is positive.
+
+### S-6D.4 Pill shows red "Cost $X" when haiku investment exceeds savings
+1. Gear several tiny prompts (5-10 chars each). The haiku call's overhead exceeds the input-token savings.
+2. **Expect:** Pill renders red "Cost $X.XX this week".
+
+### S-6D.5 Clicking the pill opens the popover with four period tabs
+1. With the pill visible, click it.
+2. **Expect:** Popover opens below the pill with tabs "Today / This Week / This Month / All Time", a totals grid (gross savings / haiku cost / net savings / spend), and a per-model breakdown table.
+3. Click each tab — the numbers refetch with the appropriate sinceMs boundary.
+
+### S-6D.6 Per-model rows appear in the popover
+1. After exchanges with multiple models (e.g., Sonnet + Opus), open popover.
+2. **Expect:** The byModel table has one row per model with Spend + Savings columns.
+
+### S-6D.7 Popover refreshes after a new geared send (turns:changed broadcast)
+1. With popover open, send a new geared prompt + wait for response.
+2. **Expect:** Within ~100ms the numbers update without manual refresh.
+
+### S-6D.8 Popover refreshes after a feedback click too (acceptable per ADR-038)
+1. With popover open, click a turn-feedback button (👍/👎/🤷).
+2. **Expect:** The popover refetches (same broadcast). Numbers stay the same — feedback doesn't affect cost. Slight visual blink is acceptable for v1.
