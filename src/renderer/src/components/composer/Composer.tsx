@@ -4,6 +4,7 @@ import { rendererLogger } from '../../observability/logger-bridge'
 import { useToast } from '../../hooks/use-toast'
 import { MOCK_BREADTHS, MOCK_FORMATS, MOCK_MODELS, MOCK_SKILLS } from '../../mocks/dropdown-options'
 import { GearReviewPane } from '../gear-review/GearReviewPane'
+import { useLiveCostEstimate } from '../../hooks/use-live-cost-estimate'
 import { AuthMissingModal } from '../notifications/AuthMissingModal'
 import { ActionsRow } from './ActionsRow'
 import { ConfigsRow } from './ConfigsRow'
@@ -42,6 +43,7 @@ export function Composer({ conversationId }: ComposerProps): JSX.Element {
   const [gearing, setGearing] = useState(false)
   const [authMissingOpen, setAuthMissingOpen] = useState(false)
   const { push: pushToast } = useToast()
+  const liveEstimate = useLiveCostEstimate({ prompt, model, breadth })
 
   const runGear = async (originalPrompt: string): Promise<void> => {
     // Gearing doesn't require an active conversation — it's a pure Anthropic
@@ -193,7 +195,7 @@ export function Composer({ conversationId }: ComposerProps): JSX.Element {
             onCommit={handleCommit}
             onPush={handlePush}
           />
-          <TelemetryStrip costPreview={null} />
+          <TelemetryStrip costPreview={liveEstimate} />
         </div>
       )}
       <AuthMissingModal open={authMissingOpen} onDismiss={() => setAuthMissingOpen(false)} />
