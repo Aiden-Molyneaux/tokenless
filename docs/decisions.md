@@ -497,3 +497,26 @@ These are deliberately conservative — built around the mock-claude's output so
 
 **Discovered:** Phase 7A draft-autosave wiring.
 
+## ADR-034 (2026-05-15) — Per-account ANTHROPIC_API_KEY stored plaintext in `accounts.api_key_ref`; OS keychain migration deferred to Phase 8
+
+**Context:** ADR-018 (2026-05-14) prescribed per-account API key injection but left the storage backend open ("opaque keychain reference"). Phase 6A actually wires per-account keys for the first time. Two implementation options:
+
+A) OS keychain (Windows Credential Manager via a native module like `keytar` or `windows-credential-manager`). Encrypted at rest, accessible to TokenLess only.
+B) Plaintext in the existing `api_key_ref` column of the SQLite DB. Simple, no new native modules, fits the existing migration story.
+
+**Choice:** B for v1. The `api_key_ref` column name is preserved (semantic mismatch acknowledged); the field stores the literal API key string.
+
+**Reasoning:**
+- The keychain approach adds a Windows-only native module (cross-platform fork later) plus a runtime dependency on a service that can be locked.
+- The DB file lives at `app.getPath('userData')/tokenless.db`. On Windows that's `%APPDATA%/tokenless/` — protected by NTFS user permissions. Backups of `%APPDATA%` (e.g., OneDrive) WILL include the key. Acceptable risk for v1 (the user opts in by setting a key in their account).
+- Plaintext lets the user inspect / export / migrate keys with standard tools. The keychain approach makes recovery scenarios (DB corruption, account migration) harder.
+- Phase 8 polish adds a `Settings → Security` view that can offer "move to keychain" as an opt-in migration. The schema column name `api_key_ref` is forward-compatible: if Phase 8 stores a keychain handle instead, no migration needed.
+
+**Storage shape:** column `accounts.api_key_ref TEXT` — already exists from Phase 3. Phase 6A stores the literal key (e.g. `sk-ant-api03-...`) directly. TypeScript field renamed to `apiKey` for clarity.
+
+**Tradeoffs:**
+- Backup snapshots contain keys. Document this in the Settings UI.
+- Reading the DB while running has no encryption layer. Acceptable for a single-user desktop app.
+
+**Discovered:** Phase 6A multi-account auth wiring.
+
