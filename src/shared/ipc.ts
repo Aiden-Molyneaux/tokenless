@@ -237,6 +237,13 @@ export {
   type PricingListResult
 } from './ipc/pricing'
 
+export {
+  IPC_AI_ANALYZE_ERROR,
+  type AiAnalyzeErrorRequest,
+  type AiAnalyzeErrorResponse,
+  type AiAnalyzeErrorResult
+} from './ipc/ai-error-analysis'
+
 export type IpcChannelName =
   | typeof IPC_LOG_FROM_RENDERER
   | typeof IPC_LOG_TO_RENDERER
@@ -293,3 +300,4 @@ export type IpcChannelName =
   | 'turns:feedback-summary'
   | 'turns:changed'
   | 'pricing:list'
+  | 'ai:analyze-error'

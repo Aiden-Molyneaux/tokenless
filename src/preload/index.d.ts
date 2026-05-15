@@ -36,7 +36,9 @@ import type {
   TurnsUpdateFeedbackRequest,
   TurnsUpdateFeedbackResult,
   TurnsFeedbackSummaryResult,
-  PricingListResult
+  PricingListResult,
+  AiAnalyzeErrorRequest,
+  AiAnalyzeErrorResult
 } from '@shared/ipc'
 import type {
   AccountsListResult,
@@ -168,6 +170,9 @@ export interface TokenlessApi {
   }
   readonly pricing: {
     list(): Promise<PricingListResult>
+  }
+  readonly ai: {
+    analyzeError(req: AiAnalyzeErrorRequest): Promise<AiAnalyzeErrorResult>
   }
 }
 

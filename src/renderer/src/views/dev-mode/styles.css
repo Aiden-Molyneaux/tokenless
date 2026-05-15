@@ -262,3 +262,30 @@
   color: var(--tl-text-muted);
   font-family: var(--tl-font-mono);
 }
+
+/* ===== AI error analysis ===== */
+
+.log-detail__analyze {
+  margin-top: var(--tl-space-2);
+  padding-top: var(--tl-space-2);
+  border-top: 1px solid var(--tl-rule);
+}
+.log-detail__analyze-button {
+  background: var(--tl-blue);
+  color: white;
+  border: none;
+  padding: 4px 12px;
+  border-radius: var(--tl-radius-sm);
+  cursor: pointer;
+  font-size: var(--tl-text-sm);
+}
+.log-detail__analyze-button:disabled { opacity: 0.6; cursor: default; }
+.log-detail__analyze-error { color: var(--tl-error); font-size: var(--tl-text-sm); margin-top: 4px; }
+.log-detail__analyze-result {
+  margin-top: var(--tl-space-2);
+  padding: var(--tl-space-2);
+  background: var(--tl-bg-mute);
+  border-radius: var(--tl-radius-sm);
+}
+.log-detail__analyze-result h4 { margin: 0 0 4px 0; font-size: var(--tl-text-sm); color: var(--tl-mute); }
+.log-detail__analyze-result p { margin: 0; line-height: var(--tl-leading-normal); white-space: pre-wrap; }

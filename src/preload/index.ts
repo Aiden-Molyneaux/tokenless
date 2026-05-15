@@ -137,7 +137,10 @@ import {
   type TurnsUpdateFeedbackResult,
   type TurnsFeedbackSummaryResult,
   IPC_PRICING_LIST,
-  type PricingListResult
+  type PricingListResult,
+  IPC_AI_ANALYZE_ERROR,
+  type AiAnalyzeErrorRequest,
+  type AiAnalyzeErrorResult
 } from '@shared/ipc'
 
 const api = {
@@ -370,6 +373,11 @@ const api = {
   pricing: {
     list(): Promise<PricingListResult> {
       return ipcRenderer.invoke(IPC_PRICING_LIST) as Promise<PricingListResult>
+    }
+  },
+  ai: {
+    analyzeError(req: AiAnalyzeErrorRequest): Promise<AiAnalyzeErrorResult> {
+      return ipcRenderer.invoke(IPC_AI_ANALYZE_ERROR, req) as Promise<AiAnalyzeErrorResult>
     }
   }
 }
