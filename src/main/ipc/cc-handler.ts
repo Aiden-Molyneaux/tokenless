@@ -6,7 +6,7 @@
 import type { IpcMain, IpcMainInvokeEvent } from 'electron'
 import type { Database } from 'better-sqlite3'
 
-import { AccountsDao, ConversationsDao } from '../db'
+import { AccountsDao, ConversationsDao, TurnsDao } from '../db'
 import { CcLifecycle } from '../cc/lifecycle'
 import { Logger } from '../observability/logger'
 import { withIpcResult } from './with-ipc-result'
@@ -84,15 +84,13 @@ export class CcHandler {
       const handle = this.lifecycle.get(req.conversationId)
       if (!handle) throw notFound(`no active PTY for conversation ${req.conversationId}`)
 
-      const now = Date.now()
-      const result = this.db
-        .prepare(
-          `INSERT INTO turns (
-            conversation_id, role, original_prompt, model_used, status, sent_at
-          ) VALUES (?, 'user', ?, ?, 'complete', ?)`
-        )
-        .run(req.conversationId, req.prompt, req.model, now)
-      const turnId = Number(result.lastInsertRowid)
+      const userTurn = TurnsDao.createUserTurn(this.db, {
+        conversationId: req.conversationId,
+        originalPrompt: req.prompt,
+        modelUsed: req.model,
+        gearMeta: req.gearMeta ?? null
+      })
+      const turnId = userTurn.id
 
       this.lifecycle.write(req.conversationId, req.prompt)
 
@@ -101,7 +99,7 @@ export class CcHandler {
       this.db.prepare('DELETE FROM drafts WHERE conversation_id = ?').run(req.conversationId)
       this.db
         .prepare('UPDATE conversations SET updated_at = ? WHERE id = ?')
-        .run(now, req.conversationId)
+        .run(Date.now(), req.conversationId)
 
       return { turnId }
     })
