@@ -19,6 +19,7 @@ import {
   IPC_CONVERSATIONS_UPDATE,
   IPC_CONVERSATIONS_DELETE,
   IPC_CONVERSATIONS_CHANGED,
+  IPC_CONVERSATIONS_BRANCH,
   IPC_CC_START,
   IPC_CC_SEND,
   IPC_CC_RESIZE,
@@ -60,6 +61,8 @@ import {
   type ConversationsUpdateResult,
   type ConversationsDeleteRequest,
   type ConversationsDeleteResult,
+  type ConversationsBranchRequest,
+  type ConversationsBranchResult,
   type CcStartRequest,
   type CcStartResult,
   type CcSendRequest,
@@ -204,6 +207,9 @@ const api = {
     },
     delete(req: ConversationsDeleteRequest): Promise<ConversationsDeleteResult> {
       return ipcRenderer.invoke(IPC_CONVERSATIONS_DELETE, req) as Promise<ConversationsDeleteResult>
+    },
+    branch(req: ConversationsBranchRequest): Promise<ConversationsBranchResult> {
+      return ipcRenderer.invoke(IPC_CONVERSATIONS_BRANCH, req) as Promise<ConversationsBranchResult>
     },
     onChanged(fn: () => void): () => void {
       const listener = (): void => fn()
