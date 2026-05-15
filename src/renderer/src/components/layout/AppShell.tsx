@@ -259,7 +259,7 @@ export function AppShell(): JSX.Element {
         {showEmptyState ? (
           <EmptyProjectsState onCreate={handleOpenCreateProject} />
         ) : (
-          <MainPane conversationId={activeConversationId} accountId={activeAccountId} />
+          <MainPane conversationId={activeConversationId} accountId={activeAccountId} accountLabel={accounts.find((a) => a.id === activeAccountId)?.label ?? null} />
         )}
       </div>
       <CreateProjectModal

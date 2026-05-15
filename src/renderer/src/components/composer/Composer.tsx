@@ -16,6 +16,7 @@ import './styles.css'
 interface ComposerProps {
   conversationId: number | null
   accountId: number | null
+  accountLabel: string | null
 }
 
 // Error code → user-facing toast message map.
@@ -34,7 +35,7 @@ const GEAR_ERROR_MESSAGES: Record<string, string> = {
 // view to GearReviewPane. Phase 5 replaces the mock gear data with real
 // Haiku-driven output via IPC.
 
-export function Composer({ conversationId, accountId }: ComposerProps): JSX.Element {
+export function Composer({ conversationId, accountId, accountLabel }: ComposerProps): JSX.Element {
   const [prompt, setPrompt] = useState('')
   const [model, setModel] = useState<string>(MOCK_MODELS[2].value) // opus default
   const [breadth, setBreadth] = useState<string>(MOCK_BREADTHS[1].value) // normal default
@@ -203,7 +204,7 @@ export function Composer({ conversationId, accountId }: ComposerProps): JSX.Elem
           <TelemetryStrip costPreview={liveEstimate} />
         </div>
       )}
-      <AuthMissingModal open={authMissingOpen} onDismiss={() => setAuthMissingOpen(false)} />
+      <AuthMissingModal open={authMissingOpen} onDismiss={() => setAuthMissingOpen(false)} accountLabel={accountLabel} />
     </>
   )
 }

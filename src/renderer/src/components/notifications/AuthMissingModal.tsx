@@ -3,10 +3,19 @@ import './styles.css'
 interface AuthMissingModalProps {
   open: boolean
   onDismiss: () => void
+  accountLabel?: string | null
 }
 
-export function AuthMissingModal({ open, onDismiss }: AuthMissingModalProps): JSX.Element | null {
+export function AuthMissingModal({ open, onDismiss, accountLabel }: AuthMissingModalProps): JSX.Element | null {
   if (!open) return null
+
+  const headline = accountLabel
+    ? `Account "${accountLabel}" needs an API key`
+    : 'Anthropic API key required'
+  const body = accountLabel
+    ? `The "${accountLabel}" account has no Anthropic API key configured. Gearing won't work for this account until you add one.`
+    : "Gearing uses Claude Haiku via the Anthropic API. TokenLess didn't find an ANTHROPIC_API_KEY for the active account."
+
   return (
     <div className="modal-backdrop" role="presentation" onClick={onDismiss}>
       <div
@@ -16,11 +25,8 @@ export function AuthMissingModal({ open, onDismiss }: AuthMissingModalProps): JS
         aria-labelledby="auth-missing-title"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 id="auth-missing-title" className="modal__title">Anthropic API key required</h2>
-        <p>
-          Gearing uses Claude Haiku via the Anthropic API. TokenLess didn&apos;t find an
-          <code> ANTHROPIC_API_KEY</code> environment variable, or the one set isn&apos;t valid.
-        </p>
+        <h2 id="auth-missing-title" className="modal__title">{headline}</h2>
+        <p>{body}</p>
         <p>
           To use gearing now: close TokenLess, set the env var, and relaunch. On Windows:
         </p>
