@@ -304,3 +304,34 @@ Hard to trigger manually — the test double simulates this. Scenario for docume
 1. Launch with the mock (which emits `tokens: N/200000` lines).
 2. Create project, New Conversation, send a few prompts.
 3. **Expect:** The Context: meter in the terminal toolbar shows a non-zero value within 3-4 seconds of each send. The value increases monotonically as the mock's tokens counter accumulates.
+
+## Phase 5A — Gearing engine
+
+### S-5A.1 Happy gearing path
+1. Set `ANTHROPIC_API_KEY` env var. Launch the app. Create project + New Conversation.
+2. Type a verbose prompt (e.g., "Could you please take a look at the auth middleware...").
+3. Click Gear.
+4. **Expect:** Within ~2s the GearReviewPane appears with a noticeably shorter geared prompt. Critique flags (info/warn) visible if applicable. Cost preview shows expected $ for the user-selected model + Haiku meta cost.
+
+### S-5A.2 Send the geared prompt
+1. From the gear review pane, click "Send geared".
+2. **Expect:** The prompt sent to claude is the GEARED text. Verify in Dev Mode logs: `send-success` entry's `promptLength` matches the geared length, not the original.
+
+### S-5A.3 Bad API key
+1. Set `ANTHROPIC_API_KEY=invalid_key`. Launch. Try to gear.
+2. **Expect:** Error toast: "Anthropic API key invalid or missing." Dev Mode shows `gearing-gear` warn with code `API_AUTH_FAILED`.
+
+### S-5A.4 Network down
+1. Unplug network. Try to gear.
+2. **Expect:** Error toast: "Network unreachable. Gearing offline." Dev Mode shows code `API_NETWORK_DOWN`.
+
+### S-5A.5 Rate-limited (synthetic)
+Hard to trigger manually. The retry path is unit-tested. When/if rate-limit hits in production:
+- 1st attempt: retry transparently
+- 2nd attempt: retry transparently
+- 3rd attempt: failure → toast "Anthropic API rate-limited. Try again in a moment."
+
+### S-5A.6 Malformed JSON from Haiku
+Hard to trigger manually (Haiku usually obeys). The parser handles this via Zod. If it does occur:
+- Toast: "Couldn't parse the gearing response. Send the original prompt."
+- Dev Mode: code `GEAR_PARSE_FAILED`.

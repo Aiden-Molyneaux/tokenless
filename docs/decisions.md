@@ -441,3 +441,16 @@ These are deliberately conservative — built around the mock-claude's output so
 
 **Discovered:** Phase 5A API design.
 
+## ADR-031 (2026-05-14) — Gearing system prompt versioning + JSON-only response contract
+
+**Context:** Phase 5A's gearing engine sends a Haiku call with a system prompt that defines the gearing rules + the strict JSON response shape. Two related decisions: where the prompt lives, and how we enforce the response shape.
+
+**Choice:**
+1. **System prompt is a markdown file** at `src/main/gearing/system-prompt.md`, loaded via Vite's `?raw` import. The build inlines its content into the main bundle.
+2. **Response shape is enforced server-side by Zod** in `gearing/parser.ts`. The system prompt tells Haiku to return JSON-only (no fences, no prose); if it disobeys, the parser strips fences as a kindness and Zod-validates the structure. Failures map to `GEAR_PARSE_FAILED`.
+3. **Versioning is implicit via git history.** When the prompt changes, the commit message documents the change. Test fixtures in `test/fixtures/api/` are regenerated against the new prompt (Phase 5B adds the regeneration script). If a fixture's gearing call signature changes such that the existing fixture no longer matches, the test fails loudly — the fixture file itself becomes the version marker.
+
+**Reasoning:** Markdown is human-readable + diff-friendly + easy to maintain. The `?raw` Vite pattern (used since Phase 3 for SQL migrations) is already proven in the build. Zod validation keeps the parser tolerant of formatting variance (the fence-stripping kindness) while strict about structure. Implicit git versioning avoids over-engineering a registry for a single prompt; Phase 7+ may add a real prompt-versioning table if we run experiments.
+
+**Discovered:** Phase 5A gearing engine design.
+
