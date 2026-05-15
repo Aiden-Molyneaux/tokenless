@@ -163,6 +163,24 @@ export {
   type PathsCheckDirResult
 } from './ipc/paths'
 
+export {
+  IPC_SKILLS_LIST,
+  IPC_SKILLS_TOGGLE_FAVORITE,
+  IPC_SKILLS_TOGGLE_HIDDEN,
+  IPC_SKILLS_RESCAN,
+  IPC_SKILLS_CHANGED,
+  type SkillsListResult,
+  type SkillsListResponse,
+  type SkillsToggleFavoriteRequest,
+  type SkillsToggleFavoriteResult,
+  type SkillsToggleFavoriteResponse,
+  type SkillsToggleHiddenRequest,
+  type SkillsToggleHiddenResult,
+  type SkillsToggleHiddenResponse,
+  type SkillsRescanResult,
+  type SkillsRescanResponse
+} from './ipc/skills'
+
 export type IpcChannelName =
   | typeof IPC_LOG_FROM_RENDERER
   | typeof IPC_LOG_TO_RENDERER
@@ -201,3 +219,8 @@ export type IpcChannelName =
   | 'settings:get'
   | 'settings:set'
   | 'paths:check-dir'
+  | 'skills:list'
+  | 'skills:toggle-favorite'
+  | 'skills:toggle-hidden'
+  | 'skills:rescan'
+  | 'skills:changed'
