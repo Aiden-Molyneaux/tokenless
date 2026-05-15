@@ -501,3 +501,41 @@ Hard to trigger manually (Haiku usually obeys). The parser handles this via Zod.
 1. Click ✎ next to an account, click Delete in the EditAccountModal.
 2. **Expect:** a styled in-app ConfirmModal appears (NOT the OS `window.confirm`). The "Delete" button is red (danger variant) and has focus. Escape closes it. Cancel button works. Clicking Delete actually deletes the account.
 3. Same scenario for EditProjectModal (with the project name in the message).
+
+## Phase 7B — Turn capture + Feedback buttons
+
+### S-7B.1 Plain Send writes a user turn (no gearMeta)
+1. With an active conversation, type "hello" and click Send.
+2. **Expect:** A `turns` row exists with `role='user'`, `original_prompt='hello'`, `geared_prompt IS NULL`, `original_tokens IS NULL`, `critique_flags_json IS NULL`. Dev Mode shows no extra event (the underlying log is `turn-list-by-conversation` only fired when the renderer queries).
+
+### S-7B.2 Send geared writes a full user turn with original + geared + tokens
+1. Type "hello", click Gear, then click Send Geared in the review pane.
+2. **Expect:** The user turn row has both `original_prompt` (the literal "hello") AND `geared_prompt` (the geared text), with numeric `original_tokens` / `geared_tokens` / `haiku_meta_tokens` values, and `critique_flags_json` populated as a JSON array of `"<severity>: <message>"` strings (or null if there were no flags).
+
+### S-7B.3 Assistant turn captured after response-complete
+1. After Send, wait for Claude's response to finish (mock-claude echoes + emits "received:").
+2. **Expect:** A second `turns` row exists with `role='assistant'`, `response_text` containing Claude's output lines joined by `\n`, and `response_tokens` set (if a `tokens:` line was emitted; null otherwise).
+
+### S-7B.4 TurnFeedbackBar appears below Composer after assistant turn
+1. After a complete user → assistant exchange.
+2. **Expect:** A small 👍 👎 🤷 bar appears at the bottom of the Composer (NOT during gear review).
+3. Click 👍. The bar disappears immediately (the `turns:changed` broadcast causes useTurns to refetch; the last turn now has `feedback='up'`).
+
+### S-7B.5 Feedback persists across restart
+1. After clicking 👍 in S-7B.4, close + relaunch the app.
+2. Open Dev Mode.
+3. **Expect:** Footer shows `👍 1 · 👎 0 · 🤷 0 · ❓ N unrated` (where N is the count of other unrated assistant turns).
+
+### S-7B.6 Multi-turn conversation: alternating rows in correct order
+1. Send three prompts in a row, waiting for response each time.
+2. Query `SELECT id, role, original_prompt, response_text FROM turns WHERE conversation_id = ? ORDER BY sent_at ASC, id ASC`.
+3. **Expect:** Six rows alternating user / assistant / user / assistant / user / assistant.
+
+### S-7B.7 Dev Mode footer updates live
+1. With Dev Mode open, click a feedback button on the latest turn.
+2. **Expect:** The footer counts update within ~100ms (no manual refresh). The bar disappears.
+
+### S-7B.8 Resumed conversation captures NEW turns but not the in-flight one
+1. While Claude is mid-response, close the app.
+2. Relaunch + resume the conversation.
+3. **Expect:** No assistant row for the truncated response. The NEXT user prompt + response captures normally. (Phase 8 may add a "scrape backlog" feature.)
