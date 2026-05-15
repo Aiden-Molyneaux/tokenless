@@ -20,28 +20,10 @@ import { EditProjectModal } from './EditProjectModal'
 import { EmptyProjectsState } from './EmptyProjectsState'
 import { MainPane } from './MainPane'
 import { TopBar } from './TopBar'
-import { OnboardingBanner } from '../onboarding/OnboardingBanner'
 import { ClaudeNotFoundModal } from '../notifications/ClaudeNotFoundModal'
 import { ToastHost } from '../notifications/ToastHost'
 import './styles.css'
 
-const ONBOARDING_DISMISSED_KEY = 'tokenless.onboardingDismissed'
-
-function readDismissed(): boolean {
-  try {
-    return window.localStorage.getItem(ONBOARDING_DISMISSED_KEY) === '1'
-  } catch {
-    return false
-  }
-}
-
-function writeDismissed(v: boolean): void {
-  try {
-    window.localStorage.setItem(ONBOARDING_DISMISSED_KEY, v ? '1' : '0')
-  } catch {
-    /* ignore */
-  }
-}
 
 export function AppShell({ onOpenSettings }: { onOpenSettings: () => void }): JSX.Element {
   const { projects, loading: projectsLoading, create: createProject, update: updateProject, remove: removeProject } = useProjects()
@@ -53,7 +35,6 @@ export function AppShell({ onOpenSettings }: { onOpenSettings: () => void }): JS
   const [editAccountOpen, setEditAccountOpen] = useState(false)
   const [editProjectOpen, setEditProjectOpen] = useState(false)
   const [claudeNotFoundOpen, setClaudeNotFoundOpen] = useState(false)
-  const [onboardingDismissed, setOnboardingDismissed] = useState<boolean>(readDismissed)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const { push: pushToast } = useToast()
 
@@ -368,15 +349,9 @@ export function AppShell({ onOpenSettings }: { onOpenSettings: () => void }): JS
     }
   }
 
-  const handleDismissOnboarding = (): void => {
-    setOnboardingDismissed(true)
-    writeDismissed(true)
-  }
-
   const activeAccount = accounts.find((a) => a.id === activeAccountId) ?? null
   const activeProject = projects.find((p) => p.id === activeProjectId) ?? null
 
-  const showOnboarding = projects.length === 0 && !onboardingDismissed && !projectsLoading
   const showEmptyState = projects.length === 0 && !projectsLoading
 
   return (
@@ -393,11 +368,6 @@ export function AppShell({ onOpenSettings }: { onOpenSettings: () => void }): JS
         onCreateAccount={() => setCreateAccountOpen(true)}
         onEditAccount={handleEditAccount}
         onOpenSettings={onOpenSettings}
-      />
-      <OnboardingBanner
-        visible={showOnboarding}
-        onCreateProject={handleOpenCreateProject}
-        onDismiss={handleDismissOnboarding}
       />
       <div className="app-shell__body">
         <ConversationSidebar

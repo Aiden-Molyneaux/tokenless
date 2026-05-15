@@ -235,6 +235,19 @@
   color: var(--color-error, #f38ba8);
 }
 
+/* "Run onboarding again" link-style button in Settings footer */
+.settings-view__rerun-onboarding {
+  background: transparent;
+  border: none;
+  color: var(--tl-mute);
+  cursor: pointer;
+  font-size: var(--tl-text-sm);
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.settings-view__rerun-onboarding:hover { color: var(--tl-fg); }
+
 /* Telemetry section inline */
 
 .telemetry-section__body {

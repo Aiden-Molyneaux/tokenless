@@ -1,0 +1,74 @@
+.onboarding-wizard {
+  position: fixed;
+  inset: 0;
+  background: rgba(42, 38, 36, 0.6);
+  z-index: var(--tl-z-modal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.onboarding-wizard__shell {
+  background: var(--tl-bg);
+  border-radius: var(--tl-radius-lg);
+  box-shadow: var(--tl-shadow-lg);
+  width: min(560px, 90vw);
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: var(--tl-space-6);
+  position: relative;
+}
+.onboarding-wizard__skip {
+  position: absolute;
+  top: var(--tl-space-3);
+  right: var(--tl-space-3);
+  background: transparent;
+  border: none;
+  color: var(--tl-mute);
+  cursor: pointer;
+  font-size: var(--tl-text-sm);
+}
+.onboarding-wizard__skip:hover { color: var(--tl-fg); }
+.onboarding-wizard__progress { display: flex; gap: 6px; justify-content: center; margin-bottom: var(--tl-space-5); }
+.onboarding-wizard__step-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--tl-rule);
+}
+.onboarding-wizard__step-dot.is-active { background: var(--tl-orange); }
+.onboarding-step__title { margin: 0 0 var(--tl-space-3) 0; font-size: var(--tl-text-xl); }
+.onboarding-step__body { color: var(--tl-fg); line-height: var(--tl-leading-normal); margin-bottom: var(--tl-space-4); }
+.onboarding-step__body p { margin: 0 0 var(--tl-space-2) 0; }
+.onboarding-step__field { display: flex; flex-direction: column; gap: 4px; margin-bottom: var(--tl-space-3); }
+.onboarding-step__field-label { font-size: var(--tl-text-sm); color: var(--tl-mute); }
+.onboarding-step__field input {
+  padding: var(--tl-space-2);
+  border: 1px solid var(--tl-rule);
+  border-radius: var(--tl-radius-sm);
+  font: inherit;
+  background: var(--tl-bg-mute);
+  color: var(--tl-fg);
+}
+.onboarding-step__field-error { font-size: var(--tl-text-sm); color: var(--tl-error); }
+.onboarding-step__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--tl-space-2);
+  margin-top: var(--tl-space-4);
+}
+.onboarding-step__actions .btn {
+  padding: var(--tl-space-2) var(--tl-space-4);
+  border-radius: var(--tl-radius-sm);
+  border: 1px solid transparent;
+  font: inherit;
+  cursor: pointer;
+}
+.onboarding-step__actions .btn--ghost {
+  background: transparent;
+  border-color: var(--tl-rule);
+  color: var(--tl-fg);
+}
+.onboarding-step__actions .btn--primary {
+  background: var(--tl-orange);
+  color: white;
+}
+.onboarding-step__actions .btn--primary:disabled { opacity: 0.6; cursor: default; }
+
