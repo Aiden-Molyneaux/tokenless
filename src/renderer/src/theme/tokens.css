@@ -106,7 +106,7 @@
   /* ===== z-index ===== */
   --tl-z-sidebar: 10;
   --tl-z-top-bar: 20;
-  --tl-z-dropdown: 50;
+  --tl-z-dropdown: 1000;
   --tl-z-dev-mode: 100;
   --tl-z-modal: 200;
   --tl-z-gear-review: 210;
