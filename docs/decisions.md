@@ -454,3 +454,30 @@ These are deliberately conservative — built around the mock-claude's output so
 
 **Discovered:** Phase 5A gearing engine design.
 
+## ADR-032 (2026-05-15) — Background summary refresh: per-conversation debounced Haiku call on response-complete
+
+**Context:** ADR-014 prescribes refreshing the rolling Haiku summary after every completed assistant turn. Phase 4B's parser already emits `response-complete` events. Phase 5B wires those events to a Haiku call that updates `conversations.summary` so future gearings see fresh context.
+
+**Options considered:**
+- A) Refresh on EVERY `response-complete` event, blocking the next user action until done. Adds per-turn latency and burns tokens for users who don't gear again immediately.
+- B) Refresh inside the gearing flow only (lazy). Cheaper but means the FIRST gear after a long claude session sees a stale summary.
+- C) Refresh in the BACKGROUND with per-conversation debounce (500ms) so rapid-fire response-complete events coalesce into one Haiku call.
+
+**Choice:** C — `SummaryRefresher` in `main/gearing/`. Per-conversation debounce timer; on `response-complete`, schedule a 500ms timer (or reset an existing one); when it fires, run the refresh.
+
+**Refresh algorithm:**
+1. Read the conversation's prior summary + last N turns (default 6 — covers most claude session shapes).
+2. Build a Haiku message: system prompt asks "produce a 200-token summary of this conversation's purpose + current state".
+3. Call `anthropicClient.complete(...)`.
+4. On success: `ConversationsDao.updateConversation({ id, summary, summaryUpdatedAt: Date.now() })`. Log `summary-refresh-ok` info.
+5. On failure: log `summary-refresh-failed` warn. NO toast (per spec §7.2 row 6 — silent failure; use stale summary).
+
+**Reasoning:** Background + debounce balances freshness with cost. Failures are invisible because a stale summary is OK — the rolling summary is an OPTIMIZATION, not a correctness primitive. Phase 5A's gearing engine works WITHOUT a fresh summary (the system prompt doesn't require one; it just helps with multi-turn context). This isolates the summary subsystem from the user's main flow.
+
+**Trade-offs:**
+- Two consecutive sends with claude responses ~1s apart: only one summary refresh happens (debounce). User won't notice.
+- A claude crash mid-stream means `response-complete` never fires; the summary stays stale. Acceptable — Phase 4C's crash detection handles the user-visible side.
+- Summary refresh fires per cc:event broadcast, NOT per turns table row. The two are correlated but not 1:1. Phase 5B accepts this; Phase 6 may revisit.
+
+**Discovered:** Phase 5B summary refresh design.
+
