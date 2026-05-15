@@ -4,6 +4,7 @@ import { rendererLogger } from '../../observability/logger-bridge'
 import { useToast } from '../../hooks/use-toast'
 import { MOCK_BREADTHS, MOCK_FORMATS, MOCK_MODELS, MOCK_SKILLS } from '../../mocks/dropdown-options'
 import { GearReviewPane } from '../gear-review/GearReviewPane'
+import { AuthMissingModal } from '../notifications/AuthMissingModal'
 import { ActionsRow } from './ActionsRow'
 import { ConfigsRow } from './ConfigsRow'
 import { PromptTextarea } from './PromptTextarea'
@@ -39,6 +40,7 @@ export function Composer({ conversationId }: ComposerProps): JSX.Element {
   const [gearState, setGearState] = useState<GearResult | null>(null)
   const [sending, setSending] = useState(false)
   const [gearing, setGearing] = useState(false)
+  const [authMissingOpen, setAuthMissingOpen] = useState(false)
   const { push: pushToast } = useToast()
 
   const runGear = async (originalPrompt: string): Promise<void> => {
@@ -55,13 +57,17 @@ export function Composer({ conversationId }: ComposerProps): JSX.Element {
         setGearState(result.data.result)
       } else {
         const code = result.error.code
-        const message = GEAR_ERROR_MESSAGES[code] ?? GEAR_ERROR_MESSAGES.API_UNKNOWN
         rendererLogger.error('ui', 'gear-failed', result.error.message, {
           conversationId,
           code,
           logId: result.error.logId
         })
-        pushToast({ message, severity: 'error' })
+        if (code === 'API_AUTH_FAILED') {
+          setAuthMissingOpen(true)
+        } else {
+          const message = GEAR_ERROR_MESSAGES[code] ?? GEAR_ERROR_MESSAGES.API_UNKNOWN
+          pushToast({ message, severity: 'error' })
+        }
       }
     } finally {
       setGearing(false)
@@ -144,45 +150,46 @@ export function Composer({ conversationId }: ComposerProps): JSX.Element {
     setGearState(null)
   }
 
-  if (gearState) {
-    return (
-      <GearReviewPane
-        key={gearState.gearedPrompt}
-        original={gearState.originalPrompt}
-        geared={gearState.gearedPrompt}
-        critiqueFlags={gearState.critiqueFlags}
-        costPreview={gearState.costPreview}
-        onSendOriginal={handleGearSendOriginal}
-        onSendGeared={handleGearSendGeared}
-        onReGear={handleGearReGear}
-        onCancel={handleGearCancel}
-      />
-    )
-  }
-
   return (
-    <div className="composer">
-      <PromptTextarea value={prompt} onChange={setPrompt} />
-      <ConfigsRow
-        model={model}
-        onModelChange={setModel}
-        breadth={breadth}
-        onBreadthChange={setBreadth}
-        format={format}
-        onFormatChange={setFormat}
-        skill={skill}
-        onSkillChange={setSkill}
-      />
-      <ActionsRow
-        promptEmpty={prompt.length === 0}
-        disableGear={sending || gearing}
-        disableSend={sending || conversationId === null}
-        onGear={handleGear}
-        onSend={() => void handleSend(prompt)}
-        onCommit={handleCommit}
-        onPush={handlePush}
-      />
-      <TelemetryStrip costPreview={null} />
-    </div>
+    <>
+      {gearState ? (
+        <GearReviewPane
+          key={gearState.gearedPrompt}
+          original={gearState.originalPrompt}
+          geared={gearState.gearedPrompt}
+          critiqueFlags={gearState.critiqueFlags}
+          costPreview={gearState.costPreview}
+          onSendOriginal={handleGearSendOriginal}
+          onSendGeared={handleGearSendGeared}
+          onReGear={handleGearReGear}
+          onCancel={handleGearCancel}
+        />
+      ) : (
+        <div className="composer">
+          <PromptTextarea value={prompt} onChange={setPrompt} />
+          <ConfigsRow
+            model={model}
+            onModelChange={setModel}
+            breadth={breadth}
+            onBreadthChange={setBreadth}
+            format={format}
+            onFormatChange={setFormat}
+            skill={skill}
+            onSkillChange={setSkill}
+          />
+          <ActionsRow
+            promptEmpty={prompt.length === 0}
+            disableGear={sending || gearing}
+            disableSend={sending || conversationId === null}
+            onGear={handleGear}
+            onSend={() => void handleSend(prompt)}
+            onCommit={handleCommit}
+            onPush={handlePush}
+          />
+          <TelemetryStrip costPreview={null} />
+        </div>
+      )}
+      <AuthMissingModal open={authMissingOpen} onDismiss={() => setAuthMissingOpen(false)} />
+    </>
   )
 }

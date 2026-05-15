@@ -67,3 +67,25 @@
   color: var(--tl-text-muted);
 }
 .toast__dismiss:hover { color: var(--tl-text-base); }
+
+.auth-missing-modal {
+  width: min(560px, 92vw);
+}
+.auth-missing-modal p { margin: 0.25rem 0; line-height: 1.5; }
+.auth-missing-modal code {
+  background: var(--tl-bg-mute);
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+.auth-missing-modal__pre {
+  background: var(--tl-bg-mute);
+  padding: 0.6rem 0.8rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  overflow-x: auto;
+}
+.auth-missing-modal__hint {
+  color: var(--tl-text-muted);
+  font-size: 0.85rem;
+}
