@@ -717,3 +717,33 @@ B) Plaintext in the existing `api_key_ref` column of the SQLite DB. Simple, no n
 
 **Discovered:** Phase 8A scope conversation + implementation.
 
+
+## ADR-042 (2026-05-15) — Phase 8B release strategy: unpacked-only for v1.0; SVG icon source with manual .ico conversion; DB backup-on-migration; crash reporter as copy-to-clipboard
+
+**Context:** Phase 8B is the release-prep phase. ADR-002 says Windows-first; everything Windows-specific here. The user's stated workflow constraint: "I want to test changes as fast as I write them" — fast iteration is the priority over distribution polish. Phase 8B's `build:unpack` flow + GitHub Releases zip is the v1.0 distribution path; NSIS/signing/auto-update defer to v1.1+.
+
+**Decisions:**
+
+1. **Unpacked-only for v1.0 (`build:unpack`).** electron-builder's `--dir` target produces `dist/win-unpacked/TokenLess.exe` as a runnable folder. No NSIS installer wrap. The user (sole user for now) creates a desktop shortcut to the exe; rebuilds with `npm run build:unpack` for new stable. Distribution to others = `git push v1.0.0` → Actions zips the folder → Release asset. Trade-off vs. installer: SmartScreen warning on first launch for unsigned exe; user clicks through. No silent updates; rebuilding is manual.
+
+2. **SVG icon source committed; .ico generated locally + gitignored.** `resources/icon.svg` is the source of truth. The .ico is a build artifact (multi-size: 16/32/48/64/128/256) that the user generates once per machine using RealFaviconGenerator / ImageMagick / png2ico (documented in `resources/icon-design.md`). Why not commit the .ico: couples the repo to one generation tool's output. Why not a postinstall script: cross-platform SVG→ICO without external deps is awkward; revisit in v1.1+ if multiple developers join.
+
+3. **DB backup-on-migration: last 5 kept, pruned by mtime DESC.** Before any pending migrations apply, copy the DB to `userData/backups/tokenless-pre-v{from}-to-v{to}-{timestamp}.db`. Rationale: schema migrations are the most likely class of data-loss-causing bug; a backup lets the user recover by `mv` if a migration produces bad state. 5 backups balances "enough to recover from a recent regression" against "disk space." The runner accepts opts as optional so test paths (in-memory DB, no backup dir) work unchanged.
+
+4. **Privacy notice as a one-time modal before Onboarding.** Persisted via `settings.privacy.acknowledged='1'`. Content (paraphrased): "Prompts go to Anthropic when you click Gear/Send. API keys stored locally (ADR-034). Logs stay local. No telemetry." Single "I understand" button. Why before Onboarding: API key entry is in Onboarding; the user should know where that key will live before pasting it. The E2E opt-out (`TOKENLESS_SKIP_ONBOARDING=1`) also pre-seeds privacy.acknowledged=1 since the modal would otherwise block test fixtures the same way the wizard did.
+
+5. **About dialog reads `__APP_VERSION__` baked at build time via Vite define.** `electron.vite.config.ts` imports package.json + injects `__APP_VERSION__` as a `define` in all three subbuilds (main, preload, renderer). The preload's `version` field on the api object reads it. Bumping package.json's version → next build picks it up automatically. Removes the previously-hardcoded `'0.0.1'` from preload that would have shipped to v1.0 incorrectly.
+
+6. **Crash reporter as copy-to-clipboard, no telemetry server.** Main process catches `uncaughtException` + `unhandledRejection` via `CrashHandler.installUncaughtHandlers()` (replaces the older `installUncaughtHandlers` in observability/, which is now deleted). After logging fatal, the handler broadcasts `crash:show` to all renderer windows. Renderer's existing `AppErrorBoundary` ALSO surfaces the same modal for React render errors (no IPC roundtrip — the boundary fetches the full report via `crash:get-report` to include the last 100 log records + system info). The modal exposes Copy report (`JSON.stringify(report)` → clipboard), Restart (relaunch the app), and Continue (only for renderer errors; main crashes can't be safely continued). No third-party crash-telemetry service: privacy-friendly, also avoids cost.
+
+7. **GitHub Actions release workflow gates on full CI before building.** Tag-triggered (`v*`). Runs typecheck → unit tests → rebuild:electron → build → e2e → build:unpack → zip → Release upload. If any gate fails, no zip is uploaded — a broken tag can't produce a Release. Uses `softprops/action-gh-release@v2` for the upload; `generate_release_notes: true` auto-builds notes from commit messages since the previous tag.
+
+**Trade-offs:**
+- Unpacked-only means no auto-update. Users (including future-you) check the Releases page manually. Acceptable for v1; auto-update needs signing + installer in any case.
+- SmartScreen warning on first launch of the unsigned exe. Users click "More info → Run anyway" once per machine. Documented in README.
+- DB backup writes a full copy each time. For a 100KB DB that's negligible; for a multi-GB DB it'd be a concern — not relevant in v1.
+- Crash reporter's clipboard-only flow means crash reports never reach a developer dashboard. The user has to manually share if they want help. Acceptable for v1's single-user audience.
+- The Vite `define` substitution happens at BUILD time. `npm run dev` also substitutes (it runs Vite). If package.json's version changes during a dev session, the renderer won't pick it up until the next dev-server restart.
+
+**Discovered:** Phase 8B scope conversation + implementation.
+
