@@ -132,7 +132,7 @@ export function AppShell(): JSX.Element {
     return () => unsubCrashed()
   }, [pushToast])
 
-  const { conversations } = useConversations(activeProjectId)
+  const { conversations, branch: branchConversation } = useConversations(activeProjectId)
   const [activeConversationId, setActiveConversationId] = useState<number | null>(null)
 
   // Reset active conversation when project changes.
@@ -240,6 +240,53 @@ export function AppShell(): JSX.Element {
       conversationId: created.data.conversation.id,
       sessionId: started.data.sessionId,
       pid: started.data.pid
+    })
+  }
+
+  const handleBranchConversation = async (): Promise<void> => {
+    if (activeConversationId === null || activeProjectId === null || activeAccountId === null) {
+      rendererLogger.warn('ui', 'branch-blocked', 'Branch clicked but no active conversation/project/account', {
+        activeConversationId, activeProjectId, activeAccountId
+      })
+      return
+    }
+    const activeProject = projects.find((p) => p.id === activeProjectId)
+    if (!activeProject) return
+
+    const branched = await branchConversation(activeConversationId)
+    if (!branched) {
+      rendererLogger.warn('ui', 'branch-failed', 'conversations.branch returned null', {
+        parentConversationId: activeConversationId
+      })
+      pushToast({
+        message: 'Could not branch — the conversation has no turns yet.',
+        severity: 'warn'
+      })
+      return
+    }
+
+    const started = await window.tokenless.cc.start({
+      conversationId: branched.id,
+      cwd: activeProject.rootPath,
+      cols: 100,
+      rows: 30,
+      accountId: activeAccountId
+    })
+    if (!started.ok) {
+      rendererLogger.error('ui', 'branch-cc-start-failed', started.error.message, {
+        conversationId: branched.id,
+        code: started.error.code,
+        logId: started.error.logId
+      })
+      if (started.error.code === 'CLAUDE_NOT_FOUND') {
+        setClaudeNotFoundOpen(true)
+      }
+      return
+    }
+    setActiveConversationId(branched.id)
+    rendererLogger.info('ui', 'branch-created', 'Conversation branched', {
+      parentConversationId: activeConversationId,
+      newConversationId: branched.id
     })
   }
 
@@ -368,7 +415,7 @@ export function AppShell(): JSX.Element {
         {showEmptyState ? (
           <EmptyProjectsState onCreate={handleOpenCreateProject} />
         ) : (
-          <MainPane conversationId={activeConversationId} accountId={activeAccountId} accountLabel={accounts.find((a) => a.id === activeAccountId)?.label ?? null} />
+          <MainPane conversationId={activeConversationId} accountId={activeAccountId} accountLabel={accounts.find((a) => a.id === activeAccountId)?.label ?? null} onBranch={() => void handleBranchConversation()} />
         )}
       </div>
       <CreateProjectModal
