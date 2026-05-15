@@ -34,6 +34,7 @@ import { scanSkillsRoots } from '@main/skills/scanner'
 import { resolveSkillsRoots } from '@main/skills/roots'
 import { SkillsWatcher } from '@main/skills/watcher'
 import { SkillsHandler } from './skills-handler'
+import { TemplatesHandler } from './templates-handler'
 import { TurnsHandler } from './turns-handler'
 import { TelemetrySummaryHandler } from './telemetry-summary-handler'
 import { pricingFor } from '@main/api/pricing'
@@ -50,6 +51,7 @@ export interface IpcRegistration {
   settingsHandler: SettingsHandler
   pathsHandler: PathsHandler
   skillsHandler: SkillsHandler
+  templatesHandler: TemplatesHandler
   turnsHandler: TurnsHandler
   telemetrySummaryHandler: TelemetrySummaryHandler
   skillsWatcher: SkillsWatcher
@@ -156,6 +158,9 @@ export function registerIpcHandlers(
   const turnsHandler = new TurnsHandler(db, logger, broadcast)
   turnsHandler.install(ipcMain)
 
+  const templatesHandler = new TemplatesHandler(db, logger, broadcast)
+  templatesHandler.install(ipcMain)
+
   const telemetrySummaryHandler = new TelemetrySummaryHandler(
     db, logger,
     (model) => pricingFor(model) ?? null,
@@ -236,6 +241,7 @@ export function registerIpcHandlers(
     settingsHandler,
     pathsHandler,
     turnsHandler,
+    templatesHandler,
     telemetrySummaryHandler,
     skillsHandler,
     skillsWatcher,
@@ -252,6 +258,7 @@ export function registerIpcHandlers(
       settingsHandler.uninstall(ipcMain)
       pathsHandler.uninstall(ipcMain)
       turnsHandler.uninstall(ipcMain)
+      templatesHandler.uninstall(ipcMain)
       telemetrySummaryHandler.uninstall(ipcMain)
       void skillsWatcher.stop().then(() => {
         logger.info('skill', 'skills-watcher-stopped', 'Skills filesystem watcher stopped')
