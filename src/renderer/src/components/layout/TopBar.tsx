@@ -3,6 +3,7 @@ import type { Project } from '@shared/types/projects'
 import { AccountSwitcher } from './AccountSwitcher'
 import { ProjectSwitcher } from './ProjectSwitcher'
 import { SettingsButton } from './SettingsButton'
+import { TelemetryPill } from './TelemetryPill'
 
 interface TopBarProps {
   projects: readonly Project[]
@@ -39,6 +40,7 @@ export function TopBar({
       <nav className="top-bar__nav">
         <ProjectSwitcher projects={projects} activeProjectId={activeProjectId} onSelect={onSelectProject} onCreate={onCreateProject} onEdit={onEditProject} />
         <AccountSwitcher accounts={accounts} activeAccountId={activeAccountId} onSelect={onSelectAccount} onCreate={onCreateAccount} onEdit={onEditAccount} />
+        <TelemetryPill />
         <SettingsButton onClick={onOpenSettings} />
       </nav>
     </header>
