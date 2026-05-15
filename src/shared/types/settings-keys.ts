@@ -7,3 +7,5 @@ export const SETTING_GEARING_DEFAULT_FORMAT = 'gearing.defaultFormat'
 export const SETTING_GEARING_SEND_CONFIRM = 'gearing.sendConfirm'
 
 export const SETTING_ONBOARDING_COMPLETE = 'onboarding.complete'
+
+export const SETTING_PRIVACY_ACKNOWLEDGED = 'privacy.acknowledged'

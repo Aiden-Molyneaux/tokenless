@@ -7,7 +7,8 @@ import { OnboardingWizard } from './views/onboarding/OnboardingWizard'
 import { rendererLogger } from './observability/logger-bridge'
 import { ToastProvider } from './hooks/use-toast'
 import { readSetting, writeSetting } from './hooks/use-settings'
-import { SETTING_ONBOARDING_COMPLETE } from '@shared/types/settings-keys'
+import { SETTING_ONBOARDING_COMPLETE, SETTING_PRIVACY_ACKNOWLEDGED } from '@shared/types/settings-keys'
+import { PrivacyNoticeModal } from './components/notifications/PrivacyNoticeModal'
 
 const LS_KEY = 'tokenless.devMode'
 
@@ -32,6 +33,8 @@ function AppContent(): JSX.Element {
   const [view, setView] = useState<'shell' | 'settings'>('shell')
   // null = not yet read from DB; false = onboarding not done; true = done
   const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null)
+  // null = loading; false = not yet acknowledged; true = acknowledged
+  const [privacyOk, setPrivacyOk] = useState<boolean | null>(null)
 
   useEffect(() => {
     rendererLogger.info('ui', 'mount', 'App mounted', { devMode })
@@ -40,8 +43,12 @@ function AppContent(): JSX.Element {
   }, [])
 
   useEffect(() => {
-    void readSetting(SETTING_ONBOARDING_COMPLETE).then((v) => {
-      setOnboardingDone(v === '1')
+    void Promise.all([
+      readSetting(SETTING_ONBOARDING_COMPLETE),
+      readSetting(SETTING_PRIVACY_ACKNOWLEDGED)
+    ]).then(([onboarding, privacy]) => {
+      setOnboardingDone(onboarding === '1')
+      setPrivacyOk(privacy === '1')
     })
   }, [])
 
@@ -66,8 +73,16 @@ function AppContent(): JSX.Element {
     setView('shell') // wizard only shows when view === 'shell'
   }
 
-  // Show wizard overlay when the setting is explicitly false (not null = loading) and we're on the shell.
-  const showOnboarding = onboardingDone === false && view === 'shell'
+  const handlePrivacyAck = (): void => {
+    void writeSetting(SETTING_PRIVACY_ACKNOWLEDGED, '1').then(() => {
+      setPrivacyOk(true)
+    })
+  }
+
+  // Privacy gate: show when explicitly false (not null = loading).
+  const showPrivacy = privacyOk === false
+  // Show wizard overlay only after privacy is acknowledged, when onboarding is not done, and on the shell.
+  const showOnboarding = privacyOk === true && onboardingDone === false && view === 'shell'
 
   return (
     <>
@@ -83,6 +98,7 @@ function AppContent(): JSX.Element {
         {devMode ? 'Hide Dev Mode' : 'Show Dev Mode'}
       </button>
       {devMode && <DevModePanel />}
+      <PrivacyNoticeModal open={showPrivacy} onAcknowledge={handlePrivacyAck} />
       {showOnboarding && (
         <OnboardingWizard onClose={() => setOnboardingDone(true)} />
       )}
