@@ -607,3 +607,28 @@ B) Plaintext in the existing `api_key_ref` column of the SQLite DB. Simple, no n
 
 **Discovered:** Phase 7B implementation; the gap was identified during Phase 6D telemetry-summary scope planning (turns table was being written too sparsely to support cost-over-time queries).
 
+
+## ADR-038 (2026-05-15) — Telemetry summary: aggregate cost + net-savings derived in main process, fed from TurnsDao; period boundaries align to local-time day/week/month starts
+
+**Context:** Phase 6D adds a per-user summary view of "what gearing has cost vs. saved." Phase 7B made the underlying `turns` table fully populated (user + assistant + token columns + `model_used`), so the aggregation is straightforward.
+
+**Decisions:**
+
+1. **Computation happens in main, not renderer.** The renderer asks for `TelemetrySummary` via `telemetry:get-summary` IPC; main runs the SQL (TurnsDao.getTokenSummary) + cost math (computeTelemetrySummary) + returns the finished object. Keeps the renderer free of pricing tables / cost math (which is duplicated in `useLiveCostEstimate` today — Phase 8 polish will consolidate).
+
+2. **Period boundary = local time.** "Today" starts at midnight in the user's local timezone, "Week" at Monday 00:00 local, "Month" at the 1st 00:00 local. We don't try to sync across machines or accept a timezone parameter for v1. The renderer computes the boundary epoch-ms via `Date` and passes it as `sinceMs` to the IPC.
+
+3. **Net savings can be negative.** If the user gears very short prompts, the haiku investment exceeds the savings. The UI surfaces this as "Cost $X" with red color (vs. "Saved $X" green). Rationale: hiding the negative case would be dishonest and prevent the user from learning that gearing isn't always worth it on tiny prompts.
+
+4. **Haiku rows excluded from per-model breakdown.** The haiku model serves the gearing engine; its token usage is summed separately as `haikuCostDollars` (the "investment"). Per-model breakdowns show only models that actually answered user prompts (Sonnet, Opus, etc.).
+
+5. **Refresh on `turns:changed`.** The renderer subscribes to the same broadcast that turn-feedback uses. A feedback click triggers a (cheap) refetch — acceptable for v1; Phase 8 can split the broadcast into `turns:created` vs `turns:feedback-changed` if measured to matter.
+
+**Trade-offs:**
+- Periods reset on calendar boundaries, not rolling windows. A user opening the app on Monday morning may see "$0 this week" briefly, even if they had savings on Sunday. Acceptable — calendar periods are what users intuitively expect.
+- The savings calc uses the user-turn's `model_used` to price the original/geared diff. If the user changes model between gearing and sending, the savings number reflects the model at SEND time, not at GEAR time. Acceptable — they ARE sending to that model.
+- `byModel` keys are the internal model keys (`'sonnet'`, `'opus'`), not the displayName. UI shows the raw key for v1; Phase 8 can join to PRICING.displayName.
+- The Pill is hidden when there's NO usage data (haikuMetaTokens === 0 AND responseOutputTokens === 0). Prevents a useless "Saved $0.00" pill from cluttering the TopBar before the user has done anything.
+
+**Discovered:** Phase 6D implementation; the gap was identified during Phase 6C scope planning and explicitly blocked on Phase 7B turn capture (so the math has data to operate on).
+
