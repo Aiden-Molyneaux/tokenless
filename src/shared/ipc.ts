@@ -203,6 +203,25 @@ export {
   type TurnsFeedbackSummaryResult
 } from './ipc/turns'
 
+export {
+  IPC_TEMPLATES_LIST,
+  IPC_TEMPLATES_CREATE,
+  IPC_TEMPLATES_UPDATE,
+  IPC_TEMPLATES_DELETE,
+  IPC_TEMPLATES_CHANGED,
+  type TemplatesListResult,
+  type TemplatesListResponse,
+  type TemplatesCreateRequest,
+  type TemplatesCreateResponse,
+  type TemplatesCreateResult,
+  type TemplatesUpdateRequest,
+  type TemplatesUpdateResponse,
+  type TemplatesUpdateResult,
+  type TemplatesDeleteRequest,
+  type TemplatesDeleteResponse,
+  type TemplatesDeleteResult
+} from './ipc/templates'
+
 export type IpcChannelName =
   | typeof IPC_LOG_FROM_RENDERER
   | typeof IPC_LOG_TO_RENDERER
@@ -247,6 +266,11 @@ export type IpcChannelName =
   | 'skills:toggle-hidden'
   | 'skills:rescan'
   | 'skills:changed'
+  | 'templates:list'
+  | 'templates:create'
+  | 'templates:update'
+  | 'templates:delete'
+  | 'templates:changed'
   | 'turns:list-by-conversation'
   | 'turns:update-feedback'
   | 'turns:feedback-summary'
