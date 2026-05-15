@@ -1,6 +1,8 @@
 import type { LogRecord } from '@shared/observability'
 import type {
   TelemetryTick,
+  TelemetryGetSummaryRequest,
+  TelemetryGetSummaryResult,
   GearingGearRequest,
   GearingGearResult,
   ApiRetryAttemptPayload,
@@ -123,6 +125,7 @@ export interface TokenlessApi {
   }
   readonly telemetry: {
     onTick(fn: (tick: TelemetryTick) => void): () => void
+    getSummary(req: TelemetryGetSummaryRequest): Promise<TelemetryGetSummaryResult>
   }
   readonly gearing: {
     gear(req: GearingGearRequest): Promise<GearingGearResult>

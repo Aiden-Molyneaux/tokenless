@@ -30,7 +30,10 @@ import {
   IPC_CC_CRASHED,
   IPC_CC_HUNG,
   IPC_TELEMETRY_TICK,
+  IPC_TELEMETRY_GET_SUMMARY,
   type TelemetryTick,
+  type TelemetryGetSummaryRequest,
+  type TelemetryGetSummaryResult,
   type LogFromRendererPayload,
   type LogGetRecentRequest,
   type LogGetRecentResponse,
@@ -278,6 +281,9 @@ const api = {
       const listener = (_e: unknown, payload: { tick: TelemetryTick }): void => fn(payload.tick)
       ipcRenderer.on(IPC_TELEMETRY_TICK, listener as never)
       return () => ipcRenderer.removeListener(IPC_TELEMETRY_TICK, listener as never)
+    },
+    getSummary(req: TelemetryGetSummaryRequest): Promise<TelemetryGetSummaryResult> {
+      return ipcRenderer.invoke(IPC_TELEMETRY_GET_SUMMARY, req) as Promise<TelemetryGetSummaryResult>
     }
   },
   gearing: {
