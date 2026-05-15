@@ -42,10 +42,8 @@ export function Composer({ conversationId }: ComposerProps): JSX.Element {
   const { push: pushToast } = useToast()
 
   const runGear = async (originalPrompt: string): Promise<void> => {
-    if (conversationId === null) {
-      rendererLogger.warn('ui', 'gear-no-conversation', 'Gear clicked with no active conversation')
-      return
-    }
+    // Gearing doesn't require an active conversation — it's a pure Anthropic
+    // API call. conversationId is passed as a tracing tag (null when absent).
     setGearing(true)
     try {
       const result = await window.tokenless.gearing.gear({

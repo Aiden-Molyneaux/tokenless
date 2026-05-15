@@ -8,6 +8,43 @@ test.beforeAll(async () => {
     args: [resolve('out/main/index.js')],
     env: { ...process.env, NODE_ENV: 'test' }
   })
+
+  // Wait for the renderer process to finish loading — this guarantees the main
+  // process completed app.whenReady() and registerIpcHandlers() ran, so the
+  // 'gearing:gear' handler exists before we override it below.
+  const win = await app.firstWindow()
+  await win.waitForLoadState('domcontentloaded')
+
+  // Phase 5A: Gear button now fires a real gearing:gear IPC call. Without an
+  // ANTHROPIC_API_KEY in the E2E env it would fail with API_AUTH_FAILED — toast
+  // appears, gearState stays null, GearReviewPane never renders. Stub the
+  // handler in the main process so renderer-side tests don't depend on real API.
+  await app.evaluate(({ ipcMain }) => {
+    ipcMain.removeHandler('gearing:gear')
+    ipcMain.handle('gearing:gear', async (_e, req: { originalPrompt: string }) => ({
+      ok: true,
+      data: {
+        result: {
+          originalPrompt: req.originalPrompt,
+          gearedPrompt: `Geared: ${req.originalPrompt}`,
+          critiqueFlags: [{ severity: 'info', message: 'Composer E2E stub' }],
+          tokenBreakdown: {
+            haikuInputTokens: 50,
+            haikuOutputTokens: 30,
+            gearedInputEstimate: 10,
+            originalInputEstimate: 40
+          },
+          costPreview: {
+            expectedDollars: 0.0042,
+            expectedInputTokens: 10,
+            expectedOutputTokens: 800,
+            modelLabel: 'Opus 4.7',
+            haikuMetaDollars: 0.0002
+          }
+        }
+      }
+    }))
+  })
 })
 
 test.afterAll(async () => {
