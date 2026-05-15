@@ -40,3 +40,8 @@ export interface UpdateConversationInput {
   readonly ccSessionId?: string | null
   readonly summary?: string | null
 }
+
+export interface BranchConversationInput {
+  readonly parentConversationId: number
+  readonly branchedAtTurnId: number
+}
