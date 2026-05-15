@@ -335,3 +335,33 @@ Hard to trigger manually. The retry path is unit-tested. When/if rate-limit hits
 Hard to trigger manually (Haiku usually obeys). The parser handles this via Zod. If it does occur:
 - Toast: "Couldn't parse the gearing response. Send the original prompt."
 - Dev Mode: code `GEAR_PARSE_FAILED`.
+
+## Phase 5B — Summary refresh + polish
+
+### S-5B.1 Auth modal (replaces toast)
+1. Launch with no `ANTHROPIC_API_KEY` set (or with an invalid key).
+2. Create project + new conversation, type a prompt, click Gear.
+3. **Expect:** Modal "Anthropic API key required" appears with PowerShell instructions. NOT a toast.
+
+### S-5B.2 Send original auto-suggest
+1. Trigger any non-auth gearing failure (easiest: temporarily set `ANTHROPIC_API_KEY=invalid_after_validation` so the call fails post-auth somehow — or simulate via 5xx by network manipulation).
+2. **Expect:** Toast appears with a "Send original" button. Clicking it sends the original prompt to claude (verify in Dev Mode `send-success` entry, prompt clears).
+
+### S-5B.3 Live cost estimate
+1. With a project + conversation active, type into the composer.
+2. **Expect:** Within ~500ms of typing pause, the TelemetryStrip shows the current model + estimated $ + token counts. Updates as you change the model selection or breadth.
+3. Clear the prompt.
+4. **Expect:** Strip returns to idle hint.
+
+### S-5B.4 Summary refresh after assistant turn
+1. Launch with real Claude Code installed + `ANTHROPIC_API_KEY` set.
+2. Start a conversation, send a prompt, wait for claude's response to complete (prompt-ready event fires).
+3. **Expect:** Within ~1s, Dev Mode shows `summary-refresh-ok` log entry with a summary length. DB inspection: `conversations.summary` column for this conversation has a populated string; `summary_updated_at` is recent.
+
+### S-5B.5 Retry attempts visible in Dev Mode
+1. Hard to reliably trigger — only fires on 429/5xx.
+2. **Expect when it happens:** Dev Mode shows multiple `api-retry-attempt` warn entries with attempt counters, then either a success log OR `api-retry-exhausted` error.
+
+### S-5B.6 Fixture recording
+1. `$env:ANTHROPIC_API_KEY = 'sk-ant-...'; npm run fixtures:record`
+2. **Expect:** Existing fixture files in `test/fixtures/api/` get updated with fresh timestamps + actual API responses. `npm run test:run` still green afterward.
