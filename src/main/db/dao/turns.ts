@@ -146,3 +146,69 @@ export function getFeedbackSummary(db: Database): FeedbackSummary {
     unrated: row?.unrated ?? 0
   }
 }
+
+export interface ModelTokenBreakdown {
+  readonly haikuMetaTokens: number
+  readonly originalInputTokens: number
+  readonly gearedInputTokens: number
+  readonly responseOutputTokens: number
+}
+
+export interface TokenSummary {
+  readonly haikuMetaTokens: number
+  readonly originalInputTokens: number
+  readonly gearedInputTokens: number
+  readonly responseOutputTokens: number
+  readonly byModel: Readonly<Record<string, ModelTokenBreakdown>>
+}
+
+interface AggregateRow {
+  model_used: string | null
+  haiku_total: number | null
+  original_total: number | null
+  geared_total: number | null
+  response_total: number | null
+}
+
+export function getTokenSummary(db: Database, sinceMs?: number): TokenSummary {
+  const where = sinceMs !== undefined ? 'WHERE sent_at >= ?' : ''
+  const params: unknown[] = sinceMs !== undefined ? [sinceMs] : []
+  const rows = db
+    .prepare<unknown[], AggregateRow>(`
+      SELECT
+        model_used,
+        COALESCE(SUM(haiku_meta_tokens), 0) AS haiku_total,
+        COALESCE(SUM(original_tokens), 0) AS original_total,
+        COALESCE(SUM(geared_tokens), 0) AS geared_total,
+        COALESCE(SUM(response_tokens), 0) AS response_total
+      FROM turns
+      ${where}
+      GROUP BY model_used
+    `)
+    .all(...params)
+
+  const byModel: Record<string, ModelTokenBreakdown> = {}
+  let haikuMetaTokens = 0
+  let originalInputTokens = 0
+  let gearedInputTokens = 0
+  let responseOutputTokens = 0
+  for (const r of rows) {
+    const haiku = r.haiku_total ?? 0
+    const original = r.original_total ?? 0
+    const geared = r.geared_total ?? 0
+    const response = r.response_total ?? 0
+    haikuMetaTokens += haiku
+    originalInputTokens += original
+    gearedInputTokens += geared
+    responseOutputTokens += response
+    if (r.model_used !== null) {
+      byModel[r.model_used] = {
+        haikuMetaTokens: haiku,
+        originalInputTokens: original,
+        gearedInputTokens: geared,
+        responseOutputTokens: response
+      }
+    }
+  }
+  return { haikuMetaTokens, originalInputTokens, gearedInputTokens, responseOutputTokens, byModel }
+}

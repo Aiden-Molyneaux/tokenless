@@ -11,7 +11,8 @@ import {
   updateFeedback,
   getLastByConversation,
   listByConversation,
-  getFeedbackSummary
+  getFeedbackSummary,
+  getTokenSummary
 } from '../../db/dao/turns'
 
 describe('db/dao/turns', () => {
@@ -110,5 +111,67 @@ describe('db/dao/turns', () => {
     updateFeedback(db, t3.id, 'down')
     const s = getFeedbackSummary(db)
     expect(s.up).toBe(2); expect(s.down).toBe(1); expect(s.shrug).toBe(0); expect(s.unrated).toBe(1)
+  })
+
+  it('getTokenSummary aggregates token columns across all rows when since is undefined', () => {
+    createUserTurn(db, {
+      conversationId, originalPrompt: 'q1', modelUsed: 'sonnet',
+      gearMeta: {
+        originalPrompt: 'q1', gearedPrompt: 'g1',
+        originalTokens: 10, gearedTokens: 30, haikuMetaTokens: 200,
+        critiqueFlags: []
+      }
+    })
+    createAssistantTurn(db, { conversationId, responseText: 'r1', responseTokens: 50, modelUsed: 'sonnet' })
+    createUserTurn(db, {
+      conversationId, originalPrompt: 'q2', modelUsed: 'opus',
+      gearMeta: {
+        originalPrompt: 'q2', gearedPrompt: 'g2',
+        originalTokens: 5, gearedTokens: 20, haikuMetaTokens: 180,
+        critiqueFlags: []
+      }
+    })
+    createAssistantTurn(db, { conversationId, responseText: 'r2', responseTokens: 80, modelUsed: 'opus' })
+
+    const s = getTokenSummary(db)
+    expect(s.haikuMetaTokens).toBe(380)
+    expect(s.originalInputTokens).toBe(15)
+    expect(s.gearedInputTokens).toBe(50)
+    expect(s.responseOutputTokens).toBe(130)
+    expect(s.byModel.sonnet.gearedInputTokens).toBe(30)
+    expect(s.byModel.sonnet.responseOutputTokens).toBe(50)
+    expect(s.byModel.opus.gearedInputTokens).toBe(20)
+    expect(s.byModel.opus.responseOutputTokens).toBe(80)
+  })
+
+  it('getTokenSummary respects the sinceMs filter (sent_at >= since)', () => {
+    const old = createUserTurn(db, {
+      conversationId, originalPrompt: 'old', modelUsed: 'sonnet',
+      gearMeta: { originalPrompt: 'o', gearedPrompt: 'g',
+        originalTokens: 100, gearedTokens: 80, haikuMetaTokens: 500, critiqueFlags: [] }
+    })
+    db.prepare('UPDATE turns SET sent_at = ? WHERE id = ?').run(Date.now() - 3600_000, old.id)
+    createUserTurn(db, {
+      conversationId, originalPrompt: 'fresh', modelUsed: 'sonnet',
+      gearMeta: { originalPrompt: 'o', gearedPrompt: 'g',
+        originalTokens: 10, gearedTokens: 5, haikuMetaTokens: 100, critiqueFlags: [] }
+    })
+
+    const sinceTenMinutesAgo = Date.now() - 600_000
+    const s = getTokenSummary(db, sinceTenMinutesAgo)
+    expect(s.haikuMetaTokens).toBe(100)
+    expect(s.originalInputTokens).toBe(10)
+    expect(s.gearedInputTokens).toBe(5)
+  })
+
+  it('getTokenSummary returns zeros for an empty table', () => {
+    const fresh = createTestDb()
+    const acc = createAccount(fresh, { label: 'X', configDir: '/x' })
+    const pr = createProject(fresh, { name: 'X', rootPath: '/x', defaultAccountId: acc.id })
+    createConversation(fresh, { projectId: pr.id, accountId: acc.id })
+    const s = getTokenSummary(fresh)
+    expect(s.haikuMetaTokens).toBe(0)
+    expect(s.responseOutputTokens).toBe(0)
+    expect(Object.keys(s.byModel)).toEqual([])
   })
 })
