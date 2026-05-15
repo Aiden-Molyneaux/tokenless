@@ -399,3 +399,60 @@
   color: var(--tl-text-base);
 }
 .project-switcher__edit:hover { background: var(--tl-bg-mute); }
+
+/* ===== TelemetryPill ===== */
+
+.telemetry-pill-host { position: relative; display: inline-flex; }
+.telemetry-pill {
+  background: transparent;
+  border: 1px solid var(--tl-rule);
+  border-radius: var(--tl-radius-sm);
+  padding: 2px 10px;
+  font-size: var(--tl-text-sm);
+  font-family: var(--tl-font-sans);
+  cursor: pointer;
+  color: var(--tl-fg);
+}
+.telemetry-pill:hover { background: var(--tl-hover); }
+.telemetry-pill.is-savings { color: var(--tl-success); border-color: var(--tl-success); }
+.telemetry-pill.is-cost { color: var(--tl-error); border-color: var(--tl-error); }
+.telemetry-pill__suffix { color: var(--tl-mute); font-weight: var(--tl-weight-regular); }
+
+.telemetry-summary-popover {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 320px;
+  max-width: 440px;
+  background: var(--tl-bg);
+  border: 1px solid var(--tl-rule);
+  border-radius: var(--tl-radius-md);
+  box-shadow: var(--tl-shadow-md);
+  z-index: var(--tl-z-dropdown);
+  padding: var(--tl-space-2);
+}
+.telemetry-summary-popover__tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--tl-rule);
+  padding-bottom: var(--tl-space-2);
+  align-items: center;
+}
+.telemetry-summary-popover__tab {
+  background: transparent; border: none; padding: 4px 8px;
+  font-size: var(--tl-text-xs); cursor: pointer; color: var(--tl-mute);
+  border-radius: var(--tl-radius-sm);
+}
+.telemetry-summary-popover__tab.is-active { background: var(--tl-active); color: var(--tl-fg); }
+.telemetry-summary-popover__close { margin-left: auto; background: transparent; border: none; cursor: pointer; color: var(--tl-mute); font-size: 16px; }
+.telemetry-summary-popover__body { padding-top: var(--tl-space-2); }
+.telemetry-summary-popover__totals { display: grid; grid-template-columns: 1fr 1fr; gap: var(--tl-space-2); margin: 0; }
+.telemetry-summary-popover__totals div { display: flex; flex-direction: column; gap: 2px; }
+.telemetry-summary-popover__totals dt { font-size: var(--tl-text-xs); color: var(--tl-mute); }
+.telemetry-summary-popover__totals dd { margin: 0; font-family: var(--tl-font-mono); font-size: var(--tl-text-sm); }
+.telemetry-summary-popover__models { width: 100%; margin-top: var(--tl-space-3); border-collapse: collapse; font-size: var(--tl-text-xs); }
+.telemetry-summary-popover__models th, .telemetry-summary-popover__models td {
+  padding: 4px 8px; text-align: left; border-top: 1px solid var(--tl-rule-subtle);
+}
+.telemetry-summary-popover__models th { color: var(--tl-mute); font-weight: var(--tl-weight-medium); }
+.telemetry-summary-popover__empty { margin: 0; color: var(--tl-mute); font-size: var(--tl-text-sm); }
