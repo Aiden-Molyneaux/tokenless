@@ -10,6 +10,7 @@ import * as pty from 'node-pty'
 
 import { IPC_CC_EVENT, IPC_CC_CRASHED, IPC_CC_HUNG } from '@shared/ipc/cc'
 import { IPC_TELEMETRY_TICK } from '@shared/ipc/telemetry'
+import { IPC_API_RETRY_ATTEMPT, type ApiRetryAttemptPayload } from '@shared/ipc/api-events'
 import { TelemetryEmitter } from '@main/cc/telemetry-emitter'
 import { LogBridge, type Broadcast } from './log-bridge'
 import { AccountsHandler } from './accounts-handler'
@@ -99,6 +100,29 @@ export function registerIpcHandlers(
   const gearingHandler = new GearingHandler(gearingEngine, logger)
   gearingHandler.install(ipcMain)
 
+  // Subscribe to the Logger ring and re-broadcast api-retry-attempt records on
+  // the dedicated IPC channel. This is ORTHOGONAL to LogBridge — same Logger,
+  // different filter, different destination (Phase 5C's retry banner consumes it).
+  const unsubscribeRetryBroadcast = logger.subscribe((record) => {
+    if (record.category === 'api' && record.event === 'api-retry-attempt') {
+      const ctx = record.context as {
+        attempt: number
+        maxRetries: number
+        code: string
+        backoffMs: number
+        model: string
+      }
+      const payload: ApiRetryAttemptPayload = {
+        attempt: ctx.attempt,
+        maxRetries: ctx.maxRetries,
+        code: ctx.code as 'API_RATE_LIMITED' | 'API_SERVER_ERROR',
+        backoffMs: ctx.backoffMs,
+        model: ctx.model
+      }
+      broadcast(IPC_API_RETRY_ATTEMPT, payload)
+    }
+  })
+
   return {
     logBridge,
     accountsHandler,
@@ -116,6 +140,7 @@ export function registerIpcHandlers(
       ccLifecycle.closeAll()
       telemetryEmitter.stop()
       gearingHandler.uninstall(ipcMain)
+      unsubscribeRetryBroadcast()
     }
   }
 }

@@ -117,6 +117,11 @@ export {
   type GearingGearResult
 } from './ipc/gearing'
 
+export {
+  IPC_API_RETRY_ATTEMPT,
+  type ApiRetryAttemptPayload
+} from './ipc/api-events'
+
 export type IpcChannelName =
   | typeof IPC_LOG_FROM_RENDERER
   | typeof IPC_LOG_TO_RENDERER
@@ -146,3 +151,4 @@ export type IpcChannelName =
   | 'cc:hung'
   | 'telemetry:tick'
   | 'gearing:gear'
+  | 'api:retry-attempt'

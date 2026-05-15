@@ -68,7 +68,9 @@ import {
   type CcHungPayload,
   IPC_GEARING_GEAR,
   type GearingGearRequest,
-  type GearingGearResult
+  type GearingGearResult,
+  IPC_API_RETRY_ATTEMPT,
+  type ApiRetryAttemptPayload
 } from '@shared/ipc'
 
 const api = {
@@ -196,6 +198,13 @@ const api = {
   gearing: {
     gear(req: GearingGearRequest): Promise<GearingGearResult> {
       return ipcRenderer.invoke(IPC_GEARING_GEAR, req) as Promise<GearingGearResult>
+    }
+  },
+  api: {
+    onRetryAttempt(fn: (payload: ApiRetryAttemptPayload) => void): () => void {
+      const listener = (_e: unknown, payload: ApiRetryAttemptPayload): void => fn(payload)
+      ipcRenderer.on(IPC_API_RETRY_ATTEMPT, listener as never)
+      return () => ipcRenderer.removeListener(IPC_API_RETRY_ATTEMPT, listener as never)
     }
   }
 }
