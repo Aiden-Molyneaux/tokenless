@@ -459,3 +459,45 @@ Hard to trigger manually (Haiku usually obeys). The parser handles this via Zod.
 ### S-6B.8 Dropdown menu paints above MainPane
 1. Click the Project: or Account: dropdown trigger.
 2. **Expect:** The expanded list is FULLY VISIBLE — not clipped behind the composer or terminal pane. (Fixed by raising --tl-z-dropdown to 1000.)
+
+## Phase 6C — Skills discovery + ConfirmModal
+
+### S-6C.1 User skill discovered on app boot
+1. Create `~/.claude/skills/test-skill/SKILL.md` with frontmatter `---\nname: test-skill\ndescription: a test\n---`.
+2. Launch the app.
+3. Open the Skill: dropdown in Composer.
+4. **Expect:** "test-skill" appears in the list with description "a test". Dev Mode shows `skills-watcher-started` info log at boot.
+
+### S-6C.2 Skill add/remove reflected without restart
+1. With the app running, add a new `~/.claude/skills/another/SKILL.md`.
+2. **Expect:** within ~1-2s (chokidar debounce), the dropdown updates and includes "another" without restart.
+3. Delete the file. The skill row stays in DB (verify via `select * from skills`) but the watcher's next debounced rescan calls `markStale` on it. Phase 6C MVP keeps showing stale skills in the dropdown — user can manually hide them; Phase 8 may filter.
+
+### S-6C.3 Favorite + hide actions
+1. Open the Skill: dropdown.
+2. Click the ☆ next to "test-skill". The button becomes ★ and the row floats to the top with a ★ prefix in its label.
+3. Click the ✕ next to another skill. The skill disappears from the dropdown. Verify via `select * from skills where hidden = 1` that the row persists with `hidden = 1`.
+4. Clicking ☆ / ✕ must NOT select the row as the active skill.
+
+### S-6C.4 Plugin skills discovered
+1. Create `~/.claude/plugins/my-pack/skills/my-skill/SKILL.md`.
+2. Launch (or trigger a manual rescan via the `skills:rescan` IPC channel).
+3. **Expect:** "my-skill" appears with the source-derived fallback description `plugin skill` when frontmatter has no description.
+
+### S-6C.5 Invalid SKILL.md silently skipped
+1. Create `~/.claude/skills/broken/SKILL.md` with `# heading\nbody` (no frontmatter).
+2. Trigger rescan (toggle a favorite or wait for chokidar).
+3. **Expect:** "broken" does not appear in the dropdown. Other valid skills are unaffected. Logger does NOT emit `error` (silent skip is the scanner contract).
+
+### S-6C.6 Favorited skill preserved across uninstall
+1. Favorite a skill.
+2. Delete the skill's directory.
+3. Wait for chokidar debounce + rescan.
+4. **Expect:** the row stays in DB with `favorited = 1` and a `last_seen_at` lowered below the current scan timestamp.
+5. Re-create the SKILL.md file.
+6. **Expect:** the skill shows up again in the dropdown, still favorited.
+
+### S-6C.7 ConfirmModal replaces window.confirm in delete flows
+1. Click ✎ next to an account, click Delete in the EditAccountModal.
+2. **Expect:** a styled in-app ConfirmModal appears (NOT the OS `window.confirm`). The "Delete" button is red (danger variant) and has focus. Escape closes it. Cancel button works. Clicking Delete actually deletes the account.
+3. Same scenario for EditProjectModal (with the project name in the message).
