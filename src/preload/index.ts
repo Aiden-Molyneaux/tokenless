@@ -135,7 +135,9 @@ import {
   type TurnsListResult,
   type TurnsUpdateFeedbackRequest,
   type TurnsUpdateFeedbackResult,
-  type TurnsFeedbackSummaryResult
+  type TurnsFeedbackSummaryResult,
+  IPC_PRICING_LIST,
+  type PricingListResult
 } from '@shared/ipc'
 
 const api = {
@@ -363,6 +365,11 @@ const api = {
   paths: {
     checkDir(req: PathsCheckDirRequest): Promise<PathsCheckDirResult> {
       return ipcRenderer.invoke(IPC_PATHS_CHECK_DIR, req) as Promise<PathsCheckDirResult>
+    }
+  },
+  pricing: {
+    list(): Promise<PricingListResult> {
+      return ipcRenderer.invoke(IPC_PRICING_LIST) as Promise<PricingListResult>
     }
   }
 }

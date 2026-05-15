@@ -12,24 +12,29 @@ export interface ModelPricing {
   readonly apiModel: string
   // Human-readable label for UI.
   readonly displayName: string
+  // Short UI description shown in model picker dropdowns.
+  readonly description: string
 }
 
 export const PRICING: Record<string, ModelPricing> = {
   haiku: {
     apiModel: 'claude-haiku-4-5-20251001',
     displayName: 'Haiku 4.5',
+    description: 'fastest · cheapest',
     inputPerMillion: 1.00,
     outputPerMillion: 5.00
   },
   sonnet: {
     apiModel: 'claude-sonnet-4-6',
     displayName: 'Sonnet 4.6',
+    description: 'balanced',
     inputPerMillion: 3.00,
     outputPerMillion: 15.00
   },
   opus: {
     apiModel: 'claude-opus-4-7',
     displayName: 'Opus 4.7',
+    description: 'most capable · best for hard tasks',
     inputPerMillion: 15.00,
     outputPerMillion: 75.00
   }

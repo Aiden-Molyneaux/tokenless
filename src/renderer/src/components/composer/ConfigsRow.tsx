@@ -4,13 +4,13 @@ import type { DropdownItem } from '../common/Dropdown'
 import { InfoTooltip } from '../common/InfoTooltip'
 import {
   MOCK_BREADTHS,
-  MOCK_FORMATS,
-  MOCK_MODELS
+  MOCK_FORMATS
 } from '../../mocks/dropdown-options'
 
 interface ConfigsRowProps {
   model: string
   onModelChange: (value: string) => void
+  modelItems: readonly DropdownItem[]
   breadth: string
   onBreadthChange: (value: string) => void
   format: string
@@ -39,7 +39,7 @@ export function ConfigsRow(props: ConfigsRowProps): JSX.Element {
       >
         <Dropdown
           label="Model:"
-          items={MOCK_MODELS}
+          items={props.modelItems}
           activeValue={props.model}
           onSelect={props.onModelChange}
         />

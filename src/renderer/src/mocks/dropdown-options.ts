@@ -1,12 +1,7 @@
 import type { DropdownItem } from '../components/common/Dropdown'
 
-// Mock dropdown options for ConfigsRow (models/breadths/formats only). Phase 6C wires real skill data via useSkills(); see Composer.
-
-export const MOCK_MODELS: readonly DropdownItem[] = [
-  { value: 'haiku', label: 'Haiku 4.5', description: 'fastest · cheapest' },
-  { value: 'sonnet', label: 'Sonnet 4.6', description: 'balanced' },
-  { value: 'opus', label: 'Opus 4.7', description: 'most capable · best for hard tasks' }
-]
+// Mock dropdown options for ConfigsRow (breadths/formats only). Models are
+// now served via the pricing:list IPC channel — see usePricing() hook.
 
 export const MOCK_BREADTHS: readonly DropdownItem[] = [
   { value: 'terse', label: 'Terse', description: '≤200 words' },

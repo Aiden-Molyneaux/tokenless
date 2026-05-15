@@ -5,8 +5,9 @@ import type { GearMeta } from '@shared/types/turns'
 import { rendererLogger } from '../../observability/logger-bridge'
 import { useToast } from '../../hooks/use-toast'
 import { useDraftAutosave } from '../../hooks/use-draft-autosave'
-import { MOCK_BREADTHS, MOCK_FORMATS, MOCK_MODELS } from '../../mocks/dropdown-options'
+import { MOCK_BREADTHS, MOCK_FORMATS } from '../../mocks/dropdown-options'
 import { useSkills } from '../../hooks/use-skills'
+import { usePricing } from '../../hooks/use-pricing'
 import type { DropdownItem } from '../common/Dropdown'
 import { GearReviewPane } from '../gear-review/GearReviewPane'
 import { useLiveCostEstimate } from '../../hooks/use-live-cost-estimate'
@@ -45,8 +46,15 @@ const GEAR_ERROR_MESSAGES: Record<string, string> = {
 // Haiku-driven output via IPC.
 
 export function Composer({ conversationId, accountId, accountLabel, onBranch }: ComposerProps): JSX.Element {
+  const pricing = usePricing()
+  const modelItems = pricing.map((p) => ({
+    value: p.key,
+    label: p.displayName,
+    description: p.description
+  }))
+
   const [prompt, setPrompt] = useState('')
-  const [model, setModel] = useState<string>(MOCK_MODELS[2].value) // opus default
+  const [model, setModel] = useState<string>('opus') // opus default
   const [breadth, setBreadth] = useState<string>(MOCK_BREADTHS[1].value) // normal default
   const [format, setFormat] = useState<string>(MOCK_FORMATS[0].value) // prose default
   const [skill, setSkill] = useState<string>('') // none default (empty string = "None" entry)
@@ -276,6 +284,7 @@ export function Composer({ conversationId, accountId, accountLabel, onBranch }: 
           <ConfigsRow
             model={model}
             onModelChange={setModel}
+            modelItems={modelItems}
             breadth={breadth}
             onBreadthChange={setBreadth}
             format={format}

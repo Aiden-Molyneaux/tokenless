@@ -37,7 +37,9 @@ import { SkillsHandler } from './skills-handler'
 import { TemplatesHandler } from './templates-handler'
 import { TurnsHandler } from './turns-handler'
 import { TelemetrySummaryHandler } from './telemetry-summary-handler'
-import { pricingFor } from '@main/api/pricing'
+import { pricingFor, PRICING } from '@main/api/pricing'
+import { PricingHandler } from './pricing-handler'
+import type { PricingEntry } from '@shared/ipc/pricing'
 
 export interface IpcRegistration {
   logBridge: LogBridge
@@ -54,6 +56,7 @@ export interface IpcRegistration {
   templatesHandler: TemplatesHandler
   turnsHandler: TurnsHandler
   telemetrySummaryHandler: TelemetrySummaryHandler
+  pricingHandler: PricingHandler
   skillsWatcher: SkillsWatcher
   uninstallAll: () => void
 }
@@ -168,6 +171,19 @@ export function registerIpcHandlers(
   )
   telemetrySummaryHandler.install(ipcMain)
 
+  const pricingProvider = (): readonly PricingEntry[] =>
+    Object.entries(PRICING).map(([key, p]) => ({
+      key,
+      apiModel: p.apiModel,
+      displayName: p.displayName,
+      description: p.description,
+      inputPerMillion: p.inputPerMillion,
+      outputPerMillion: p.outputPerMillion
+    }))
+
+  const pricingHandler = new PricingHandler(logger, pricingProvider)
+  pricingHandler.install(ipcMain)
+
   // Skills subsystem — user + plugin roots only this phase; project-local
   // scanning lands when Phase 7 wires active-project tracking through here.
   const skillsRoots = resolveSkillsRoots(homedir(), null)
@@ -243,6 +259,7 @@ export function registerIpcHandlers(
     turnsHandler,
     templatesHandler,
     telemetrySummaryHandler,
+    pricingHandler,
     skillsHandler,
     skillsWatcher,
     uninstallAll: () => {
@@ -260,6 +277,7 @@ export function registerIpcHandlers(
       turnsHandler.uninstall(ipcMain)
       templatesHandler.uninstall(ipcMain)
       telemetrySummaryHandler.uninstall(ipcMain)
+      pricingHandler.uninstall(ipcMain)
       void skillsWatcher.stop().then(() => {
         logger.info('skill', 'skills-watcher-stopped', 'Skills filesystem watcher stopped')
       })

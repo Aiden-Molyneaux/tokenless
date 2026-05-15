@@ -35,7 +35,8 @@ import type {
   TurnsListResult,
   TurnsUpdateFeedbackRequest,
   TurnsUpdateFeedbackResult,
-  TurnsFeedbackSummaryResult
+  TurnsFeedbackSummaryResult,
+  PricingListResult
 } from '@shared/ipc'
 import type {
   AccountsListResult,
@@ -164,6 +165,9 @@ export interface TokenlessApi {
   }
   readonly paths: {
     checkDir(req: PathsCheckDirRequest): Promise<PathsCheckDirResult>
+  }
+  readonly pricing: {
+    list(): Promise<PricingListResult>
   }
 }
 

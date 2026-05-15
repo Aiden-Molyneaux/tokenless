@@ -230,6 +230,13 @@ export {
   type TemplatesDeleteResult
 } from './ipc/templates'
 
+export {
+  IPC_PRICING_LIST,
+  type PricingEntry,
+  type PricingListResponse,
+  type PricingListResult
+} from './ipc/pricing'
+
 export type IpcChannelName =
   | typeof IPC_LOG_FROM_RENDERER
   | typeof IPC_LOG_TO_RENDERER
@@ -285,3 +292,4 @@ export type IpcChannelName =
   | 'turns:update-feedback'
   | 'turns:feedback-summary'
   | 'turns:changed'
+  | 'pricing:list'
