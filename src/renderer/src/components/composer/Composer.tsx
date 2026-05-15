@@ -13,6 +13,7 @@ import { useLiveCostEstimate } from '../../hooks/use-live-cost-estimate'
 import { AuthMissingModal } from '../notifications/AuthMissingModal'
 import { useTurns } from '../../hooks/use-turns'
 import { ActionsRow } from './ActionsRow'
+import { TemplatePickerPopover } from './TemplatePickerPopover'
 import { ConfigsRow } from './ConfigsRow'
 import { PromptTextarea } from './PromptTextarea'
 import { TelemetryStrip } from './TelemetryStrip'
@@ -52,6 +53,7 @@ export function Composer({ conversationId, accountId, accountLabel }: ComposerPr
   const [sending, setSending] = useState(false)
   const [gearing, setGearing] = useState(false)
   const [authMissingOpen, setAuthMissingOpen] = useState(false)
+  const [templatesOpen, setTemplatesOpen] = useState(false)
   const { push: pushToast } = useToast()
   const liveEstimate = useLiveCostEstimate({ prompt, model, breadth })
   const { clear: clearDraft } = useDraftAutosave(conversationId, prompt, setPrompt)
@@ -211,6 +213,12 @@ export function Composer({ conversationId, accountId, accountLabel }: ComposerPr
     setPrompt('Push the current branch to its remote.')
   }
 
+  const handleInsertTemplate = (body: string): void => {
+    setPrompt((prev) => prev.trim().length === 0 ? body : `${prev.trimEnd()}\n${body}`)
+    setTemplatesOpen(false)
+    rendererLogger.info('ui', 'template-inserted', 'Template inserted into composer', { bodyLength: body.length })
+  }
+
   const handleGearSendOriginal = (): void => {
     void handleSend(gearState?.originalPrompt ?? prompt, null)
     setGearState(null)
@@ -276,15 +284,24 @@ export function Composer({ conversationId, accountId, accountLabel }: ComposerPr
             skillItems={skillItems}
             renderSkillItem={renderSkillItem}
           />
-          <ActionsRow
-            promptEmpty={prompt.length === 0}
-            disableGear={sending || gearing}
-            disableSend={sending || conversationId === null}
-            onGear={handleGear}
-            onSend={() => void handleSend(prompt)}
-            onCommit={handleCommit}
-            onPush={handlePush}
-          />
+          <div className="actions-row-host">
+            <ActionsRow
+              promptEmpty={prompt.length === 0}
+              disableGear={sending || gearing}
+              disableSend={sending || conversationId === null}
+              onGear={handleGear}
+              onSend={() => void handleSend(prompt)}
+              onTemplates={() => setTemplatesOpen((v) => !v)}
+              onCommit={handleCommit}
+              onPush={handlePush}
+            />
+            {templatesOpen && (
+              <TemplatePickerPopover
+                onInsert={handleInsertTemplate}
+                onClose={() => setTemplatesOpen(false)}
+              />
+            )}
+          </div>
           <TelemetryStrip costPreview={liveEstimate} />
           {showFeedbackBar && lastTurn && (
             <TurnFeedbackBar

@@ -177,3 +177,51 @@
   outline: 1px solid var(--tl-blue);
   outline-offset: 1px;
 }
+
+/* ===== TemplatePickerPopover ===== */
+
+.actions-row-host { position: relative; }
+
+.template-picker-popover {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  right: 0;
+  width: 360px;
+  max-height: 400px;
+  overflow-y: auto;
+  background: var(--tl-bg);
+  border: 1px solid var(--tl-rule);
+  border-radius: var(--tl-radius-md);
+  box-shadow: var(--tl-shadow-md);
+  z-index: var(--tl-z-dropdown);
+}
+.template-picker-popover__header {
+  display: flex;
+  align-items: center;
+  padding: var(--tl-space-2) var(--tl-space-3);
+  border-bottom: 1px solid var(--tl-rule);
+}
+.template-picker-popover__title { margin: 0; font-size: var(--tl-text-md); font-weight: var(--tl-weight-medium); flex: 1; }
+.template-picker-popover__close { background: transparent; border: none; cursor: pointer; color: var(--tl-mute); font-size: 16px; }
+.template-picker-popover__body { padding: var(--tl-space-2); }
+.template-picker-popover__group { margin-bottom: var(--tl-space-3); }
+.template-picker-popover__group-title {
+  margin: 0 0 var(--tl-space-1) 0;
+  font-size: var(--tl-text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--tl-mute);
+}
+.template-picker-popover__list { list-style: none; margin: 0; padding: 0; }
+.template-picker-popover__item {
+  display: flex; flex-direction: column; gap: 2px;
+  width: 100%; text-align: left;
+  background: transparent; border: none;
+  padding: var(--tl-space-2) var(--tl-space-3);
+  cursor: pointer; border-radius: var(--tl-radius-sm);
+  font-family: var(--tl-font-sans); font-size: var(--tl-text-sm);
+}
+.template-picker-popover__item:hover { background: var(--tl-hover); }
+.template-picker-popover__item-name { font-weight: var(--tl-weight-medium); color: var(--tl-fg); }
+.template-picker-popover__item-description { font-size: var(--tl-text-xs); color: var(--tl-mute); }
+.template-picker-popover__empty { margin: 0; padding: var(--tl-space-3); color: var(--tl-mute); font-size: var(--tl-text-sm); text-align: center; }

@@ -10,6 +10,7 @@ interface ActionsRowProps {
   disableSend?: boolean
   onGear: () => void
   onSend: () => void
+  onTemplates: () => void
   onCommit: () => void
   onPush: () => void
 }
@@ -19,7 +20,7 @@ interface ActionsRowProps {
 // Commit + Push pre-fill the composer with canned git prompts (Phase 7
 // wires that; Phase 2B stubs the callbacks).
 
-export function ActionsRow({ promptEmpty, disableGear = false, disableSend = false, onGear, onSend, onCommit, onPush }: ActionsRowProps): JSX.Element {
+export function ActionsRow({ promptEmpty, disableGear = false, disableSend = false, onGear, onSend, onTemplates, onCommit, onPush }: ActionsRowProps): JSX.Element {
   return (
     <div className="actions-row">
       <div className="actions-row__primary">
@@ -45,6 +46,15 @@ export function ActionsRow({ promptEmpty, disableGear = false, disableSend = fal
         </InfoTooltip>
       </div>
       <div className="actions-row__secondary">
+        <InfoTooltip helperText="Insert a saved template into the composer.">
+          <button
+            type="button"
+            className="actions-row__button actions-row__button--secondary"
+            onClick={onTemplates}
+          >
+            Templates ▾
+          </button>
+        </InfoTooltip>
         <InfoTooltip helperText="Pre-fills the composer with this project's commit prompt (editable in Settings).">
           <button
             type="button"
