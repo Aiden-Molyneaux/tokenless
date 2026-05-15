@@ -1,5 +1,6 @@
 import { useState } from 'react'
 
+import { useOutsideClick } from '../../hooks/use-outside-click'
 import { useTelemetrySummary } from '../../hooks/use-telemetry-summary'
 import { TelemetrySummaryPopover } from './TelemetrySummaryPopover'
 
@@ -20,6 +21,7 @@ export function TelemetryPill(): JSX.Element | null {
   const [open, setOpen] = useState(false)
   const since = startOfWeekMs()
   const { summary } = useTelemetrySummary(since)
+  const hostRef = useOutsideClick<HTMLDivElement>(open, () => setOpen(false))
 
   if (!summary) return null
   if (summary.haikuMetaTokens === 0 && summary.responseOutputTokens === 0) return null
@@ -29,7 +31,7 @@ export function TelemetryPill(): JSX.Element | null {
   const cls = `telemetry-pill ${isSavings ? 'is-savings' : 'is-cost'}`
 
   return (
-    <div className="telemetry-pill-host">
+    <div className="telemetry-pill-host" ref={hostRef}>
       <button
         type="button"
         className={cls}
