@@ -396,3 +396,28 @@ Hard to trigger manually (Haiku usually obeys). The parser handles this via Zod.
 3. Quit the app.
 4. Relaunch.
 5. **Expect:** Composer is empty (no persistence for null-conversation drafts per ADR-033).
+
+## Phase 6A — Multi-account API keys
+
+### S-6A.1 Create a second account with its own key
+1. Launch the app with the seeded "Personal" account. Click the `+` next to AccountSwitcher.
+2. Fill the modal: label="Work", configDir blank, API key set to a valid `sk-ant-...`. Click Add.
+3. **Expect:** "Work" appears in AccountSwitcher and is auto-selected as active. Dev Mode shows `account-create` info log.
+
+### S-6A.2 Gear uses the active account's key
+1. Continuing from S-6A.1, type a prompt and click Gear.
+2. **Expect:** Gearing succeeds (assuming the key is valid). The Haiku call is billed to the Work account's key, not Personal's.
+
+### S-6A.3 Switch to an account with no key
+1. Switch back to "Personal" (which was seeded with no key).
+2. Type a prompt and click Gear.
+3. **Expect:** `AuthMissingModal` opens with the headline "Account 'Personal' needs an API key". Dismissable.
+
+### S-6A.4 Per-account state survives restart
+1. Set up two accounts. Pick one as active. Restart the app.
+2. **Expect:** Both accounts still in AccountSwitcher; the previously-active one is active again (Phase 6B may persist this further; for 6A the auto-active behaviour falls back to first-account).
+
+### S-6A.5 Summary refresh respects account boundaries
+1. With Account A as the conversation owner (account_id on the row), send a prompt + wait for response-complete.
+2. Switch active account to B in the UI.
+3. **Expect:** Background summary refresh uses Account A's key (because the conversation's accountId is A), not B's. Dev Mode shows `summary-refresh-ok` for that conversation.
