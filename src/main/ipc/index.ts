@@ -21,6 +21,7 @@ import { CcLifecycle } from '@main/cc'
 import type { PtySpawnFn, PtyHandle } from '@main/cc'
 import type { AnthropicClientLike } from '@main/api'
 import { GearingEngine } from '@main/gearing'
+import { SummaryRefresher } from '@main/gearing/summary-refresher'
 import { GearingHandler } from './gearing-handler'
 
 export interface IpcRegistration {
@@ -64,6 +65,10 @@ export function registerIpcHandlers(
   })
   telemetryEmitter.start()
 
+  const summaryRefresher = new SummaryRefresher({
+    db, client: anthropicClient, logger
+  })
+
   const ccLifecycle = new CcLifecycle(productionPtyFactory, {
     onChunk: (e) => broadcast('cc:output-chunk', e),
     onExit: (e) => {
@@ -72,6 +77,9 @@ export function registerIpcHandlers(
     },
     onEvent: (e) => {
       telemetryEmitter.handle(e)
+      if (e.event.kind === 'response-complete') {
+        summaryRefresher.onResponseComplete(e.conversationId)
+      }
       broadcast(IPC_CC_EVENT, e)
     },
     onCrashed: (e) => {
@@ -140,6 +148,7 @@ export function registerIpcHandlers(
       ccLifecycle.closeAll()
       telemetryEmitter.stop()
       gearingHandler.uninstall(ipcMain)
+      summaryRefresher.stop()
       unsubscribeRetryBroadcast()
     }
   }
