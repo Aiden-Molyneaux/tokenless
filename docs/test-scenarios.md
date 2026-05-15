@@ -365,3 +365,34 @@ Hard to trigger manually (Haiku usually obeys). The parser handles this via Zod.
 ### S-5B.6 Fixture recording
 1. `$env:ANTHROPIC_API_KEY = 'sk-ant-...'; npm run fixtures:record`
 2. **Expect:** Existing fixture files in `test/fixtures/api/` get updated with fresh timestamps + actual API responses. `npm run test:run` still green afterward.
+
+## Phase 7A — Drafts auto-save
+
+### S-7A.1 Type → switch away → come back → draft preserved
+1. Launch app with a project + at least one conversation. Click into the conversation.
+2. Type "this is my draft prompt" into the composer.
+3. Wait ~1 second. Verify in Dev Mode that a `drafts-save` log entry appeared.
+4. Click a DIFFERENT conversation in the sidebar.
+5. **Expect:** Composer either clears or shows the OTHER conversation's draft (if any).
+6. Click back to the original conversation.
+7. **Expect:** "this is my draft prompt" is restored in the composer.
+
+### S-7A.2 Send clears the draft
+1. Continuing from S-7A.1, click Send.
+2. **Expect:** Composer text clears. `drafts-clear` log entry visible in Dev Mode.
+3. Switch away + back.
+4. **Expect:** Composer is empty (no leftover draft).
+
+### S-7A.3 Restart preserves drafts
+1. Type a long prompt into a conversation. Wait for `drafts-save` to fire.
+2. Quit the app (Cmd/Ctrl+Q).
+3. Relaunch.
+4. Click the conversation.
+5. **Expect:** The draft is restored.
+
+### S-7A.4 No-conversation drafts not persisted
+1. Launch with no projects yet (or all projects with no conversations).
+2. Type a prompt anyway (the textarea is editable even without a conversation).
+3. Quit the app.
+4. Relaunch.
+5. **Expect:** Composer is empty (no persistence for null-conversation drafts per ADR-033).

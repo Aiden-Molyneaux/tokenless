@@ -481,3 +481,19 @@ These are deliberately conservative — built around the mock-claude's output so
 
 **Discovered:** Phase 5B summary refresh design.
 
+## ADR-033 (2026-05-15) — Drafts auto-save: 750ms debounce per conversation; null-conversation drafts NOT persisted
+
+**Context:** ADR-013 prescribed per-conversation auto-saved drafts (750ms debounce, cleared on Send). Phase 7A implements it.
+
+**Three sub-decisions:**
+
+1. **The drafts table's `UNIQUE(conversation_id)` has weird NULL semantics in SQLite** — multiple NULL rows are allowed. To avoid an unbounded pile of "no-conversation" drafts, Phase 7A drafts ONLY save when `conversationId !== null`. The Composer can still have a typed prompt without an active conversation; it just won't survive process restart in that state. The user can always create a conversation first if they care about persistence.
+
+2. **Load timing:** the hook fetches on mount + on conversationId change. Saves are suppressed until the load finishes (a `initialLoadDone` ref guard) to prevent racing the load → "save empty string overtop of the draft" bug.
+
+3. **Clear on Send wins:** Send fires `clearDraft()` BEFORE the next debounce tick. We cancel the pending timer and set a `cancelled` flag so the next effect re-render doesn't immediately schedule another save (which would happen because `prompt` just changed to `''`).
+
+**Reasoning:** Simple, predictable. The null-conversation exclusion is the only design liberty taken — UX cost is low (rare case) and it sidesteps SQLite UNIQUE-NULL footguns.
+
+**Discovered:** Phase 7A draft-autosave wiring.
+
