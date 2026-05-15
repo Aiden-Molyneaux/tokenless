@@ -181,6 +181,21 @@ export {
   type SkillsRescanResponse
 } from './ipc/skills'
 
+export {
+  IPC_TURNS_LIST_BY_CONVERSATION,
+  IPC_TURNS_UPDATE_FEEDBACK,
+  IPC_TURNS_FEEDBACK_SUMMARY,
+  IPC_TURNS_CHANGED,
+  type TurnsListRequest,
+  type TurnsListResponse,
+  type TurnsListResult,
+  type TurnsUpdateFeedbackRequest,
+  type TurnsUpdateFeedbackResponse,
+  type TurnsUpdateFeedbackResult,
+  type TurnsFeedbackSummaryResponse,
+  type TurnsFeedbackSummaryResult
+} from './ipc/turns'
+
 export type IpcChannelName =
   | typeof IPC_LOG_FROM_RENDERER
   | typeof IPC_LOG_TO_RENDERER
@@ -224,3 +239,7 @@ export type IpcChannelName =
   | 'skills:toggle-hidden'
   | 'skills:rescan'
   | 'skills:changed'
+  | 'turns:list-by-conversation'
+  | 'turns:update-feedback'
+  | 'turns:feedback-summary'
+  | 'turns:changed'

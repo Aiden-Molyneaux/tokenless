@@ -12,6 +12,7 @@ import * as pty from 'node-pty'
 import { TurnsDao } from '@main/db'
 
 import { IPC_CC_EVENT, IPC_CC_CRASHED, IPC_CC_HUNG } from '@shared/ipc/cc'
+import { IPC_TURNS_CHANGED } from '@shared/ipc/turns'
 import { IPC_TELEMETRY_TICK } from '@shared/ipc/telemetry'
 import { IPC_API_RETRY_ATTEMPT, type ApiRetryAttemptPayload } from '@shared/ipc/api-events'
 import { TelemetryEmitter } from '@main/cc/telemetry-emitter'
@@ -33,6 +34,7 @@ import { scanSkillsRoots } from '@main/skills/scanner'
 import { resolveSkillsRoots } from '@main/skills/roots'
 import { SkillsWatcher } from '@main/skills/watcher'
 import { SkillsHandler } from './skills-handler'
+import { TurnsHandler } from './turns-handler'
 
 export interface IpcRegistration {
   logBridge: LogBridge
@@ -46,6 +48,7 @@ export interface IpcRegistration {
   settingsHandler: SettingsHandler
   pathsHandler: PathsHandler
   skillsHandler: SkillsHandler
+  turnsHandler: TurnsHandler
   skillsWatcher: SkillsWatcher
   uninstallAll: () => void
 }
@@ -123,6 +126,7 @@ export function registerIpcHandlers(
           responseTokens,
           modelUsed: null  // model not tracked per response yet — Phase 8 may add
         })
+        broadcast(IPC_TURNS_CHANGED, undefined)
       } catch (err) {
         logger.error('db', 'assistant-turn-write-failed', err instanceof Error ? err.message : String(err), {
           conversationId,
@@ -145,6 +149,9 @@ export function registerIpcHandlers(
 
   const pathsHandler = new PathsHandler(logger)
   pathsHandler.install(ipcMain)
+
+  const turnsHandler = new TurnsHandler(db, logger, broadcast)
+  turnsHandler.install(ipcMain)
 
   // Skills subsystem — user + plugin roots only this phase; project-local
   // scanning lands when Phase 7 wires active-project tracking through here.
@@ -218,6 +225,7 @@ export function registerIpcHandlers(
     draftsHandler,
     settingsHandler,
     pathsHandler,
+    turnsHandler,
     skillsHandler,
     skillsWatcher,
     uninstallAll: () => {
@@ -232,6 +240,7 @@ export function registerIpcHandlers(
       draftsHandler.uninstall(ipcMain)
       settingsHandler.uninstall(ipcMain)
       pathsHandler.uninstall(ipcMain)
+      turnsHandler.uninstall(ipcMain)
       void skillsWatcher.stop().then(() => {
         logger.info('skill', 'skills-watcher-stopped', 'Skills filesystem watcher stopped')
       })
