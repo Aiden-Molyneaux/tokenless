@@ -149,7 +149,7 @@ import {
 } from '@shared/ipc'
 
 const api = {
-  version: '0.0.1',
+  version: __APP_VERSION__,
   log: {
     send(record: LogRecord): void {
       const payload: LogFromRendererPayload = { record }

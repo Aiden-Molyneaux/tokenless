@@ -1,9 +1,11 @@
+import { useState } from 'react'
 import { AccountsSection } from './AccountsSection'
 import { GearingDefaultsSection } from './GearingDefaultsSection'
 import { SendConfirmToggle } from './SendConfirmToggle'
 import { DevModeToggle } from './DevModeToggle'
 import { TelemetrySection } from './TelemetrySection'
 import { PathsSection } from './PathsSection'
+import { AboutDialog } from '../../components/notifications/AboutDialog'
 import './styles.css'
 
 interface SettingsViewProps {
@@ -18,6 +20,7 @@ interface SettingsViewProps {
 // Rendered by App.tsx when view === 'settings'.
 
 export function SettingsView({ onBack, devMode, onDevModeChange, onRerunOnboarding }: SettingsViewProps): JSX.Element {
+  const [aboutOpen, setAboutOpen] = useState(false)
   return (
     <div className="settings-view">
       <header className="settings-view__header">
@@ -41,8 +44,16 @@ export function SettingsView({ onBack, devMode, onDevModeChange, onRerunOnboardi
           >
             Run onboarding again
           </button>
+          <button
+            type="button"
+            className="settings-view__about-link"
+            onClick={() => setAboutOpen(true)}
+          >
+            About TokenLess
+          </button>
         </div>
       </div>
+      <AboutDialog open={aboutOpen} onClose={() => setAboutOpen(false)} />
     </div>
   )
 }

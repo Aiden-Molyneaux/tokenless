@@ -248,6 +248,20 @@
 }
 .settings-view__rerun-onboarding:hover { color: var(--tl-fg); }
 
+/* "About TokenLess" link-style button in Settings footer */
+.settings-view__about-link {
+  background: transparent;
+  border: none;
+  color: var(--tl-blue);
+  cursor: pointer;
+  font-size: var(--tl-text-sm);
+  padding: 4px 8px;
+  text-decoration: underline;
+}
+.settings-view__about-link:hover {
+  color: var(--tl-blue-700);
+}
+
 /* Telemetry section inline */
 
 .telemetry-section__body {
