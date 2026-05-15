@@ -421,3 +421,41 @@ Hard to trigger manually (Haiku usually obeys). The parser handles this via Zod.
 1. With Account A as the conversation owner (account_id on the row), send a prompt + wait for response-complete.
 2. Switch active account to B in the UI.
 3. **Expect:** Background summary refresh uses Account A's key (because the conversation's accountId is A), not B's. Dev Mode shows `summary-refresh-ok` for that conversation.
+
+## Phase 6B — Account + Project CRUD + last-active persistence
+
+### S-6B.1 Edit account API key
+1. Active account "Test" has a working key. Click ✎ next to AccountSwitcher.
+2. Clear the API key field, paste a new key. Save.
+3. **Expect:** Account is updated. Next Gear call uses the new key (registry was invalidated). Dev Mode shows `account-update` info log + `accounts-update` db log.
+
+### S-6B.2 Delete account
+1. With "Test" account active, click ✎. Click Delete in the modal. Confirm at the OS prompt.
+2. **Expect:** Account is removed from the dropdown. Active account falls back to first remaining ("Personal"). Dev Mode shows `account-delete` info + `accounts-delete` db log.
+
+### S-6B.3 Edit project rootPath
+1. Click ✎ next to ProjectSwitcher. Change rootPath to a different real directory. Save.
+2. **Expect:** Project is updated. The NEXT New Conversation uses the new path as claude's cwd. Existing conversations keep their original rootPath (Phase 7 may reconcile).
+
+### S-6B.4 CreateProjectModal validates rootPath
+1. Click + next to ProjectSwitcher. Type a path that doesn't exist. Wait ~400ms.
+2. **Expect:** Inline error "Directory doesn't exist on disk." appears under the field. Submit is blocked (handleSubmit early-returns).
+3. Change to a real directory. Error clears. Submit succeeds.
+
+### S-6B.5 EditProjectModal also validates rootPath
+1. Click ✎ next to ProjectSwitcher. Change rootPath to a non-existent path.
+2. **Expect:** Same inline error as S-6B.4. Save blocked until the path is valid.
+
+### S-6B.6 Last-active persistence
+1. Set active account = "Test" and active project = "Foo". Close the app.
+2. Relaunch.
+3. **Expect:** "Test" and "Foo" are auto-selected as active (not the first-in-list defaults). Dev Mode shows two `settings-get` events at boot.
+
+### S-6B.7 Stale last-active gracefully ignored
+1. With "Test" + "Foo" persisted as last-active, delete "Foo" project via the edit modal. Close the app.
+2. Relaunch.
+3. **Expect:** activeProjectId falls back to first remaining project. No error toast. Dev Mode shows `settings-get` returned the stale id but the fallback default-picker effect ran.
+
+### S-6B.8 Dropdown menu paints above MainPane
+1. Click the Project: or Account: dropdown trigger.
+2. **Expect:** The expanded list is FULLY VISIBLE — not clipped behind the composer or terminal pane. (Fixed by raising --tl-z-dropdown to 1000.)
