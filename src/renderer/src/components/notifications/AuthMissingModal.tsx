@@ -27,16 +27,30 @@ export function AuthMissingModal({ open, onDismiss, accountLabel }: AuthMissingM
       >
         <h2 id="auth-missing-title" className="modal__title">{headline}</h2>
         <p>{body}</p>
-        <p>
-          To use gearing now: close TokenLess, set the env var, and relaunch. On Windows:
-        </p>
-        <pre className="auth-missing-modal__pre">
-{`$env:ANTHROPIC_API_KEY = 'sk-ant-...'
-npm run dev`}
-        </pre>
-        <p className="auth-missing-modal__hint">
-          A proper Settings → &ldquo;API key&rdquo; field lands in Phase 8 polish.
-        </p>
+        {accountLabel ? (
+          <>
+            <p>
+              Click the <code>+</code> next to the account selector to add a new account with
+              an API key, or wait for Phase 6B to ship inline editing for the existing account.
+            </p>
+            <p className="auth-missing-modal__hint">
+              Keys are stored in TokenLess&apos;s local DB (see ADR-034). A proper Settings →
+              &ldquo;API key&rdquo; field with keychain integration lands in Phase 8 polish.
+            </p>
+          </>
+        ) : (
+          <>
+            <p>
+              Add an account from the <code>+</code> button next to the account selector — set
+              the Anthropic API key field when you create it. Phase 6A removed the
+              <code> ANTHROPIC_API_KEY </code>
+              env var fallback; gearing now uses per-account keys.
+            </p>
+            <p className="auth-missing-modal__hint">
+              A proper Settings → &ldquo;API key&rdquo; field lands in Phase 8 polish.
+            </p>
+          </>
+        )}
         <div className="modal__actions">
           <button type="button" className="btn btn--primary" onClick={onDismiss}>
             Got it

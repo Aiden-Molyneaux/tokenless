@@ -20,8 +20,9 @@ interface ComposerProps {
 }
 
 // Error code → user-facing toast message map.
+// Note: API_AUTH_FAILED is intentionally absent — it opens AuthMissingModal
+// instead of a toast (see runGear's failure branch).
 const GEAR_ERROR_MESSAGES: Record<string, string> = {
-  API_AUTH_FAILED: 'Anthropic API key invalid or missing. Set ANTHROPIC_API_KEY and restart.',
   API_RATE_LIMITED: 'Anthropic API rate-limited. Try again in a moment.',
   API_SERVER_ERROR: 'Anthropic API returned an error. Try again.',
   API_NETWORK_DOWN: 'Network unreachable. Gearing offline.',
