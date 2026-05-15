@@ -15,7 +15,13 @@ import type {
   SettingsSetRequest,
   SettingsSetResult,
   PathsCheckDirRequest,
-  PathsCheckDirResult
+  PathsCheckDirResult,
+  SkillsListResult,
+  SkillsToggleFavoriteRequest,
+  SkillsToggleFavoriteResult,
+  SkillsToggleHiddenRequest,
+  SkillsToggleHiddenResult,
+  SkillsRescanResult
 } from '@shared/ipc'
 import type {
   AccountsListResult,
@@ -83,6 +89,13 @@ export interface TokenlessApi {
     create(req: ConversationsCreateRequest): Promise<ConversationsCreateResult>
     update(req: ConversationsUpdateRequest): Promise<ConversationsUpdateResult>
     delete(req: ConversationsDeleteRequest): Promise<ConversationsDeleteResult>
+    onChanged(fn: () => void): () => void
+  }
+  readonly skills: {
+    list(): Promise<SkillsListResult>
+    toggleFavorite(req: SkillsToggleFavoriteRequest): Promise<SkillsToggleFavoriteResult>
+    toggleHidden(req: SkillsToggleHiddenRequest): Promise<SkillsToggleHiddenResult>
+    rescan(): Promise<SkillsRescanResult>
     onChanged(fn: () => void): () => void
   }
   readonly cc: {

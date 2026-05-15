@@ -94,7 +94,18 @@ import {
   type SettingsSetResult,
   IPC_PATHS_CHECK_DIR,
   type PathsCheckDirRequest,
-  type PathsCheckDirResult
+  type PathsCheckDirResult,
+  IPC_SKILLS_LIST,
+  IPC_SKILLS_TOGGLE_FAVORITE,
+  IPC_SKILLS_TOGGLE_HIDDEN,
+  IPC_SKILLS_RESCAN,
+  IPC_SKILLS_CHANGED,
+  type SkillsListResult,
+  type SkillsToggleFavoriteRequest,
+  type SkillsToggleFavoriteResult,
+  type SkillsToggleHiddenRequest,
+  type SkillsToggleHiddenResult,
+  type SkillsRescanResult
 } from '@shared/ipc'
 
 const api = {
@@ -174,6 +185,25 @@ const api = {
       const listener = (): void => fn()
       ipcRenderer.on(IPC_CONVERSATIONS_CHANGED, listener as never)
       return () => ipcRenderer.removeListener(IPC_CONVERSATIONS_CHANGED, listener as never)
+    }
+  },
+  skills: {
+    list(): Promise<SkillsListResult> {
+      return ipcRenderer.invoke(IPC_SKILLS_LIST) as Promise<SkillsListResult>
+    },
+    toggleFavorite(req: SkillsToggleFavoriteRequest): Promise<SkillsToggleFavoriteResult> {
+      return ipcRenderer.invoke(IPC_SKILLS_TOGGLE_FAVORITE, req) as Promise<SkillsToggleFavoriteResult>
+    },
+    toggleHidden(req: SkillsToggleHiddenRequest): Promise<SkillsToggleHiddenResult> {
+      return ipcRenderer.invoke(IPC_SKILLS_TOGGLE_HIDDEN, req) as Promise<SkillsToggleHiddenResult>
+    },
+    rescan(): Promise<SkillsRescanResult> {
+      return ipcRenderer.invoke(IPC_SKILLS_RESCAN) as Promise<SkillsRescanResult>
+    },
+    onChanged(fn: () => void): () => void {
+      const listener = (): void => fn()
+      ipcRenderer.on(IPC_SKILLS_CHANGED, listener as never)
+      return () => ipcRenderer.removeListener(IPC_SKILLS_CHANGED, listener as never)
     }
   },
   cc: {
