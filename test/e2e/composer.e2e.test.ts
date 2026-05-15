@@ -73,7 +73,10 @@ test('composer renders with textarea, 4 config dropdowns, and action buttons', a
   await expect(page.locator('.prompt-textarea')).toBeVisible()
   await expect(page.locator('.configs-row .dropdown')).toHaveCount(4)
   await expect(page.locator('.actions-row__button--gear')).toBeVisible()
-  await expect(page.locator('.actions-row__button')).toHaveCount(4)
+  // Phase 2B → 7D: primary (Gear, Send) + secondary (Templates, Commit, Push) = 5 buttons.
+  // Bumping the count whenever a button lands here is intentional — a tight count
+  // assertion catches accidental button additions/removals.
+  await expect(page.locator('.actions-row__button')).toHaveCount(5)
 })
 
 test('typing in the prompt textarea enables Gear and Send buttons', async () => {
