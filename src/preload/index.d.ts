@@ -24,6 +24,13 @@ import type {
   SkillsToggleHiddenRequest,
   SkillsToggleHiddenResult,
   SkillsRescanResult,
+  TemplatesListResult,
+  TemplatesCreateRequest,
+  TemplatesCreateResult,
+  TemplatesUpdateRequest,
+  TemplatesUpdateResult,
+  TemplatesDeleteRequest,
+  TemplatesDeleteResult,
   TurnsListRequest,
   TurnsListResult,
   TurnsUpdateFeedbackRequest,
@@ -103,6 +110,13 @@ export interface TokenlessApi {
     toggleFavorite(req: SkillsToggleFavoriteRequest): Promise<SkillsToggleFavoriteResult>
     toggleHidden(req: SkillsToggleHiddenRequest): Promise<SkillsToggleHiddenResult>
     rescan(): Promise<SkillsRescanResult>
+    onChanged(fn: () => void): () => void
+  }
+  readonly templates: {
+    list(): Promise<TemplatesListResult>
+    create(req: TemplatesCreateRequest): Promise<TemplatesCreateResult>
+    update(req: TemplatesUpdateRequest): Promise<TemplatesUpdateResult>
+    delete(req: TemplatesDeleteRequest): Promise<TemplatesDeleteResult>
     onChanged(fn: () => void): () => void
   }
   readonly turns: {

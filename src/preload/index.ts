@@ -109,6 +109,18 @@ import {
   type SkillsToggleHiddenRequest,
   type SkillsToggleHiddenResult,
   type SkillsRescanResult,
+  IPC_TEMPLATES_LIST,
+  IPC_TEMPLATES_CREATE,
+  IPC_TEMPLATES_UPDATE,
+  IPC_TEMPLATES_DELETE,
+  IPC_TEMPLATES_CHANGED,
+  type TemplatesListResult,
+  type TemplatesCreateRequest,
+  type TemplatesCreateResult,
+  type TemplatesUpdateRequest,
+  type TemplatesUpdateResult,
+  type TemplatesDeleteRequest,
+  type TemplatesDeleteResult,
   IPC_TURNS_LIST_BY_CONVERSATION,
   IPC_TURNS_UPDATE_FEEDBACK,
   IPC_TURNS_FEEDBACK_SUMMARY,
@@ -216,6 +228,25 @@ const api = {
       const listener = (): void => fn()
       ipcRenderer.on(IPC_SKILLS_CHANGED, listener as never)
       return () => ipcRenderer.removeListener(IPC_SKILLS_CHANGED, listener as never)
+    }
+  },
+  templates: {
+    list(): Promise<TemplatesListResult> {
+      return ipcRenderer.invoke(IPC_TEMPLATES_LIST) as Promise<TemplatesListResult>
+    },
+    create(req: TemplatesCreateRequest): Promise<TemplatesCreateResult> {
+      return ipcRenderer.invoke(IPC_TEMPLATES_CREATE, req) as Promise<TemplatesCreateResult>
+    },
+    update(req: TemplatesUpdateRequest): Promise<TemplatesUpdateResult> {
+      return ipcRenderer.invoke(IPC_TEMPLATES_UPDATE, req) as Promise<TemplatesUpdateResult>
+    },
+    delete(req: TemplatesDeleteRequest): Promise<TemplatesDeleteResult> {
+      return ipcRenderer.invoke(IPC_TEMPLATES_DELETE, req) as Promise<TemplatesDeleteResult>
+    },
+    onChanged(fn: () => void): () => void {
+      const listener = (): void => fn()
+      ipcRenderer.on(IPC_TEMPLATES_CHANGED, listener as never)
+      return () => ipcRenderer.removeListener(IPC_TEMPLATES_CHANGED, listener as never)
     }
   },
   turns: {
