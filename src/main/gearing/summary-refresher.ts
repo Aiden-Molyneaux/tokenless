@@ -1,12 +1,12 @@
-﻿// SummaryRefresher — per-conversation debounced Haiku call to update
+// SummaryRefresher — per-conversation debounced Haiku call to update
 // conversations.summary after a response-complete event fires. Silent on
 // failure per spec §7.2 row 6 (stale summary is OK).
 
 import type { Database } from 'better-sqlite3'
 
-import type { AnthropicClientLike } from '../api/types'
+import { AnthropicClientRegistry } from '../api'
 import { PRICING, GEARING_MODEL } from '../api/pricing'
-import { ConversationsDao } from '../db'
+import { AccountsDao, ConversationsDao } from '../db'
 import { Logger } from '../observability/logger'
 
 // eslint-disable-next-line import/no-unresolved
@@ -14,7 +14,7 @@ import SUMMARY_PROMPT from './summary-prompt.md?raw'
 
 export interface SummaryRefresherOptions {
   readonly db: Database
-  readonly client: AnthropicClientLike
+  readonly registry: AnthropicClientRegistry
   readonly logger: Logger
   readonly debounceMs?: number       // default 500
   readonly recentTurnsCount?: number // default 6
@@ -59,6 +59,20 @@ export class SummaryRefresher {
   private async refresh(conversationId: number): Promise<void> {
     const conv = ConversationsDao.getConversationById(this.opts.db, conversationId)
     if (!conv) return
+    if (!conv.accountId) {
+      this.opts.logger.warn('gearing', 'summary-refresh-no-account',
+        'Conversation has no account — skipping summary refresh', { conversationId })
+      return
+    }
+    const account = AccountsDao.getAccountById(this.opts.db, conv.accountId)
+    if (!account) return
+    const client = this.opts.registry.getClient(account)
+    if (!client) {
+      this.opts.logger.warn('gearing', 'summary-refresh-no-key',
+        'Account has no API key — skipping summary refresh', { conversationId, accountLabel: account.label })
+      return
+    }
+
     const turns = this.opts.db
       .prepare<[number, number], TurnRow>(
         `SELECT role, original_prompt, response_text FROM turns
@@ -74,7 +88,7 @@ export class SummaryRefresher {
       (conv.summary ? `## Prior summary\n\n${conv.summary}\n\n` : '') +
       `## Recent turns\n\n${turnsText}`
 
-    const result = await this.opts.client.complete({
+    const result = await client.complete({
       model: PRICING[GEARING_MODEL].apiModel,
       maxTokens: SUMMARY_MAX_TOKENS,
       system: SUMMARY_PROMPT,

@@ -8,7 +8,7 @@ import {
 } from './observability'
 import type { Broadcast } from './ipc/log-bridge'
 import { registerIpcHandlers } from './ipc'
-import { AnthropicClient } from './api'
+import { AnthropicClientRegistry } from './api'
 import {
   openDatabase,
   closeDatabase,
@@ -101,13 +101,11 @@ app.whenReady().then(() => {
     return
   }
 
-  const apiKey = process.env['ANTHROPIC_API_KEY'] ?? ''
-  if (!apiKey) {
-    logger.warn('api', 'api-key-missing', 'ANTHROPIC_API_KEY not set — gearing will fail with API_AUTH_FAILED')
-  }
-  const anthropicClient = new AnthropicClient({ apiKey, logger })
+  // Phase 6A: accounts own their API keys — no global ANTHROPIC_API_KEY.
+  // The AnthropicClientRegistry resolves per-account clients on demand.
+  const clientRegistry = new AnthropicClientRegistry(logger)
 
-  const ipcRegistration = registerIpcHandlers(ipcMain, logger, broadcast, db, anthropicClient)
+  const ipcRegistration = registerIpcHandlers(ipcMain, logger, broadcast, db, clientRegistry)
 
   createWindow()
 

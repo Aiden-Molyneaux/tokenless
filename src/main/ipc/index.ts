@@ -20,8 +20,7 @@ import { CcHandler } from './cc-handler'
 import { DraftsHandler } from './drafts-handler'
 import { CcLifecycle } from '@main/cc'
 import type { PtySpawnFn, PtyHandle } from '@main/cc'
-import type { AnthropicClientLike } from '@main/api'
-import { GearingEngine } from '@main/gearing'
+import { AnthropicClientRegistry } from '@main/api'
 import { SummaryRefresher } from '@main/gearing/summary-refresher'
 import { GearingHandler } from './gearing-handler'
 
@@ -47,7 +46,7 @@ export function registerIpcHandlers(
   logger: Logger,
   broadcast: Broadcast,
   db: Database,
-  anthropicClient: AnthropicClientLike
+  clientRegistry: AnthropicClientRegistry
 ): IpcRegistration {
   const logBridge = new LogBridge(logger, ipcMain, broadcast)
   logBridge.install()
@@ -68,7 +67,7 @@ export function registerIpcHandlers(
   telemetryEmitter.start()
 
   const summaryRefresher = new SummaryRefresher({
-    db, client: anthropicClient, logger
+    db, registry: clientRegistry, logger
   })
 
   const ccLifecycle = new CcLifecycle(productionPtyFactory, {
@@ -106,8 +105,7 @@ export function registerIpcHandlers(
   const ccHandler = new CcHandler(db, logger, ccLifecycle)
   ccHandler.install(ipcMain)
 
-  const gearingEngine = new GearingEngine(anthropicClient)
-  const gearingHandler = new GearingHandler(gearingEngine, logger)
+  const gearingHandler = new GearingHandler(db, logger, clientRegistry)
   gearingHandler.install(ipcMain)
 
   const draftsHandler = new DraftsHandler(db, logger)

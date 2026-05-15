@@ -8,6 +8,10 @@ export interface GearingGearRequest {
   // active PTY conversation. Phase 5B may use conversationId for rolling-
   // summary context — until then it's a tracing/logging tag only.
   readonly conversationId: number | null
+  // Phase 6A: when conversationId is null (no active conversation), this is
+  // REQUIRED. When conversationId is set, this is ignored (the conversation's
+  // account is the source of truth).
+  readonly accountId: number | null
   readonly originalPrompt: string
   readonly configs: GearConfigs
 }

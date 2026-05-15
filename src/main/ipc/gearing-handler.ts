@@ -1,6 +1,9 @@
+import type { Database } from 'better-sqlite3'
 import type { IpcMain, IpcMainInvokeEvent } from 'electron'
 
 import { GearingEngine } from '../gearing'
+import { AnthropicClientRegistry } from '../api'
+import { AccountsDao, ConversationsDao } from '../db'
 import { Logger } from '../observability/logger'
 import { withIpcResult } from './with-ipc-result'
 
@@ -10,35 +13,64 @@ import {
   type GearingGearResult
 } from '@shared/ipc/gearing'
 
+interface ErrWithCode extends Error { code?: string }
+function tagged(message: string, code: string): ErrWithCode {
+  const e = new Error(message) as ErrWithCode
+  e.code = code
+  return e
+}
+
 export class GearingHandler {
   private installedHandlers: string[] = []
 
   constructor(
-    private readonly engine: GearingEngine,
-    private readonly logger: Logger
+    private readonly db: Database,
+    private readonly logger: Logger,
+    private readonly registry: AnthropicClientRegistry
   ) {}
 
   gear = async (req: GearingGearRequest): Promise<GearingGearResult> =>
     withIpcResult(this.logger, 'gearing', 'gearing-gear', async () => {
-      const apiResult = await this.engine.gear({
+      // Resolve the account: prefer conversation.accountId; fall back to
+      // request.accountId; fail if neither.
+      let accountId: number | null = null
+      if (req.conversationId !== null) {
+        const conv = ConversationsDao.getConversationById(this.db, req.conversationId)
+        accountId = conv?.accountId ?? null
+      }
+      if (accountId === null) accountId = req.accountId ?? null
+      if (accountId === null) {
+        throw tagged('No account specified for gearing call', 'API_AUTH_FAILED')
+      }
+      const account = AccountsDao.getAccountById(this.db, accountId)
+      if (!account) {
+        throw tagged(`Account ${accountId} not found`, 'NOT_FOUND')
+      }
+      const client = this.registry.getClient(account)
+      if (!client) {
+        throw tagged(
+          `Account "${account.label}" has no API key configured`,
+          'API_AUTH_FAILED'
+        )
+      }
+
+      const engine = new GearingEngine(client)
+      const result = await engine.gear({
         originalPrompt: req.originalPrompt,
         configs: req.configs
       })
-      if (!apiResult.ok) {
-        // Throw a tagged error so withIpcResult produces the right envelope
-        // code. The classifier in withIpcResult propagates UPPER_SNAKE_CASE.
-        const tagged = new Error(apiResult.error.message) as Error & { code?: string }
-        tagged.code = apiResult.error.code
-        throw tagged
+      if (!result.ok) {
+        throw tagged(result.error.message, result.error.code)
       }
       this.logger.info('gearing', 'gearing-gear-ok', 'Gearing succeeded', {
+        accountLabel: account.label,
         conversationId: req.conversationId,
-        haikuInputTokens: apiResult.data.tokenBreakdown.haikuInputTokens,
-        haikuOutputTokens: apiResult.data.tokenBreakdown.haikuOutputTokens,
-        gearedInputEstimate: apiResult.data.tokenBreakdown.gearedInputEstimate,
-        expectedDollars: apiResult.data.costPreview.expectedDollars
+        haikuInputTokens: result.data.tokenBreakdown.haikuInputTokens,
+        haikuOutputTokens: result.data.tokenBreakdown.haikuOutputTokens,
+        gearedInputEstimate: result.data.tokenBreakdown.gearedInputEstimate,
+        expectedDollars: result.data.costPreview.expectedDollars
       })
-      return { result: apiResult.data }
+      return { result: result.data }
     })
 
   install(ipcMain: IpcMain): void {

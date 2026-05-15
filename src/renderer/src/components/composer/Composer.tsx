@@ -54,6 +54,7 @@ export function Composer({ conversationId }: ComposerProps): JSX.Element {
     try {
       const result = await window.tokenless.gearing.gear({
         conversationId,
+        accountId: null, // Phase 6A: conversation.accountId is used when conversationId is set; Task 7 threads active accountId for null-conversation gearing
         originalPrompt,
         configs: { model, breadth, format, skill: skill || null }
       })
