@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { MockCritiqueFlag } from '../../mocks/geared-prompt'
+import type { CritiqueFlag, CostPreview } from '@shared/types/gearing'
 import { CritiqueFlags } from './CritiqueFlags'
 import { GearedPane } from './GearedPane'
 import { OriginalPane } from './OriginalPane'
@@ -8,7 +8,8 @@ import './styles.css'
 interface GearReviewPaneProps {
   original: string
   geared: string
-  critiqueFlags: readonly MockCritiqueFlag[]
+  critiqueFlags: readonly CritiqueFlag[]
+  costPreview: CostPreview
   onSendOriginal: () => void
   onSendGeared: (editedGeared: string) => void
   onReGear: () => void
@@ -29,6 +30,7 @@ export function GearReviewPane({
   original,
   geared,
   critiqueFlags,
+  costPreview,
   onSendOriginal,
   onSendGeared,
   onReGear,
@@ -63,6 +65,20 @@ export function GearReviewPane({
           tokenCount={gearedTokens}
           savings={savings}
         />
+      </div>
+      <div className="gear-review-pane__cost-preview">
+        <span className="gear-review-pane__cost-expected">
+          Expected: ${costPreview.expectedDollars.toFixed(4)}
+          {' '}
+          <span className="gear-review-pane__cost-tokens">
+            ({costPreview.expectedInputTokens.toLocaleString()} in / {costPreview.expectedOutputTokens.toLocaleString()} out)
+          </span>
+        </span>
+        {costPreview.haikuMetaDollars > 0 && (
+          <span className="gear-review-pane__cost-meta">
+            Gearing meta: ${costPreview.haikuMetaDollars.toFixed(4)}
+          </span>
+        )}
       </div>
       <div className="gear-review-pane__actions">
         <button

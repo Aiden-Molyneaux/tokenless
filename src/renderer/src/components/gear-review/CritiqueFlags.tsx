@@ -1,11 +1,10 @@
-import type { MockCritiqueFlag } from '../../mocks/geared-prompt'
+import type { CritiqueFlag } from '@shared/types/gearing'
 
 interface CritiqueFlagsProps {
-  flags: readonly MockCritiqueFlag[]
+  flags: readonly CritiqueFlag[]
 }
 
 // Yellow/info banner displaying critique flags from the gearing engine.
-// Phase 5 wires real Haiku-produced flags; Phase 2B passes MOCK_CRITIQUE_FLAGS.
 
 export function CritiqueFlags({ flags }: CritiqueFlagsProps): JSX.Element | null {
   if (flags.length === 0) return null

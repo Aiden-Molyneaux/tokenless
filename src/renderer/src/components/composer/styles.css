@@ -129,3 +129,28 @@
 .telemetry-strip__separator {
   color: var(--tl-rule-strong);
 }
+
+.telemetry-strip__model {
+  color: var(--tl-mute);
+}
+
+.telemetry-strip__cost {
+  color: var(--tl-fg);
+  font-weight: var(--tl-weight-medium);
+}
+
+.telemetry-strip__tokens {
+  color: var(--tl-mute);
+}
+
+.telemetry-strip__meta {
+  color: var(--tl-mute);
+}
+
+.telemetry-strip--idle {
+  font-style: italic;
+}
+
+.telemetry-strip__hint {
+  color: var(--tl-mute);
+}

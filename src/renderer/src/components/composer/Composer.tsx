@@ -1,9 +1,8 @@
 import { useState } from 'react'
+import type { GearResult } from '@shared/types/gearing'
 import { rendererLogger } from '../../observability/logger-bridge'
 import { useToast } from '../../hooks/use-toast'
 import { MOCK_BREADTHS, MOCK_FORMATS, MOCK_MODELS, MOCK_SKILLS } from '../../mocks/dropdown-options'
-import { MOCK_CRITIQUE_FLAGS, MOCK_GEARED_PROMPT } from '../../mocks/geared-prompt'
-import type { MockCritiqueFlag } from '../../mocks/geared-prompt'
 import { GearReviewPane } from '../gear-review/GearReviewPane'
 import { ActionsRow } from './ActionsRow'
 import { ConfigsRow } from './ConfigsRow'
@@ -11,14 +10,19 @@ import { PromptTextarea } from './PromptTextarea'
 import { TelemetryStrip } from './TelemetryStrip'
 import './styles.css'
 
-interface GearState {
-  original: string
-  geared: string
-  flags: readonly MockCritiqueFlag[]
-}
-
 interface ComposerProps {
   conversationId: number | null
+}
+
+// Error code → user-facing toast message map.
+const GEAR_ERROR_MESSAGES: Record<string, string> = {
+  API_AUTH_FAILED: 'Anthropic API key invalid or missing. Set ANTHROPIC_API_KEY and restart.',
+  API_RATE_LIMITED: 'Anthropic API rate-limited. Try again in a moment.',
+  API_SERVER_ERROR: 'Anthropic API returned an error. Try again.',
+  API_NETWORK_DOWN: 'Network unreachable. Gearing offline.',
+  API_TIMEOUT: 'Gearing timed out. Try again or send the original prompt.',
+  GEAR_PARSE_FAILED: "Couldn't parse the gearing response. Send the original prompt.",
+  API_UNKNOWN: 'Gearing failed unexpectedly. View Dev Mode for details.'
 }
 
 // Composer is the top half of MainPane. Holds prompt text + 4 config
@@ -32,17 +36,43 @@ export function Composer({ conversationId }: ComposerProps): JSX.Element {
   const [breadth, setBreadth] = useState<string>(MOCK_BREADTHS[1].value) // normal default
   const [format, setFormat] = useState<string>(MOCK_FORMATS[0].value) // prose default
   const [skill, setSkill] = useState<string>(MOCK_SKILLS[0].value) // none default
-  const [gearState, setGearState] = useState<GearState | null>(null)
+  const [gearState, setGearState] = useState<GearResult | null>(null)
   const [sending, setSending] = useState(false)
+  const [gearing, setGearing] = useState(false)
   const { push: pushToast } = useToast()
 
+  const runGear = async (originalPrompt: string): Promise<void> => {
+    if (conversationId === null) {
+      rendererLogger.warn('ui', 'gear-no-conversation', 'Gear clicked with no active conversation')
+      return
+    }
+    setGearing(true)
+    try {
+      const result = await window.tokenless.gearing.gear({
+        conversationId,
+        originalPrompt,
+        configs: { model, breadth, format, skill: skill || null }
+      })
+      if (result.ok) {
+        setGearState(result.data.result)
+      } else {
+        const code = result.error.code
+        const message = GEAR_ERROR_MESSAGES[code] ?? GEAR_ERROR_MESSAGES.API_UNKNOWN
+        rendererLogger.error('ui', 'gear-failed', result.error.message, {
+          conversationId,
+          code,
+          logId: result.error.logId
+        })
+        pushToast({ message, severity: 'error' })
+      }
+    } finally {
+      setGearing(false)
+    }
+  }
+
   const handleGear = (): void => {
-    rendererLogger.info('ui', 'gear-clicked', 'Gear (stub)', { promptLength: prompt.length, model, breadth, format, skill })
-    setGearState({
-      original: prompt,
-      geared: MOCK_GEARED_PROMPT,
-      flags: MOCK_CRITIQUE_FLAGS
-    })
+    rendererLogger.info('ui', 'gear-clicked', 'Gear clicked', { promptLength: prompt.length, model, breadth, format, skill })
+    void runGear(prompt)
   }
 
   const handleSend = async (finalPrompt: string): Promise<void> => {
@@ -95,7 +125,7 @@ export function Composer({ conversationId }: ComposerProps): JSX.Element {
   }
 
   const handleGearSendOriginal = (): void => {
-    void handleSend(gearState?.original ?? prompt)
+    void handleSend(gearState?.originalPrompt ?? prompt)
     setGearState(null)
   }
 
@@ -105,12 +135,10 @@ export function Composer({ conversationId }: ComposerProps): JSX.Element {
   }
 
   const handleGearReGear = (): void => {
-    rendererLogger.info('ui', 're-gear-clicked', 'Re-gear (stub) — refreshing mock')
-    setGearState({
-      original: prompt,
-      geared: MOCK_GEARED_PROMPT,
-      flags: MOCK_CRITIQUE_FLAGS
-    })
+    rendererLogger.info('ui', 're-gear-clicked', 'Re-gear — re-firing gearing IPC')
+    const originalPrompt = gearState?.originalPrompt ?? prompt
+    setGearState(null)
+    void runGear(originalPrompt)
   }
 
   const handleGearCancel = (): void => {
@@ -121,10 +149,11 @@ export function Composer({ conversationId }: ComposerProps): JSX.Element {
   if (gearState) {
     return (
       <GearReviewPane
-        key={gearState.geared}
-        original={gearState.original}
-        geared={gearState.geared}
-        critiqueFlags={gearState.flags}
+        key={gearState.gearedPrompt}
+        original={gearState.originalPrompt}
+        geared={gearState.gearedPrompt}
+        critiqueFlags={gearState.critiqueFlags}
+        costPreview={gearState.costPreview}
         onSendOriginal={handleGearSendOriginal}
         onSendGeared={handleGearSendGeared}
         onReGear={handleGearReGear}
@@ -148,14 +177,14 @@ export function Composer({ conversationId }: ComposerProps): JSX.Element {
       />
       <ActionsRow
         promptEmpty={prompt.length === 0}
-        disableGear={sending}
+        disableGear={sending || gearing}
         disableSend={sending || conversationId === null}
         onGear={handleGear}
         onSend={() => void handleSend(prompt)}
         onCommit={handleCommit}
         onPush={handlePush}
       />
-      <TelemetryStrip />
+      <TelemetryStrip costPreview={null} />
     </div>
   )
 }

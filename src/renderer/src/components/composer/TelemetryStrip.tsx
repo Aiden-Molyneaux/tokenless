@@ -1,33 +1,33 @@
-import { InfoTooltip } from '../common/InfoTooltip'
-import { MOCK_COST_PREVIEW } from '../../mocks/telemetry'
+import type { CostPreview } from '@shared/types/gearing'
 
 // The narrow strip at the bottom of the composer showing cost preview +
-// token estimate for the geared prompt. Phase 5 replaces the mock data
-// with real Anthropic SDK pricing math.
+// token estimate for the geared prompt. Prop-driven — Composer passes the
+// CostPreview from the last successful gearing call, or null before first gear.
 
-export function TelemetryStrip(): JSX.Element {
-  const { expectedDollars, expectedInputTokens, expectedOutputTokens, modelLabel } = MOCK_COST_PREVIEW
+interface TelemetryStripProps {
+  costPreview: CostPreview | null
+}
 
+export function TelemetryStrip({ costPreview }: TelemetryStripProps): JSX.Element {
+  if (!costPreview) {
+    return (
+      <div className="telemetry-strip telemetry-strip--idle">
+        <span className="telemetry-strip__hint">Type a prompt + click Gear to see cost estimate</span>
+      </div>
+    )
+  }
   return (
     <div className="telemetry-strip">
-      <span className="telemetry-strip__item">
-        <InfoTooltip
-          helperText="Estimated cost based on current configs"
-          contextFn={() => `Using ${modelLabel} pricing. Updates when you change Model or Breadth.`}
-          outcomeFn={() => `You've saved an average of $0.07/prompt over 30 days (mock).`}
-        >
-          <span className="telemetry-strip__label">≈</span>
-          <span className="telemetry-strip__value">${expectedDollars.toFixed(2)}</span>
-        </InfoTooltip>
+      <span className="telemetry-strip__model">{costPreview.modelLabel}</span>
+      <span className="telemetry-strip__cost">${costPreview.expectedDollars.toFixed(4)}</span>
+      <span className="telemetry-strip__tokens">
+        {costPreview.expectedInputTokens.toLocaleString()} in + {costPreview.expectedOutputTokens.toLocaleString()} out
       </span>
-      <span className="telemetry-strip__separator">·</span>
-      <span className="telemetry-strip__item">
-        <InfoTooltip helperText="Estimated input → output tokens for this send">
-          <span className="telemetry-strip__value">
-            {expectedInputTokens.toLocaleString()} → {expectedOutputTokens.toLocaleString()} tok
-          </span>
-        </InfoTooltip>
-      </span>
+      {costPreview.haikuMetaDollars > 0 && (
+        <span className="telemetry-strip__meta">
+          +${costPreview.haikuMetaDollars.toFixed(4)} gearing
+        </span>
+      )}
     </div>
   )
 }
