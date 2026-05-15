@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { GearResult } from '@shared/types/gearing'
+import type { GearMeta } from '@shared/types/turns'
 import { rendererLogger } from '../../observability/logger-bridge'
 import { useToast } from '../../hooks/use-toast'
 import { useDraftAutosave } from '../../hooks/use-draft-autosave'
@@ -10,10 +11,12 @@ import type { DropdownItem } from '../common/Dropdown'
 import { GearReviewPane } from '../gear-review/GearReviewPane'
 import { useLiveCostEstimate } from '../../hooks/use-live-cost-estimate'
 import { AuthMissingModal } from '../notifications/AuthMissingModal'
+import { useTurns } from '../../hooks/use-turns'
 import { ActionsRow } from './ActionsRow'
 import { ConfigsRow } from './ConfigsRow'
 import { PromptTextarea } from './PromptTextarea'
 import { TelemetryStrip } from './TelemetryStrip'
+import { TurnFeedbackBar } from './TurnFeedbackBar'
 import './styles.css'
 
 interface ComposerProps {
@@ -53,6 +56,11 @@ export function Composer({ conversationId, accountId, accountLabel }: ComposerPr
   const liveEstimate = useLiveCostEstimate({ prompt, model, breadth })
   const { clear: clearDraft } = useDraftAutosave(conversationId, prompt, setPrompt)
   const { skills, toggleFavorite, toggleHidden } = useSkills()
+  const { turns, updateFeedback } = useTurns(conversationId)
+  const lastTurn = turns.length > 0 ? turns[turns.length - 1] : null
+  const showFeedbackBar = lastTurn !== null
+    && lastTurn.role === 'assistant'
+    && lastTurn.feedback === null
 
   const skillItems: readonly DropdownItem[] = useMemo(() => [
     { value: '', label: 'None', description: 'no skill requested' },
@@ -152,7 +160,7 @@ export function Composer({ conversationId, accountId, accountLabel }: ComposerPr
     void runGear(prompt)
   }
 
-  const handleSend = async (finalPrompt: string): Promise<void> => {
+  const handleSend = async (finalPrompt: string, gearMeta: GearMeta | null = null): Promise<void> => {
     if (conversationId === null) {
       rendererLogger.warn('ui', 'send-no-conversation', 'Send clicked with no active conversation')
       return
@@ -164,7 +172,8 @@ export function Composer({ conversationId, accountId, accountLabel }: ComposerPr
         prompt: finalPrompt,
         model,
         breadth,
-        format
+        format,
+        gearMeta
       })
       if (result.ok) {
         setPrompt('')
@@ -203,12 +212,25 @@ export function Composer({ conversationId, accountId, accountLabel }: ComposerPr
   }
 
   const handleGearSendOriginal = (): void => {
-    void handleSend(gearState?.originalPrompt ?? prompt)
+    void handleSend(gearState?.originalPrompt ?? prompt, null)
     setGearState(null)
   }
 
   const handleGearSendGeared = (editedGeared: string): void => {
-    void handleSend(editedGeared)
+    if (!gearState) {
+      void handleSend(editedGeared, null)
+      setGearState(null)
+      return
+    }
+    const meta: GearMeta = {
+      originalPrompt: gearState.originalPrompt,
+      gearedPrompt: editedGeared,
+      originalTokens: gearState.tokenBreakdown.originalInputEstimate,
+      gearedTokens: gearState.tokenBreakdown.gearedInputEstimate,
+      haikuMetaTokens: gearState.tokenBreakdown.haikuInputTokens + gearState.tokenBreakdown.haikuOutputTokens,
+      critiqueFlags: gearState.critiqueFlags.map((f) => `${f.severity}: ${f.message}`)
+    }
+    void handleSend(editedGeared, meta)
     setGearState(null)
   }
 
@@ -264,6 +286,12 @@ export function Composer({ conversationId, accountId, accountLabel }: ComposerPr
             onPush={handlePush}
           />
           <TelemetryStrip costPreview={liveEstimate} />
+          {showFeedbackBar && lastTurn && (
+            <TurnFeedbackBar
+              turnId={lastTurn.id}
+              onSubmit={(id, feedback) => { void updateFeedback(id, feedback) }}
+            />
+          )}
         </div>
       )}
       <AuthMissingModal open={authMissingOpen} onDismiss={() => setAuthMissingOpen(false)} accountLabel={accountLabel} />
