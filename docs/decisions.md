@@ -520,3 +520,27 @@ B) Plaintext in the existing `api_key_ref` column of the SQLite DB. Simple, no n
 
 **Discovered:** Phase 6A multi-account auth wiring.
 
+
+## ADR-035 (2026-05-15) — Last-active selections persisted via the `settings` key/value table; restore on mount with fallback if the target is missing
+
+**Context:** Phase 6B needs to remember which account + project the user had selected at the last session, so reopening the app doesn't dump them back to defaults.
+
+**Options considered:**
+- A) Dedicated `app_state` table with one row. Overkill for two fields.
+- B) JSON file at `userData/last-active.json`. Adds a second persistence mechanism.
+- C) Use the existing `settings(key, value)` table (schema landed Phase 3, never wired). Two rows: `lastActiveAccountId`, `lastActiveProjectId`. Values are stringified ints.
+
+**Choice:** C.
+
+**Reasoning:**
+- The `settings` table was designed exactly for this — Phase 3 just never wired it.
+- Phase 8 will add more app-wide singletons here (theme preference, send-confirm toggle, etc.). One table, one access pattern.
+- On boot, AppShell reads both keys in parallel, validates the IDs still exist in the current `accounts` / `projects` lists, and only sets state via a functional setter (`(current) => current ?? id`) — so the restore never clobbers a value the user has already picked between mount and when the async read resolves. If the stored ID is stale (the account/project was deleted in a prior session), it's silently ignored and the existing "first-in-list" default-picker effect runs as fallback.
+
+**Trade-offs:**
+- The renderer makes 2 IPC calls on mount (async). Acceptable — the activeAccountId/activeProjectId state briefly shows null before snapping to last-active. Phase 8 could batch via a single `settings:get-batch` IPC if it matters for UX.
+- Stale IDs are silently ignored (no toast). The fallback picker covers it.
+- Persist failures are warn-level (non-critical); the next launch loses the most-recent active id but nothing else.
+
+**Discovered:** Phase 6B account+project CRUD work.
+
