@@ -66,7 +66,14 @@ export function Composer({ conversationId }: ComposerProps): JSX.Element {
           setAuthMissingOpen(true)
         } else {
           const message = GEAR_ERROR_MESSAGES[code] ?? GEAR_ERROR_MESSAGES.API_UNKNOWN
-          pushToast({ message, severity: 'error' })
+          pushToast({
+            message,
+            severity: 'error',
+            action: {
+              label: 'Send original',
+              onActivate: () => void handleSend(prompt)
+            }
+          })
         }
       }
     } finally {
