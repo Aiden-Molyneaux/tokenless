@@ -35,6 +35,8 @@ import { resolveSkillsRoots } from '@main/skills/roots'
 import { SkillsWatcher } from '@main/skills/watcher'
 import { SkillsHandler } from './skills-handler'
 import { TurnsHandler } from './turns-handler'
+import { TelemetrySummaryHandler } from './telemetry-summary-handler'
+import { pricingFor } from '@main/api/pricing'
 
 export interface IpcRegistration {
   logBridge: LogBridge
@@ -49,6 +51,7 @@ export interface IpcRegistration {
   pathsHandler: PathsHandler
   skillsHandler: SkillsHandler
   turnsHandler: TurnsHandler
+  telemetrySummaryHandler: TelemetrySummaryHandler
   skillsWatcher: SkillsWatcher
   uninstallAll: () => void
 }
@@ -153,6 +156,13 @@ export function registerIpcHandlers(
   const turnsHandler = new TurnsHandler(db, logger, broadcast)
   turnsHandler.install(ipcMain)
 
+  const telemetrySummaryHandler = new TelemetrySummaryHandler(
+    db, logger,
+    (model) => pricingFor(model) ?? null,
+    'haiku'
+  )
+  telemetrySummaryHandler.install(ipcMain)
+
   // Skills subsystem — user + plugin roots only this phase; project-local
   // scanning lands when Phase 7 wires active-project tracking through here.
   const skillsRoots = resolveSkillsRoots(homedir(), null)
@@ -226,6 +236,7 @@ export function registerIpcHandlers(
     settingsHandler,
     pathsHandler,
     turnsHandler,
+    telemetrySummaryHandler,
     skillsHandler,
     skillsWatcher,
     uninstallAll: () => {
@@ -241,6 +252,7 @@ export function registerIpcHandlers(
       settingsHandler.uninstall(ipcMain)
       pathsHandler.uninstall(ipcMain)
       turnsHandler.uninstall(ipcMain)
+      telemetrySummaryHandler.uninstall(ipcMain)
       void skillsWatcher.stop().then(() => {
         logger.info('skill', 'skills-watcher-stopped', 'Skills filesystem watcher stopped')
       })
