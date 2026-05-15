@@ -577,3 +577,33 @@ B) Plaintext in the existing `api_key_ref` column of the SQLite DB. Simple, no n
 
 **Discovered:** Phase 6C implementation.
 
+
+## ADR-037 (2026-05-15) — Turn capture: one user-side write at Send, one assistant-side write on response-complete; ResponseAccumulator owns the bracketing
+
+**Context:** Phase 7B closes the persistence gap where the `turns` table was being written only on the user side (via an inline INSERT in `cc-handler.send` that conflated original vs. final text and skipped tokens entirely), with no assistant rows ever written.
+
+**Options considered:**
+- A) Write user + assistant turns in cc-handler.send (assistant in a setTimeout). Doesn't actually capture text — the response hasn't arrived yet.
+- B) Subscribe to cc:output-chunk in the renderer and write turns from there. Crosses the main/renderer boundary unnecessarily; the main process already has the stream.
+- C) **Chosen.** Extend the PTY parser to emit `response-chunk` for non-event lines; introduce `ResponseAccumulator` per-slot that buffers chunks between user-send (`startCollecting()`) and `response-complete` (drain). On drain, lifecycle hooks call `TurnsDao.createAssistantTurn` via a new `onAssistantTurn` callback.
+
+**Why C:**
+- Single source of truth: lifecycle owns the per-PTY accumulator just like it owns the parser. No renderer logic needs to know about turn persistence.
+- Pure functions are testable: accumulator + parser logic are isolated and unit-tested without touching DB or PTY.
+- Pre-existing `response-complete` event from Phase 4B already exists — we hook the data flow into the same event boundary.
+- `cc-handler.send` becomes the single user-side write site via `TurnsDao.createUserTurn` (replaces the inline INSERT that Phase 5 added).
+
+**GearMeta on user turn:** when Send fires from the GearReviewPane, the renderer threads `{ originalPrompt, gearedPrompt, originalTokens, gearedTokens, haikuMetaTokens, critiqueFlags }` through `cc:send`. TurnsDao writes all of it into one user-turn row. Plain Send passes `gearMeta: null` and the user turn ends up with `original_prompt = req.prompt` (no geared variant; that's correct semantically).
+
+**Critique flag lossy mapping:** `GearMeta.critiqueFlags: readonly string[]` stores `"<severity>: <message>"` strings. The full `CritiqueFlag { severity, message }` shape from the gearing API is collapsed at the Composer's `handleGearSendGeared` mapping. For v1 telemetry / replay this is sufficient; Phase 7C/8 may extend the schema if structured critique becomes important.
+
+**Feedback model:** assistant turns get a nullable `feedback` column accepting `'up' | 'down' | 'shrug'`. The Composer mounts a `TurnFeedbackBar` ONLY when the latest turn is an unrated assistant turn (so it disappears after clicking and doesn't reappear unless a new assistant turn arrives). Aggregate counts surface in the Dev Mode panel footer for v1; a per-project breakdown is Phase 6D / Phase 8 polish.
+
+**Trade-offs:**
+- The parser now emits one `response-chunk` event per non-event line — higher volume on the IPC channel. Acceptable: events are small + the existing throttle / IPC pipeline handles it. Phase 8 can debounce if measured to matter.
+- The accumulator joins lines with `\n` — preserves original line breaks but loses trailing/leading whitespace from the raw PTY stream. Acceptable for prompt-feeding purposes; visual replay can fetch raw chunks separately if needed (post-v1 / replay UI).
+- `responseTokens` comes from the most recent `tokens-used` event before `response-complete`. Real claude may not always emit `tokens-used` mid-stream; in that case we record `null`. UI must handle null (already does).
+- A resumed conversation that's mid-response when restored will MISS that response's assistant turn (the accumulator starts fresh and isn't collecting). Acceptable for v1; the user gets to see the response on screen and the next turn captures normally.
+
+**Discovered:** Phase 7B implementation; the gap was identified during Phase 6D telemetry-summary scope planning (turns table was being written too sparsely to support cost-over-time queries).
+
