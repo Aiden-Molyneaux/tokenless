@@ -3,6 +3,7 @@
 // — any failure rolls the whole batch back so we never have a partial schema.
 
 import type { Database } from 'better-sqlite3'
+import { backupDb, pruneOldBackups } from './backup'
 
 export interface Migration {
   readonly version: number
@@ -28,7 +29,20 @@ export function listAppliedVersions(db: Database): readonly number[] {
   return rows.map((r) => r.version)
 }
 
-export function runMigrations(db: Database, migrations: readonly Migration[]): void {
+export interface RunMigrationsOptions {
+  // When both are provided AND there are pending migrations, the current DB
+  // is copied to backupsDir before the migration batch applies. No-op
+  // otherwise — caller may omit (tests typically do).
+  readonly dbPath?: string
+  readonly backupsDir?: string
+  readonly keepBackups?: number  // default 5
+}
+
+export function runMigrations(
+  db: Database,
+  migrations: readonly Migration[],
+  opts: RunMigrationsOptions = {}
+): void {
   ensureMetaTable(db)
   const applied = new Set(listAppliedVersions(db))
   const pending = migrations
@@ -36,6 +50,14 @@ export function runMigrations(db: Database, migrations: readonly Migration[]): v
     .slice()
     .sort((a, b) => a.version - b.version)
   if (pending.length === 0) return
+
+  // Backup BEFORE the first migration fires. Requires both dbPath + backupsDir.
+  if (opts.dbPath && opts.backupsDir) {
+    const fromVersion = applied.size > 0 ? Math.max(...applied) : 0
+    const toVersion = pending[pending.length - 1].version
+    backupDb(opts.dbPath, opts.backupsDir, fromVersion, toVersion)
+    pruneOldBackups(opts.backupsDir, opts.keepBackups ?? 5)
+  }
 
   const apply = db.transaction((batch: readonly Migration[]) => {
     const record = db.prepare(

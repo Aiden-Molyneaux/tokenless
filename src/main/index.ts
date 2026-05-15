@@ -93,7 +93,8 @@ app.whenReady().then(() => {
   const dbPath = join(app.getPath('userData'), 'tokenless.db')
   try {
     db = openDatabase(dbPath)
-    runMigrations(db, MIGRATIONS)
+    const backupsDir = join(app.getPath('userData'), 'backups')
+    runMigrations(db, MIGRATIONS, { dbPath, backupsDir })
     seedBuiltinData(db)
     // E2E test harness opt-out: pre-seed `onboarding.complete = '1'` so the
     // wizard overlay doesn't block clicks on the AppShell underneath. Real
@@ -101,6 +102,7 @@ app.whenReady().then(() => {
     // way regardless.
     if (process.env['TOKENLESS_SKIP_ONBOARDING'] === '1') {
       SettingsDao.setSetting(db, 'onboarding.complete', '1')
+      SettingsDao.setSetting(db, 'privacy.acknowledged', '1')
     }
     logger.info('db', 'db-online', 'Database opened, migrations applied', { dbPath })
   } catch (error) {
