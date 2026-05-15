@@ -1,5 +1,12 @@
 import { test, expect, _electron as electron, type ElectronApplication, type Page } from '@playwright/test'
+import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+
+// Read package.json's version at test time so this assertion doesn't break
+// every time the version bumps. Phase 8B (v1.0) wired the preload to read
+// the baked __APP_VERSION__ from package.json via Vite define — the test
+// should reflect the same source of truth.
+const PACKAGE_VERSION = JSON.parse(readFileSync(resolve('package.json'), 'utf8')).version as string
 
 let app: ElectronApplication
 
@@ -56,5 +63,5 @@ test('app shell renders TopBar brand + ConversationSidebar + MainPane with compo
 test('preload exposes window.tokenless.version', async () => {
   const page = await app.firstWindow()
   const version = await page.evaluate(() => window.tokenless?.version)
-  expect(version).toBe('0.0.1')
+  expect(version).toBe(PACKAGE_VERSION)
 })
