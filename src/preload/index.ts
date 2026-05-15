@@ -79,7 +79,13 @@ import {
   type DraftsGetRequest,
   type DraftsGetResult,
   type DraftsClearRequest,
-  type DraftsClearResult
+  type DraftsClearResult,
+  IPC_SETTINGS_GET,
+  IPC_SETTINGS_SET,
+  type SettingsGetRequest,
+  type SettingsGetResult,
+  type SettingsSetRequest,
+  type SettingsSetResult
 } from '@shared/ipc'
 
 const api = {
@@ -225,6 +231,14 @@ const api = {
     },
     clear(req: DraftsClearRequest): Promise<DraftsClearResult> {
       return ipcRenderer.invoke(IPC_DRAFTS_CLEAR, req) as Promise<DraftsClearResult>
+    }
+  },
+  settings: {
+    get(req: SettingsGetRequest): Promise<SettingsGetResult> {
+      return ipcRenderer.invoke(IPC_SETTINGS_GET, req) as Promise<SettingsGetResult>
+    },
+    set(req: SettingsSetRequest): Promise<SettingsSetResult> {
+      return ipcRenderer.invoke(IPC_SETTINGS_SET, req) as Promise<SettingsSetResult>
     }
   }
 }

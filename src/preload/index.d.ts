@@ -9,7 +9,11 @@ import type {
   DraftsGetRequest,
   DraftsGetResult,
   DraftsClearRequest,
-  DraftsClearResult
+  DraftsClearResult,
+  SettingsGetRequest,
+  SettingsGetResult,
+  SettingsSetRequest,
+  SettingsSetResult
 } from '@shared/ipc'
 import type {
   AccountsListResult,
@@ -98,6 +102,10 @@ export interface TokenlessApi {
     save(req: DraftsSaveRequest): Promise<DraftsSaveResult>
     get(req: DraftsGetRequest): Promise<DraftsGetResult>
     clear(req: DraftsClearRequest): Promise<DraftsClearResult>
+  }
+  readonly settings: {
+    get(req: SettingsGetRequest): Promise<SettingsGetResult>
+    set(req: SettingsSetRequest): Promise<SettingsSetResult>
   }
 }
 
