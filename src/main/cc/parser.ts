@@ -77,6 +77,9 @@ export class CcParser {
       })
       return
     }
-    // Unknown line — ignored
+    // Unknown lines are emitted as response-chunk — the accumulator (or any
+    // other listener) decides what to keep based on its own state machine
+    // (bracketed between user-send and response-complete events).
+    this.onEvent({ kind: 'response-chunk', text: line })
   }
 }

@@ -26,8 +26,14 @@ export interface CcEventTokensUsed {
   readonly total: number
 }
 
+export interface CcEventResponseChunk {
+  readonly kind: 'response-chunk'
+  readonly text: string
+}
+
 export type CcEvent =
   | CcEventPromptReady
   | CcEventToolCall
   | CcEventResponseComplete
   | CcEventTokensUsed
+  | CcEventResponseChunk

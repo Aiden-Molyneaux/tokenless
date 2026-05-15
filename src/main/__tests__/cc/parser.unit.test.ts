@@ -58,12 +58,15 @@ describe('cc/parser', () => {
     expect(events).toEqual([{ kind: 'tool-call', name: 'Read', summary: 'src/main/index.ts' }])
   })
 
-  it('ignores lines that match no known pattern', () => {
+  it('emits response-chunk for lines that match no known pattern', () => {
     const { events, onEvent } = collect()
     const p = new CcParser(onEvent)
     p.feed('arbitrary chatter from claude\r\n')
     p.feed('more random text\r\n')
-    expect(events).toEqual([])
+    expect(events).toEqual([
+      { kind: 'response-chunk', text: 'arbitrary chatter from claude' },
+      { kind: 'response-chunk', text: 'more random text' }
+    ])
   })
 
   it('handles a line split across two chunks', () => {
