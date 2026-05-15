@@ -644,3 +644,113 @@ Hard to trigger manually (Haiku usually obeys). The parser handles this via Zod.
 ### S-7C.7 Parent deletion sets branch.parent_conversation_id to NULL
 1. Branch a conversation. Then delete the parent (via the existing conversations:delete IPC; UI for this is currently only direct DB or future Phase 8).
 2. **Expect:** The branch's `parent_conversation_id` becomes NULL (ON DELETE SET NULL). The branch keeps existing. Its title still starts with "↳" but the sidebar indent disappears on next render (since `parentConversationId === null` now).
+
+## Phase 8A — Polish
+
+### S-8A.1 Logs at userData/logs/
+1. Launch the app.
+2. Inspect `%APPDATA%\tokenless\logs\` (Windows) — there should be a `tokenless-<date>.jsonl` file growing as you click around.
+3. `%USERPROFILE%\.tokenless\logs\` (the old location) is no longer being written to.
+
+### S-8A.2 Main window resizable + has minimum size
+1. Drag the right edge of the main window inward.
+2. **Expect:** window stops at 900px wide. Same for height at 600px.
+3. Drag outward — no maximum; the layout reflows correctly.
+
+### S-8A.3 Terminal copy with Ctrl+Shift+C
+1. Send a prompt; wait for response output.
+2. Drag-select some response text in the terminal pane.
+3. Press Ctrl+Shift+C. Paste into another app — the selected text arrives.
+4. Press Ctrl+C (no Shift) — sends SIGINT to claude, NOT copy. The selection stays visible but no clipboard write.
+
+### S-8A.4 Terminal copy with right-click
+1. Drag-select some text. Right-click anywhere in the terminal pane.
+2. **Expect:** text copied to clipboard. No OS context menu appears (we prevented default).
+3. Right-click without a selection: OS default menu appears (we didn't preventDefault).
+
+### S-8A.5 Terminal keystroke pass-through (Y/N prompts)
+1. Trigger a flow where claude asks a Y/N question (e.g. "Use tool X? [y/n]").
+2. Click the terminal pane to give it focus.
+3. Press `y` followed by Enter.
+4. **Expect:** the keystroke goes to claude directly. No new turn row in the `turns` table.
+
+### S-8A.6 Dev Mode shows historical logs on open
+1. Click around for ~30 seconds (generates ui logs).
+2. Open Dev Mode.
+3. **Expect:** Within ~1 second the panel shows records from app boot onward (header briefly shows "loading history…"). LogTable sorts newest at top by default — scroll down to find boot-time records.
+
+### S-8A.7 Pricing IPC drives model dropdown
+1. Open the composer's Model dropdown.
+2. **Expect:** Three options (Haiku 4.5, Sonnet 4.6, Opus 4.7) with descriptions ("fastest · cheapest", "balanced", "most capable"). No references to "mock" anywhere.
+3. Default selection is Opus (until gearing defaults set otherwise via Settings).
+
+### S-8A.8 Outside-click closes popovers
+1. Click the TelemetryPill in the TopBar — popover opens.
+2. Click anywhere outside the pill/popover.
+3. **Expect:** popover closes.
+4. Same for the Templates ▾ button + popover.
+
+### S-8A.9 Modal focus management
+1. Trigger AuthMissingModal (e.g., switch to an account with no API key, click Gear).
+2. **Expect:** the "Got it" button is focused (visible focus ring). Press Escape — modal closes.
+3. Same for ClaudeNotFoundModal.
+
+### S-8A.10 Persistent CostPreview after Send
+1. Type a prompt + click Gear + wait for the geared pane.
+2. Click "Send Geared".
+3. After the send, the composer textarea is empty.
+4. **Expect:** TelemetryStrip shows "Last gear cost: $X.XX" (the cost from the gearing call just completed).
+5. Start typing a new prompt — TelemetryStrip switches to showing the live estimate.
+
+### S-8A.11 "Send original" toast reads latest prompt
+1. Type "first prompt", click Gear, wait for failure (e.g. with no API key).
+2. The error toast appears with "Send original" action.
+3. While the toast is visible, type more — now the composer says "first prompt and more".
+4. Click "Send original" in the toast.
+5. **Expect:** the FULL CURRENT prompt ("first prompt and more") is sent, not the original captured at toast-creation time.
+
+### S-8A.12 AI error analysis on Dev Mode error row
+1. Trigger an error log (e.g. attempt Gear with no account/key).
+2. Open Dev Mode. Find the error row (severity=error). Click it to expand.
+3. **Expect:** "Analyze with AI" button visible.
+4. Click it. Loading state briefly. Result panel appears with Haiku's analysis (≤200 words plain text).
+
+### S-8A.13 Settings page opens via TopBar gear icon
+1. Click the Settings button in the TopBar.
+2. **Expect:** the view switches from AppShell to SettingsView with 6 sections (Accounts, Gearing Defaults, Send Confirm, Dev Mode, Telemetry, Paths).
+3. Click "← Back" — returns to AppShell.
+
+### S-8A.14 Gearing defaults persist + take effect
+1. In Settings → Gearing Defaults, change model to "Haiku 4.5".
+2. Back to shell. Open a new conversation.
+3. **Expect:** the Composer's Model dropdown defaults to Haiku, not Opus.
+4. Restart the app. Verify the default still sticks.
+
+### S-8A.15 Send-confirm toggle gates Send
+1. In Settings → Send Confirm, toggle on.
+2. Back to shell. Type a prompt + click Send.
+3. **Expect:** ConfirmModal "Send prompt?" appears. Click Cancel — nothing sent. Click Confirm — prompt sent normally.
+4. Toggle off in Settings — Send works without the modal.
+
+### S-8A.16 Paths section "Open folder" buttons
+1. Settings → Paths. Click "Open folder" next to Logs.
+2. **Expect:** Windows file explorer (or OS equivalent) opens to `%APPDATA%\tokenless\logs\`.
+
+### S-8A.17 Onboarding wizard runs on first launch
+1. Fresh install (delete `%APPDATA%\tokenless\`).
+2. Launch.
+3. **Expect:** Welcome step appears over a dimmed AppShell. Progress dots show step 1 of 4.
+4. Click through: Welcome → API Key (paste a real `sk-ant-...` key) → First Project (name + valid rootPath) → Done.
+5. After "Start your first conversation": wizard closes; you're in the AppShell with one account + one project ready.
+6. Restart the app — wizard does NOT reappear.
+
+### S-8A.18 Skip in wizard re-shows next launch
+1. Fresh install. Launch. Wizard appears.
+2. Click "Skip" (top-right).
+3. **Expect:** wizard closes. You see the AppShell with no projects.
+4. Restart the app — wizard reappears.
+
+### S-8A.19 Run onboarding again from Settings
+1. Complete the wizard once.
+2. Open Settings. Click "Run onboarding again".
+3. **Expect:** Wizard reappears at step 1. The previously-created account + project still exist (the wizard doesn't delete them — it just re-runs the flow).
