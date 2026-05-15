@@ -1,8 +1,6 @@
 import type { DropdownItem } from '../components/common/Dropdown'
 
-// Mock dropdown options for ConfigsRow. Phase 5 replaces with real models
-// (from Anthropic SDK) and Phase 6 replaces skill mocks with real ones
-// discovered from ~/.claude/skills/.
+// Mock dropdown options for ConfigsRow (models/breadths/formats only). Phase 6C wires real skill data via useSkills(); see Composer.
 
 export const MOCK_MODELS: readonly DropdownItem[] = [
   { value: 'haiku', label: 'Haiku 4.5', description: 'fastest · cheapest' },
@@ -23,9 +21,3 @@ export const MOCK_FORMATS: readonly DropdownItem[] = [
   { value: 'json', label: 'JSON', description: 'structured data' }
 ]
 
-export const MOCK_SKILLS: readonly DropdownItem[] = [
-  { value: '', label: 'None', description: 'no skill requested' },
-  { value: 'simplify', label: 'simplify', description: 'review changed code for reuse + quality' },
-  { value: 'review', label: 'review', description: 'review a pull request' },
-  { value: 'security-review', label: 'security-review', description: 'security audit of pending changes' }
-]

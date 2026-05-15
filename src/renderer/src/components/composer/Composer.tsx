@@ -1,9 +1,12 @@
-import { useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
+import type { ReactNode } from 'react'
 import type { GearResult } from '@shared/types/gearing'
 import { rendererLogger } from '../../observability/logger-bridge'
 import { useToast } from '../../hooks/use-toast'
 import { useDraftAutosave } from '../../hooks/use-draft-autosave'
-import { MOCK_BREADTHS, MOCK_FORMATS, MOCK_MODELS, MOCK_SKILLS } from '../../mocks/dropdown-options'
+import { MOCK_BREADTHS, MOCK_FORMATS, MOCK_MODELS } from '../../mocks/dropdown-options'
+import { useSkills } from '../../hooks/use-skills'
+import type { DropdownItem } from '../common/Dropdown'
 import { GearReviewPane } from '../gear-review/GearReviewPane'
 import { useLiveCostEstimate } from '../../hooks/use-live-cost-estimate'
 import { AuthMissingModal } from '../notifications/AuthMissingModal'
@@ -41,7 +44,7 @@ export function Composer({ conversationId, accountId, accountLabel }: ComposerPr
   const [model, setModel] = useState<string>(MOCK_MODELS[2].value) // opus default
   const [breadth, setBreadth] = useState<string>(MOCK_BREADTHS[1].value) // normal default
   const [format, setFormat] = useState<string>(MOCK_FORMATS[0].value) // prose default
-  const [skill, setSkill] = useState<string>(MOCK_SKILLS[0].value) // none default
+  const [skill, setSkill] = useState<string>('') // none default (empty string = "None" entry)
   const [gearState, setGearState] = useState<GearResult | null>(null)
   const [sending, setSending] = useState(false)
   const [gearing, setGearing] = useState(false)
@@ -49,6 +52,61 @@ export function Composer({ conversationId, accountId, accountLabel }: ComposerPr
   const { push: pushToast } = useToast()
   const liveEstimate = useLiveCostEstimate({ prompt, model, breadth })
   const { clear: clearDraft } = useDraftAutosave(conversationId, prompt, setPrompt)
+  const { skills, toggleFavorite, toggleHidden } = useSkills()
+
+  const skillItems: readonly DropdownItem[] = useMemo(() => [
+    { value: '', label: 'None', description: 'no skill requested' },
+    ...skills
+      .filter((s) => !s.hidden)
+      .map((s) => ({
+        value: s.path,
+        label: s.favorited ? `★ ${s.name}` : s.name,
+        description: s.description ?? `${s.source} skill`
+      }))
+  ], [skills])
+
+  const renderSkillItem = useCallback((item: DropdownItem, _isActive: boolean): ReactNode => {
+    if (item.value === '') {
+      return (
+        <>
+          <span className="dropdown__item-label">{item.label}</span>
+          <span className="dropdown__item-description">{item.description}</span>
+        </>
+      )
+    }
+    const matchedSkill = skills.find((s) => s.path === item.value)
+    if (!matchedSkill) return null
+    return (
+      <>
+        <span className="dropdown__item-label">{item.label}</span>
+        {item.description && <span className="dropdown__item-description">{item.description}</span>}
+        <span className="dropdown__item-actions">
+          <button
+            type="button"
+            className="dropdown__item-action"
+            aria-label={matchedSkill.favorited ? 'Unfavorite' : 'Favorite'}
+            onClick={(e) => {
+              e.stopPropagation()
+              void toggleFavorite(matchedSkill.id, !matchedSkill.favorited)
+            }}
+          >
+            {matchedSkill.favorited ? '★' : '☆'}
+          </button>
+          <button
+            type="button"
+            className="dropdown__item-action"
+            aria-label="Hide"
+            onClick={(e) => {
+              e.stopPropagation()
+              void toggleHidden(matchedSkill.id, true)
+            }}
+          >
+            ✕
+          </button>
+        </span>
+      </>
+    )
+  }, [skills, toggleFavorite, toggleHidden])
 
   const runGear = async (originalPrompt: string): Promise<void> => {
     // Gearing doesn't require an active conversation — it's a pure Anthropic
@@ -193,6 +251,8 @@ export function Composer({ conversationId, accountId, accountLabel }: ComposerPr
             onFormatChange={setFormat}
             skill={skill}
             onSkillChange={setSkill}
+            skillItems={skillItems}
+            renderSkillItem={renderSkillItem}
           />
           <ActionsRow
             promptEmpty={prompt.length === 0}

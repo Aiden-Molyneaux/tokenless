@@ -1,10 +1,11 @@
+import type { ReactNode } from 'react'
 import { Dropdown } from '../common/Dropdown'
+import type { DropdownItem } from '../common/Dropdown'
 import { InfoTooltip } from '../common/InfoTooltip'
 import {
   MOCK_BREADTHS,
   MOCK_FORMATS,
-  MOCK_MODELS,
-  MOCK_SKILLS
+  MOCK_MODELS
 } from '../../mocks/dropdown-options'
 
 interface ConfigsRowProps {
@@ -16,6 +17,8 @@ interface ConfigsRowProps {
   onFormatChange: (value: string) => void
   skill: string
   onSkillChange: (value: string) => void
+  skillItems: readonly DropdownItem[]
+  renderSkillItem?: (item: DropdownItem, isActive: boolean) => ReactNode
 }
 
 // The row of 4 configuration dropdowns below the prompt textarea.
@@ -72,9 +75,10 @@ export function ConfigsRow(props: ConfigsRowProps): JSX.Element {
       >
         <Dropdown
           label="Skill:"
-          items={MOCK_SKILLS}
+          items={props.skillItems}
           activeValue={props.skill}
           onSelect={props.onSkillChange}
+          renderItem={props.renderSkillItem}
         />
       </InfoTooltip>
     </div>
