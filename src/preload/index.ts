@@ -145,7 +145,14 @@ import {
   type PricingListResult,
   IPC_AI_ANALYZE_ERROR,
   type AiAnalyzeErrorRequest,
-  type AiAnalyzeErrorResult
+  type AiAnalyzeErrorResult,
+  IPC_CRASH_SHOW,
+  IPC_CRASH_RESTART,
+  IPC_CRASH_GET_REPORT,
+  type CrashShowPayload,
+  type CrashGetReportRequest,
+  type CrashGetReportResult,
+  type CrashRestartResult
 } from '@shared/ipc'
 
 const api = {
@@ -389,6 +396,19 @@ const api = {
   ai: {
     analyzeError(req: AiAnalyzeErrorRequest): Promise<AiAnalyzeErrorResult> {
       return ipcRenderer.invoke(IPC_AI_ANALYZE_ERROR, req) as Promise<AiAnalyzeErrorResult>
+    }
+  },
+  crash: {
+    getReport(req: CrashGetReportRequest): Promise<CrashGetReportResult> {
+      return ipcRenderer.invoke(IPC_CRASH_GET_REPORT, req) as Promise<CrashGetReportResult>
+    },
+    restart(): Promise<CrashRestartResult> {
+      return ipcRenderer.invoke(IPC_CRASH_RESTART) as Promise<CrashRestartResult>
+    },
+    onCrash(fn: (payload: CrashShowPayload) => void): () => void {
+      const listener = (_e: unknown, payload: CrashShowPayload): void => fn(payload)
+      ipcRenderer.on(IPC_CRASH_SHOW, listener as never)
+      return () => ipcRenderer.removeListener(IPC_CRASH_SHOW, listener as never)
     }
   }
 }

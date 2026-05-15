@@ -41,6 +41,7 @@ import { pricingFor, PRICING } from '@main/api/pricing'
 import { PricingHandler } from './pricing-handler'
 import type { PricingEntry } from '@shared/ipc/pricing'
 import { ErrorAnalysisHandler } from './error-analysis-handler'
+import { CrashHandler } from './crash-handler'
 
 export interface IpcRegistration {
   logBridge: LogBridge
@@ -59,6 +60,7 @@ export interface IpcRegistration {
   telemetrySummaryHandler: TelemetrySummaryHandler
   pricingHandler: PricingHandler
   errorAnalysisHandler: ErrorAnalysisHandler
+  crashHandler: CrashHandler
   skillsWatcher: SkillsWatcher
   uninstallAll: () => void
 }
@@ -189,6 +191,10 @@ export function registerIpcHandlers(
   const errorAnalysisHandler = new ErrorAnalysisHandler(db, logger, clientRegistry)
   errorAnalysisHandler.install(ipcMain)
 
+  const crashHandler = new CrashHandler(logger, broadcast)
+  crashHandler.install(ipcMain)
+  crashHandler.installUncaughtHandlers()
+
   // Skills subsystem — user + plugin roots only this phase; project-local
   // scanning lands when Phase 7 wires active-project tracking through here.
   const skillsRoots = resolveSkillsRoots(homedir(), null)
@@ -266,6 +272,7 @@ export function registerIpcHandlers(
     telemetrySummaryHandler,
     pricingHandler,
     errorAnalysisHandler,
+    crashHandler,
     skillsHandler,
     skillsWatcher,
     uninstallAll: () => {
@@ -285,6 +292,7 @@ export function registerIpcHandlers(
       telemetrySummaryHandler.uninstall(ipcMain)
       pricingHandler.uninstall(ipcMain)
       errorAnalysisHandler.uninstall(ipcMain)
+      crashHandler.uninstall(ipcMain)
       void skillsWatcher.stop().then(() => {
         logger.info('skill', 'skills-watcher-stopped', 'Skills filesystem watcher stopped')
       })

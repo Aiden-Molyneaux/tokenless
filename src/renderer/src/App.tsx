@@ -9,6 +9,8 @@ import { ToastProvider } from './hooks/use-toast'
 import { readSetting, writeSetting } from './hooks/use-settings'
 import { SETTING_ONBOARDING_COMPLETE, SETTING_PRIVACY_ACKNOWLEDGED } from '@shared/types/settings-keys'
 import { PrivacyNoticeModal } from './components/notifications/PrivacyNoticeModal'
+import { CrashReporterModal } from './components/notifications/CrashReporterModal'
+import type { CrashReport } from '@shared/types/crash-report'
 
 const LS_KEY = 'tokenless.devMode'
 
@@ -35,11 +37,18 @@ function AppContent(): JSX.Element {
   const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null)
   // null = loading; false = not yet acknowledged; true = acknowledged
   const [privacyOk, setPrivacyOk] = useState<boolean | null>(null)
+  const [crashReport, setCrashReport] = useState<CrashReport | null>(null)
 
   useEffect(() => {
     rendererLogger.info('ui', 'mount', 'App mounted', { devMode })
     // Intentionally not re-firing on devMode change; this is a one-shot startup log
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    return window.tokenless.crash.onCrash(({ report }) => {
+      setCrashReport(report)
+    })
   }, [])
 
   useEffect(() => {
@@ -102,6 +111,12 @@ function AppContent(): JSX.Element {
       {showOnboarding && (
         <OnboardingWizard onClose={() => setOnboardingDone(true)} />
       )}
+      <CrashReporterModal
+        open={crashReport !== null}
+        report={crashReport}
+        allowContinue={false}
+        onContinue={() => setCrashReport(null)}
+      />
     </>
   )
 }

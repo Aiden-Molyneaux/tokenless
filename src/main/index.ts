@@ -3,7 +3,6 @@ import { join } from 'node:path'
 import { existsSync } from 'node:fs'
 import {
   FileSink,
-  installUncaughtHandlers,
   Logger
 } from './observability'
 import type { Broadcast } from './ipc/log-bridge'
@@ -24,8 +23,6 @@ import {
 const logDir = join(app.getPath('userData'), 'logs')
 const fileSink = new FileSink(logDir)
 const logger = new Logger(fileSink, 5000, 'main')
-
-installUncaughtHandlers(logger)
 
 logger.info('observability', 'logger-online', 'Logger initialized', { logDir })
 

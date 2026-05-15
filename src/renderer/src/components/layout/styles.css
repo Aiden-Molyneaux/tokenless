@@ -509,4 +509,42 @@
   font-size: var(--tl-text-sm);
   font-family: var(--tl-font-mono);
 }
+
+/* ===== Crash reporter modal ===== */
+
+.crash-modal { max-width: 600px; }
+.crash-modal__source {
+  font-size: var(--tl-text-sm);
+  color: var(--tl-mute);
+  margin: 0 0 var(--tl-space-2) 0;
+}
+.crash-modal__message {
+  background: var(--tl-error-bg);
+  color: var(--tl-error);
+  border: 1px solid var(--tl-error);
+  border-radius: var(--tl-radius-sm);
+  padding: var(--tl-space-2);
+  margin: 0 0 var(--tl-space-2) 0;
+  font-family: var(--tl-font-mono);
+  font-size: var(--tl-text-sm);
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+.crash-modal__stack {
+  background: var(--tl-bg-mute);
+  border-radius: var(--tl-radius-sm);
+  padding: var(--tl-space-2);
+  margin: 0 0 var(--tl-space-3) 0;
+  font-family: var(--tl-font-mono);
+  font-size: var(--tl-text-xs);
+  max-height: 200px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+}
+.crash-modal__hint {
+  font-size: var(--tl-text-sm);
+  color: var(--tl-mute);
+  margin: 0 0 var(--tl-space-3) 0;
+  line-height: var(--tl-leading-normal);
+}
 .telemetry-summary-popover__empty { margin: 0; color: var(--tl-mute); font-size: var(--tl-text-sm); }

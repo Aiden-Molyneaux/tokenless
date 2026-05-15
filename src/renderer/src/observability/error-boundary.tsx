@@ -1,22 +1,25 @@
 import { Component, type ErrorInfo, type PropsWithChildren, type ReactNode } from 'react'
+import type { CrashReport } from '@shared/types/crash-report'
 import { rendererLogger } from './logger-bridge'
+import { CrashReporterModal } from '../components/notifications/CrashReporterModal'
 
 interface State {
   hasError: boolean
   error?: Error
+  report: CrashReport | null
 }
 
 // Top-level React error boundary. Wraps the entire App. On uncaught render
-// errors, logs to main via the renderer logger bridge and renders a minimal
-// fallback that the user can recover from via reload.
+// errors, logs to main via the renderer logger bridge, fetches a full crash
+// report (including the last 100 log records), and renders CrashReporterModal.
 //
 // React error boundaries must be class components — function components
 // don't support componentDidCatch / getDerivedStateFromError.
 
 export class AppErrorBoundary extends Component<PropsWithChildren, State> {
-  state: State = { hasError: false }
+  state: State = { hasError: false, report: null }
 
-  static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error): Partial<State> {
     return { hasError: true, error }
   }
 
@@ -28,26 +31,28 @@ export class AppErrorBoundary extends Component<PropsWithChildren, State> {
       { componentStack: errorInfo.componentStack ?? null },
       error.stack
     )
+    void window.tokenless.crash.getReport({
+      source: 'renderer',
+      message: error.message,
+      stack: error.stack ?? null
+    }).then((r) => {
+      if (r.ok) this.setState({ report: r.data.report })
+    })
   }
 
-  reload = (): void => {
-    window.location.reload()
+  handleContinue = (): void => {
+    this.setState({ hasError: false, error: undefined, report: null })
   }
 
   render(): ReactNode {
     if (this.state.hasError) {
       return (
-        <div className="error-boundary">
-          <h1 className="error-boundary__title">Something broke</h1>
-          <p className="error-boundary__body">
-            The UI hit an error and stopped rendering. The error has been logged.
-            Reload to recover.
-          </p>
-          <p className="error-boundary__detail">{this.state.error?.message ?? 'Unknown error'}</p>
-          <button className="error-boundary__reload" onClick={this.reload} type="button">
-            Reload
-          </button>
-        </div>
+        <CrashReporterModal
+          open
+          report={this.state.report}
+          allowContinue
+          onContinue={this.handleContinue}
+        />
       )
     }
     return this.props.children

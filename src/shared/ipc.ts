@@ -251,6 +251,18 @@ export {
   type AiAnalyzeErrorResult
 } from './ipc/ai-error-analysis'
 
+export {
+  IPC_CRASH_SHOW,
+  IPC_CRASH_RESTART,
+  IPC_CRASH_GET_REPORT,
+  type CrashShowPayload,
+  type CrashGetReportRequest,
+  type CrashGetReportResponse,
+  type CrashGetReportResult,
+  type CrashRestartResponse,
+  type CrashRestartResult
+} from './ipc/crash'
+
 export type IpcChannelName =
   | typeof IPC_LOG_FROM_RENDERER
   | typeof IPC_LOG_TO_RENDERER
@@ -310,3 +322,6 @@ export type IpcChannelName =
   | 'turns:changed'
   | 'pricing:list'
   | 'ai:analyze-error'
+  | 'crash:show'
+  | 'crash:restart'
+  | 'crash:get-report'

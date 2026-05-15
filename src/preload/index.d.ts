@@ -44,6 +44,12 @@ import type {
   AiAnalyzeErrorResult
 } from '@shared/ipc'
 import type {
+  CrashShowPayload,
+  CrashGetReportRequest,
+  CrashGetReportResult,
+  CrashRestartResult
+} from '@shared/ipc'
+import type {
   AccountsListResult,
   AccountsCreateRequest,
   AccountsCreateResult,
@@ -178,6 +184,11 @@ export interface TokenlessApi {
   }
   readonly ai: {
     analyzeError(req: AiAnalyzeErrorRequest): Promise<AiAnalyzeErrorResult>
+  }
+  readonly crash: {
+    getReport(req: CrashGetReportRequest): Promise<CrashGetReportResult>
+    restart(): Promise<CrashRestartResult>
+    onCrash(fn: (payload: CrashShowPayload) => void): () => void
   }
 }
 
