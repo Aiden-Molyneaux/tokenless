@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { GearResult } from '@shared/types/gearing'
 import { rendererLogger } from '../../observability/logger-bridge'
 import { useToast } from '../../hooks/use-toast'
+import { useDraftAutosave } from '../../hooks/use-draft-autosave'
 import { MOCK_BREADTHS, MOCK_FORMATS, MOCK_MODELS, MOCK_SKILLS } from '../../mocks/dropdown-options'
 import { GearReviewPane } from '../gear-review/GearReviewPane'
 import { useLiveCostEstimate } from '../../hooks/use-live-cost-estimate'
@@ -44,6 +45,7 @@ export function Composer({ conversationId }: ComposerProps): JSX.Element {
   const [authMissingOpen, setAuthMissingOpen] = useState(false)
   const { push: pushToast } = useToast()
   const liveEstimate = useLiveCostEstimate({ prompt, model, breadth })
+  const { clear: clearDraft } = useDraftAutosave(conversationId, prompt, setPrompt)
 
   const runGear = async (originalPrompt: string): Promise<void> => {
     // Gearing doesn't require an active conversation — it's a pure Anthropic
@@ -104,6 +106,7 @@ export function Composer({ conversationId }: ComposerProps): JSX.Element {
       })
       if (result.ok) {
         setPrompt('')
+        void clearDraft()  // clears the persisted draft for this conversation
         rendererLogger.info('ui', 'send-success', 'Prompt sent', {
           conversationId,
           turnId: result.data.turnId,
