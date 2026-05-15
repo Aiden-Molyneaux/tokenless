@@ -684,3 +684,36 @@ B) Plaintext in the existing `api_key_ref` column of the SQLite DB. Simple, no n
 
 **Discovered:** Phase 7C implementation; the per-turn picker complexity surfaced during scope planning.
 
+
+## ADR-041 (2026-05-15) — Phase 8A polish architecture: log path under userData; cc:input as a separate IPC; pricing as single source of truth; Settings as a top-level view; Onboarding as a full-screen overlay
+
+**Context:** Phase 8A bundles ~14 polish items that span the renderer, IPC layer, and main process. This ADR documents the non-obvious architectural choices.
+
+**Decisions:**
+
+1. **Logs move to `app.getPath('userData')/logs/`.** Previously at `~/.tokenless/logs/` on POSIX / `%USERPROFILE%/.tokenless/logs/` on Windows; now sit next to the DB at `%APPDATA%/tokenless/`. Electron's `userData` is the conventional root, and `app.getPath('userData')` works synchronously before `app.whenReady()` for the userData key (computed at electron-import time).
+
+2. **`cc:input` is a separate IPC channel from `cc:send`.** Sending a complete prompt creates a `turns` row (Phase 7B), bumps the conversation's `updated_at`, clears the draft. Sending a raw keystroke (e.g. responding "y" to claude's confirmation prompt) does NONE of those — it's a stream-byte write to the PTY. Keeping the channels separate prevents accidental conflation: a turn capture for every keystroke would corrupt the gearing-savings math and balloon the turns table. xterm's `term.onData` fires per-keystroke and routes through `cc:input`.
+
+3. **Pricing IPC (`pricing:list`) is the single source of truth.** Pre-8A there were two duplicate copies of the pricing table — one in `src/main/api/pricing.ts` (canonical), one hardcoded in `src/renderer/src/hooks/use-live-cost-estimate.ts`, plus a third `MOCK_MODELS` array in `mocks/dropdown-options.ts`. Phase 8A consolidates: the main-process table is the source; `pricing.list` IPC exposes it; renderer's `usePricing()` hook fetches once on mount. The renderer no longer hardcodes model IDs or per-million prices.
+
+4. **Settings is a top-level view, not a modal.** App.tsx swaps between `<AppShell />` and `<SettingsView />` via a `view: 'shell' | 'settings'` state. Modals are for narrow interactions; Settings has 6 sections of content with mutation flows (account edit modal opens FROM the Settings page) — fitting it into a modal would create modal-within-modal stacking issues.
+
+5. **Onboarding is a full-screen overlay, not a route.** The wizard renders ON TOP of the underlying AppShell (which stays mounted). Reason: after onboarding completes, the user is one click away from their first conversation in the AppShell — no transition / unmount needed.
+
+6. **"Skip" doesn't mark onboarding complete.** Only finishing all four steps sets `onboarding.complete = '1'`. Skipping closes the wizard but leaves the flag false — the wizard reappears next launch so users who skipped accidentally get another chance. Explicit "Run onboarding again" in Settings clears the flag.
+
+7. **Dev Mode log backfill: 5000 records.** Was `getRecent(1000)`; matches the ring buffer's 5000 capacity. Header shows "loading history…" while the IPC is in-flight so the user knows backfill is happening.
+
+8. **Outside-click closing is a hook, not a portal pattern.** `useOutsideClick(enabled, onOutside)` attaches a `mousedown` listener on document and calls back when the click target is outside the returned ref. Used for TelemetryPill popover + TemplatePicker. Simpler than a portal-based dismiss approach for v1; Phase 8B might revisit for stacked popovers.
+
+9. **§6.5 AI error analysis sends redacted records.** The `ai:analyze-error` handler strips stack traces (often contain absolute paths) before shipping the record to Haiku. Diagnostic fields (severity/category/event/message/context/source) are preserved. Account resolution: explicit accountId if provided, else first account with a non-null apiKey.
+
+**Trade-offs:**
+- Logs path move means existing users (just you, currently) have old logs at `~/.tokenless/logs/` that won't be auto-migrated. Manual move if you care; otherwise the old files stay where they were and new ones land in the new location.
+- `cc:input` is intentionally fire-and-forget from the renderer's perspective (no echo back). Mistyped keystrokes can't be "undone" via the IPC layer; user backspaces in the terminal as they normally would.
+- Pricing IPC introduces a brief window at boot where renderer-side cost estimates return null (until the IPC resolves). UI handles null gracefully with "—".
+- AI error analysis uses Haiku tokens on each click. No rate limiting in 8A — Phase 8B could add a "max N analyses per minute" guard.
+
+**Discovered:** Phase 8A scope conversation + implementation.
+
