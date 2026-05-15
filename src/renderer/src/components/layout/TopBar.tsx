@@ -13,6 +13,7 @@ interface TopBarProps {
   activeAccountId: number | null
   onSelectAccount: (id: number) => void
   onCreateAccount: () => void
+  onEditAccount: () => void
   onOpenSettings: () => void
 }
 
@@ -27,6 +28,7 @@ export function TopBar({
   activeAccountId,
   onSelectAccount,
   onCreateAccount,
+  onEditAccount,
   onOpenSettings
 }: TopBarProps): JSX.Element {
   return (
@@ -34,7 +36,7 @@ export function TopBar({
       <div className="top-bar__brand">TokenLess</div>
       <nav className="top-bar__nav">
         <ProjectSwitcher projects={projects} activeProjectId={activeProjectId} onSelect={onSelectProject} onCreate={onCreateProject} />
-        <AccountSwitcher accounts={accounts} activeAccountId={activeAccountId} onSelect={onSelectAccount} onCreate={onCreateAccount} />
+        <AccountSwitcher accounts={accounts} activeAccountId={activeAccountId} onSelect={onSelectAccount} onCreate={onCreateAccount} onEdit={onEditAccount} />
         <SettingsButton onClick={onOpenSettings} />
       </nav>
     </header>

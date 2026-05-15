@@ -293,6 +293,7 @@
   gap: 0.5rem;
   margin-top: 0.25rem;
 }
+.modal__actions-spacer { flex: 1; }
 .btn {
   padding: 0.4rem 0.9rem;
   border-radius: 4px;
@@ -310,6 +311,15 @@
   border-color: var(--tl-rule-subtle);
   color: var(--tl-text-base);
 }
+.btn--danger {
+  background: transparent;
+  border-color: var(--tl-color-danger, #d22);
+  color: var(--tl-color-danger, #d22);
+}
+.btn--danger:hover:not(:disabled) {
+  background: rgba(196, 68, 68, 0.06);
+}
+.btn--danger:disabled { opacity: 0.6; cursor: default; }
 
 /* ===== Empty projects state ===== */
 
@@ -354,6 +364,17 @@
   color: var(--tl-text-base);
 }
 .account-switcher__add:hover { background: var(--tl-bg-mute); }
+.account-switcher__edit {
+  background: transparent;
+  border: 1px solid var(--tl-rule-subtle);
+  border-radius: 4px;
+  width: 1.8rem;
+  height: 1.8rem;
+  font-size: 0.95rem;
+  cursor: pointer;
+  color: var(--tl-text-base);
+}
+.account-switcher__edit:hover { background: var(--tl-bg-mute); }
 
 .project-switcher { display: inline-flex; align-items: center; gap: 0.25rem; }
 .project-switcher__add {

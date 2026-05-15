@@ -6,15 +6,10 @@ interface AccountSwitcherProps {
   activeAccountId: number | null
   onSelect: (id: number) => void
   onCreate: () => void
+  onEdit: () => void
 }
 
-// Thin wrapper around <Dropdown>. Phase 6 wires real account auth +
-// CLAUDE_CONFIG_DIR + ANTHROPIC_API_KEY injection per ADR-018. Converts
-// number IDs to strings for Dropdown's value prop and back to number in
-// the onSelect callback. Phase 6A adds a "+" button to open the create
-// account modal.
-
-export function AccountSwitcher({ accounts, activeAccountId, onSelect, onCreate }: AccountSwitcherProps): JSX.Element {
+export function AccountSwitcher({ accounts, activeAccountId, onSelect, onCreate, onEdit }: AccountSwitcherProps): JSX.Element {
   const items: readonly DropdownItem[] = accounts.map((a) => ({
     value: String(a.id),
     label: a.label,
@@ -37,6 +32,16 @@ export function AccountSwitcher({ accounts, activeAccountId, onSelect, onCreate 
       >
         +
       </button>
+      {activeAccountId !== null && (
+        <button
+          type="button"
+          className="account-switcher__edit"
+          onClick={onEdit}
+          aria-label="Edit active account"
+        >
+          ✎
+        </button>
+      )}
     </div>
   )
 }

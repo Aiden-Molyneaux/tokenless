@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { rendererLogger } from '../../observability/logger-bridge'
+import type { UpdateAccountInput } from '@shared/types/accounts'
 import { useAccounts } from '../../hooks/use-accounts'
 import { useConversations } from '../../hooks/use-conversations'
 import { useProjects } from '../../hooks/use-projects'
 import { useToast } from '../../hooks/use-toast'
 import { ConversationSidebar } from './ConversationSidebar'
 import { CreateAccountModal } from './CreateAccountModal'
+import { EditAccountModal } from './EditAccountModal'
 import { CreateProjectModal } from './CreateProjectModal'
 import { EmptyProjectsState } from './EmptyProjectsState'
 import { MainPane } from './MainPane'
@@ -35,11 +37,12 @@ function writeDismissed(v: boolean): void {
 
 export function AppShell(): JSX.Element {
   const { projects, loading: projectsLoading, create: createProject } = useProjects()
-  const { accounts, create: createAccount } = useAccounts()
+  const { accounts, create: createAccount, update: updateAccount, remove: removeAccount } = useAccounts()
   const [activeProjectId, setActiveProjectId] = useState<number | null>(null)
   const [activeAccountId, setActiveAccountId] = useState<number | null>(null)
   const [createProjectOpen, setCreateProjectOpen] = useState(false)
   const [createAccountOpen, setCreateAccountOpen] = useState(false)
+  const [editAccountOpen, setEditAccountOpen] = useState(false)
   const [claudeNotFoundOpen, setClaudeNotFoundOpen] = useState(false)
   const [onboardingDismissed, setOnboardingDismissed] = useState<boolean>(readDismissed)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
@@ -222,10 +225,34 @@ export function AppShell(): JSX.Element {
     }
   }
 
+  const handleEditAccount = (): void => {
+    setEditAccountOpen(true)
+  }
+
+  const handleUpdateAccount = async (input: UpdateAccountInput): Promise<void> => {
+    const updated = await updateAccount(input)
+    if (updated) {
+      rendererLogger.info('ui', 'account-update', 'Account updated', { accountId: updated.id })
+    }
+  }
+
+  const handleDeleteAccount = async (id: number): Promise<void> => {
+    const removed = await removeAccount(id)
+    if (removed) {
+      rendererLogger.info('ui', 'account-delete', 'Account deleted', { accountId: id })
+      if (activeAccountId === id) {
+        const fallback = accounts.find((a) => a.id !== id)?.id ?? null
+        setActiveAccountId(fallback)
+      }
+    }
+  }
+
   const handleDismissOnboarding = (): void => {
     setOnboardingDismissed(true)
     writeDismissed(true)
   }
+
+  const activeAccount = accounts.find((a) => a.id === activeAccountId) ?? null
 
   const showOnboarding = projects.length === 0 && !onboardingDismissed && !projectsLoading
   const showEmptyState = projects.length === 0 && !projectsLoading
@@ -241,6 +268,7 @@ export function AppShell(): JSX.Element {
         activeAccountId={activeAccountId}
         onSelectAccount={handleSelectAccount}
         onCreateAccount={() => setCreateAccountOpen(true)}
+        onEditAccount={handleEditAccount}
         onOpenSettings={handleOpenSettings}
       />
       <OnboardingBanner
@@ -272,6 +300,13 @@ export function AppShell(): JSX.Element {
         open={createAccountOpen}
         onClose={() => setCreateAccountOpen(false)}
         onCreate={handleCreateAccount}
+      />
+      <EditAccountModal
+        open={editAccountOpen}
+        account={activeAccount}
+        onClose={() => setEditAccountOpen(false)}
+        onUpdate={handleUpdateAccount}
+        onDelete={handleDeleteAccount}
       />
       <ClaudeNotFoundModal
         open={claudeNotFoundOpen}
