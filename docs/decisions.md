@@ -632,3 +632,29 @@ B) Plaintext in the existing `api_key_ref` column of the SQLite DB. Simple, no n
 
 **Discovered:** Phase 6D implementation; the gap was identified during Phase 6C scope planning and explicitly blocked on Phase 7B turn capture (so the math has data to operate on).
 
+
+## ADR-039 (2026-05-15) — Templates: seeded built-ins are read-only; picker inserts body at the bottom of the composer with a single newline separator
+
+**Context:** Phase 7D ships the templates feature per spec §2. v1 surface is a picker; the full `/templates` CRUD route is Phase 8.
+
+**Decisions:**
+
+1. **Built-ins are read-only.** Update + delete on a `builtin=1` row return business error code `BUILTIN_PROTECTED`. Rationale: built-ins are documentation of "the way TokenLess intends gearing to be used"; users can copy a built-in and edit the copy (Phase 8). Hiding the original would be a reasonable v1.5 feature.
+
+2. **Seeding is idempotent by (builtin=1, name).** Re-running on every boot is safe. Adding a NEW built-in in a future release just adds it (existing rows by other names are unaffected). RENAMING a built-in would orphan the old row; if that becomes necessary, the seed function should grow a "deprecations" list. Not yet.
+
+3. **Insert behavior: append, don't replace.** Clicking a template appends the body to the existing prompt with `\n` if non-empty, or replaces the empty composer with the body. Rationale: users may have already started typing context ("for the auth module, ..."); a template should COMPLEMENT, not stomp it. Power users can always select-all + delete first.
+
+4. **Popover anchored to ActionsRow, opens upward.** The Templates button sits in `actions-row__secondary`; the popover renders above (bottom-up). Avoids collisions with the textarea above.
+
+5. **No template variables (`{{file}}` etc.) in v1.** Templates are plain-text bodies. Phase 8 may add a templating language; YAGNI for v1.
+
+6. **Code-focused built-ins, not project-management.** TokenLess wraps Claude Code — the 8 built-ins (Refactor for clarity, Add JSDoc, Write tests, Code review, Explain this code, Debug this error, Commit message, PR description) target common code-work prompts.
+
+**Trade-offs:**
+- Built-in-protected returns an error code, not a UI guard. The picker UI doesn't render edit/delete affordances on built-ins (Phase 8 view will). For v1 the picker is read-only — only the insert action.
+- The 8 chosen built-ins are opinionated. Easy to extend in `seed-templates.ts`.
+- Clicking outside the popover does NOT close it (only the × button or selecting a template closes it). Phase 8 polish can add an outside-click handler.
+
+**Discovered:** Phase 7D implementation.
+
