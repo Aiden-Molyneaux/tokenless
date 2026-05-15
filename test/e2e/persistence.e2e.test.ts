@@ -29,7 +29,7 @@ test.describe('Phase 3 persistence', () => {
   async function launch(): Promise<{ app: ElectronApplication; page: Page }> {
     const application = await electron.launch({
       args: ['out/main/index.js', `--user-data-dir=${userDataDir}`],
-      env: { ...process.env, TOKENLESS_USER_DATA_DIR: userDataDir }
+      env: { ...process.env, TOKENLESS_USER_DATA_DIR: userDataDir, TOKENLESS_SKIP_ONBOARDING: '1' }
     })
     const firstWindow = await application.firstWindow()
     await firstWindow.waitForLoadState('domcontentloaded')

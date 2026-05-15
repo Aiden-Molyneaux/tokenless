@@ -27,6 +27,7 @@ test.describe('Phase 4C cc:crashed', () => {
       env: {
         ...process.env,
         TOKENLESS_USER_DATA_DIR: userDataDir,
+        TOKENLESS_SKIP_ONBOARDING: '1',
         TOKENLESS_CLAUDE_BIN: mockClaudeCmd,
         TOKENLESS_MOCK_CRASH_AFTER_MS: '500' // crash 0.5s after spawn
       }

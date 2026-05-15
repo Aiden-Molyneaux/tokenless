@@ -26,6 +26,7 @@ test.describe('Phase 4B §7.1 CLAUDE_NOT_FOUND modal', () => {
       env: {
         ...process.env,
         TOKENLESS_USER_DATA_DIR: userDataDir,
+        TOKENLESS_SKIP_ONBOARDING: '1',
         TOKENLESS_CLAUDE_BIN: 'C:/this/path/does/not/exist/claude.cmd'
       }
     })

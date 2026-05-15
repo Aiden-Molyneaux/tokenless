@@ -14,6 +14,7 @@ import {
   runMigrations,
   MIGRATIONS,
   seedBuiltinData,
+  SettingsDao,
   type Database
 } from './db'
 
@@ -91,6 +92,13 @@ app.whenReady().then(() => {
     db = openDatabase(dbPath)
     runMigrations(db, MIGRATIONS)
     seedBuiltinData(db)
+    // E2E test harness opt-out: pre-seed `onboarding.complete = '1'` so the
+    // wizard overlay doesn't block clicks on the AppShell underneath. Real
+    // users never set this env var; the renderer reads the setting the same
+    // way regardless.
+    if (process.env['TOKENLESS_SKIP_ONBOARDING'] === '1') {
+      SettingsDao.setSetting(db, 'onboarding.complete', '1')
+    }
     logger.info('db', 'db-online', 'Database opened, migrations applied', { dbPath })
   } catch (error) {
     logger.fatal('db', 'db-init-failed', 'Failed to open database', {

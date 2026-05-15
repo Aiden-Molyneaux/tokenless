@@ -27,6 +27,7 @@ test.describe('Phase 4B cc:stop', () => {
       env: {
         ...process.env,
         TOKENLESS_USER_DATA_DIR: userDataDir,
+        TOKENLESS_SKIP_ONBOARDING: '1',
         TOKENLESS_CLAUDE_BIN: mockClaudeCmd
       }
     })

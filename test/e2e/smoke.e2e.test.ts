@@ -6,7 +6,7 @@ let app: ElectronApplication
 test.beforeAll(async () => {
   app = await electron.launch({
     args: [resolve('out/main/index.js')],
-    env: { ...process.env, NODE_ENV: 'test' }
+    env: { ...process.env, NODE_ENV: 'test', TOKENLESS_SKIP_ONBOARDING: '1' }
   })
 })
 
