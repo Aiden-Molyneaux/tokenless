@@ -611,3 +611,36 @@ Hard to trigger manually (Haiku usually obeys). The parser handles this via Zod.
 
 ### S-7D.7 Templates seed survives across schema migrations
 (Future-proofing — covered by the idempotency contract in ADR-039.)
+
+## Phase 7C — Branching MVP
+
+### S-7C.1 Branch button visible in ActionsRow
+1. Open the app with an active conversation.
+2. **Expect:** A "Branch" button appears in the actions row's secondary group, between Templates and Commit.
+
+### S-7C.2 Branch from a conversation with turns
+1. With an active conversation and at least one user turn already sent (S-7B.1).
+2. Click Branch.
+3. **Expect:** A new conversation appears in the sidebar prefixed with "↳ " and indented. The new conversation auto-selects (its xterm pane is empty — fresh PTY). Dev Mode shows `branch-created` info log.
+
+### S-7C.3 Branched conversation indented in sidebar
+1. Visually inspect the sidebar after S-7C.2.
+2. **Expect:** The branch row's title starts with "↳" and the row is visibly indented compared to non-branched siblings. The title text is muted (var(--tl-text-muted)).
+
+### S-7C.4 Branch with no prior turns → toast
+1. Create a brand-new conversation but do NOT send anything. Click Branch.
+2. **Expect:** A warn-severity toast: "Could not branch — the conversation has no turns yet." No new conversation row appears in the sidebar. Dev Mode shows `branch-failed`.
+
+### S-7C.5 Branch inherits parent's summary
+1. After enough turns that the parent's summary has been refreshed (Phase 5B — verify via SQLite: `select summary from conversations where id = <parent>`).
+2. Click Branch.
+3. Inspect new row: `select summary from conversations where id = <branch>`.
+4. **Expect:** Same non-null summary string as the parent.
+
+### S-7C.6 Branched conversation has its own PTY
+1. After branching, click between parent and branch in the sidebar.
+2. **Expect:** Each has its own xterm pane state (different output / scrollback). Stop button on the branch only kills the branch's PTY.
+
+### S-7C.7 Parent deletion sets branch.parent_conversation_id to NULL
+1. Branch a conversation. Then delete the parent (via the existing conversations:delete IPC; UI for this is currently only direct DB or future Phase 8).
+2. **Expect:** The branch's `parent_conversation_id` becomes NULL (ON DELETE SET NULL). The branch keeps existing. Its title still starts with "↳" but the sidebar indent disappears on next render (since `parentConversationId === null` now).
