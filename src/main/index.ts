@@ -1,6 +1,5 @@
 import { app, BrowserWindow, ipcMain, shell } from 'electron'
 import { join } from 'node:path'
-import { homedir } from 'node:os'
 import {
   FileSink,
   installUncaughtHandlers,
@@ -19,8 +18,8 @@ import {
 } from './db'
 
 // Initialize the Logger as early as possible so even early-startup errors
-// can be captured. Log files live under ~/.tokenless/logs/.
-const logDir = join(homedir(), '.tokenless', 'logs')
+// can be captured. Log files live under `<userData>/logs/` (next to the DB).
+const logDir = join(app.getPath('userData'), 'logs')
 const fileSink = new FileSink(logDir)
 const logger = new Logger(fileSink, 5000, 'main')
 
@@ -55,6 +54,8 @@ function createWindow(): void {
   const mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
+    minWidth: 900,
+    minHeight: 600,
     show: false,
     autoHideMenuBar: true,
     title: 'TokenLess',
