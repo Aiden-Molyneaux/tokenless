@@ -1,7 +1,8 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState, useEffect } from 'react'
 import type { ReactNode } from 'react'
-import type { GearResult } from '@shared/types/gearing'
+import type { CostPreview, GearResult } from '@shared/types/gearing'
 import type { GearMeta } from '@shared/types/turns'
+import { useOutsideClick } from '../../hooks/use-outside-click'
 import { rendererLogger } from '../../observability/logger-bridge'
 import { useToast } from '../../hooks/use-toast'
 import { useDraftAutosave } from '../../hooks/use-draft-autosave'
@@ -63,9 +64,15 @@ export function Composer({ conversationId, accountId, accountLabel, onBranch }: 
   const [gearing, setGearing] = useState(false)
   const [authMissingOpen, setAuthMissingOpen] = useState(false)
   const [templatesOpen, setTemplatesOpen] = useState(false)
+  const [lastCostPreview, setLastCostPreview] = useState<CostPreview | null>(null)
+  const promptRef = useRef(prompt)
   const { push: pushToast } = useToast()
   const liveEstimate = useLiveCostEstimate({ prompt, model, breadth })
   const { clear: clearDraft } = useDraftAutosave(conversationId, prompt, setPrompt)
+  const templatesHostRef = useOutsideClick<HTMLDivElement>(templatesOpen, () => setTemplatesOpen(false))
+  useEffect(() => {
+    promptRef.current = prompt
+  }, [prompt])
   const { skills, toggleFavorite, toggleHidden } = useSkills()
   const { turns, updateFeedback } = useTurns(conversationId)
   const lastTurn = turns.length > 0 ? turns[turns.length - 1] : null
@@ -156,7 +163,7 @@ export function Composer({ conversationId, accountId, accountLabel, onBranch }: 
             severity: 'error',
             action: {
               label: 'Send original',
-              onActivate: () => void handleSend(prompt)
+              onActivate: () => void handleSend(promptRef.current)
             }
           })
         }
@@ -229,6 +236,7 @@ export function Composer({ conversationId, accountId, accountLabel, onBranch }: 
   }
 
   const handleGearSendOriginal = (): void => {
+    if (gearState) setLastCostPreview(gearState.costPreview)
     void handleSend(gearState?.originalPrompt ?? prompt, null)
     setGearState(null)
   }
@@ -239,6 +247,7 @@ export function Composer({ conversationId, accountId, accountLabel, onBranch }: 
       setGearState(null)
       return
     }
+    setLastCostPreview(gearState.costPreview)
     const meta: GearMeta = {
       originalPrompt: gearState.originalPrompt,
       gearedPrompt: editedGeared,
@@ -294,7 +303,7 @@ export function Composer({ conversationId, accountId, accountLabel, onBranch }: 
             skillItems={skillItems}
             renderSkillItem={renderSkillItem}
           />
-          <div className="actions-row-host">
+          <div className="actions-row-host" ref={templatesHostRef}>
             <ActionsRow
               promptEmpty={prompt.length === 0}
               disableGear={sending || gearing}
@@ -313,7 +322,7 @@ export function Composer({ conversationId, accountId, accountLabel, onBranch }: 
               />
             )}
           </div>
-          <TelemetryStrip costPreview={liveEstimate} />
+          <TelemetryStrip liveEstimate={liveEstimate} lastCostPreview={lastCostPreview} prompt={prompt} />
           {showFeedbackBar && lastTurn && (
             <TurnFeedbackBar
               turnId={lastTurn.id}
