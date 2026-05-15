@@ -103,14 +103,20 @@
   --tl-sidebar-width: 240px;
   --tl-sidebar-width-collapsed: 36px;
 
-  /* ===== z-index ===== */
+  /* ===== z-index =====
+     Ordering (low to high): sidebar < top-bar < gear-review < dev-mode <
+     dropdown < modal < toast. Phase 6B bumped the page-floating tiers
+     (dropdown / modal / toast) into a >=1000 range so dropdown menus always
+     paint above MainPane content (the original demo bug). Modal and toast
+     stay above dropdown so a dropdown left open while a modal opens or a
+     crash toast appears doesn't trap the user. */
   --tl-z-sidebar: 10;
   --tl-z-top-bar: 20;
-  --tl-z-dropdown: 1000;
-  --tl-z-dev-mode: 100;
-  --tl-z-modal: 200;
   --tl-z-gear-review: 210;
-  --tl-z-toast: 300;
+  --tl-z-dev-mode: 500;
+  --tl-z-dropdown: 1000;
+  --tl-z-modal: 2000;
+  --tl-z-toast: 3000;
 
   /* ===== Transitions ===== */
   --tl-transition-fast: 120ms ease-out;

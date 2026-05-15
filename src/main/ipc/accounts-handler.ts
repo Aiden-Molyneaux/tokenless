@@ -1,8 +1,6 @@
-// AccountsHandler — wraps AccountsDao with withIpcResult and converts
-// throws into IpcResult envelopes.
-//
-// Phase 3 only needs list (for the AccountSwitcher dropdown source) and
-// create (for the onboarding skeleton). Full Account CRUD lands in Phase 6.
+// AccountsHandler — wraps AccountsDao with withIpcResult and converts throws
+// into IpcResult envelopes. Owns AnthropicClientRegistry invalidation on
+// update (in case the apiKey changed) and on delete.
 
 import type { IpcMain, IpcMainInvokeEvent } from 'electron'
 import type { Database } from 'better-sqlite3'
