@@ -105,7 +105,16 @@ import {
   type SkillsToggleFavoriteResult,
   type SkillsToggleHiddenRequest,
   type SkillsToggleHiddenResult,
-  type SkillsRescanResult
+  type SkillsRescanResult,
+  IPC_TURNS_LIST_BY_CONVERSATION,
+  IPC_TURNS_UPDATE_FEEDBACK,
+  IPC_TURNS_FEEDBACK_SUMMARY,
+  IPC_TURNS_CHANGED,
+  type TurnsListRequest,
+  type TurnsListResult,
+  type TurnsUpdateFeedbackRequest,
+  type TurnsUpdateFeedbackResult,
+  type TurnsFeedbackSummaryResult
 } from '@shared/ipc'
 
 const api = {
@@ -204,6 +213,22 @@ const api = {
       const listener = (): void => fn()
       ipcRenderer.on(IPC_SKILLS_CHANGED, listener as never)
       return () => ipcRenderer.removeListener(IPC_SKILLS_CHANGED, listener as never)
+    }
+  },
+  turns: {
+    listByConversation(req: TurnsListRequest): Promise<TurnsListResult> {
+      return ipcRenderer.invoke(IPC_TURNS_LIST_BY_CONVERSATION, req) as Promise<TurnsListResult>
+    },
+    updateFeedback(req: TurnsUpdateFeedbackRequest): Promise<TurnsUpdateFeedbackResult> {
+      return ipcRenderer.invoke(IPC_TURNS_UPDATE_FEEDBACK, req) as Promise<TurnsUpdateFeedbackResult>
+    },
+    getFeedbackSummary(): Promise<TurnsFeedbackSummaryResult> {
+      return ipcRenderer.invoke(IPC_TURNS_FEEDBACK_SUMMARY) as Promise<TurnsFeedbackSummaryResult>
+    },
+    onChanged(fn: () => void): () => void {
+      const listener = (): void => fn()
+      ipcRenderer.on(IPC_TURNS_CHANGED, listener as never)
+      return () => ipcRenderer.removeListener(IPC_TURNS_CHANGED, listener as never)
     }
   },
   cc: {

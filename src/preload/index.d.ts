@@ -21,7 +21,12 @@ import type {
   SkillsToggleFavoriteResult,
   SkillsToggleHiddenRequest,
   SkillsToggleHiddenResult,
-  SkillsRescanResult
+  SkillsRescanResult,
+  TurnsListRequest,
+  TurnsListResult,
+  TurnsUpdateFeedbackRequest,
+  TurnsUpdateFeedbackResult,
+  TurnsFeedbackSummaryResult
 } from '@shared/ipc'
 import type {
   AccountsListResult,
@@ -96,6 +101,12 @@ export interface TokenlessApi {
     toggleFavorite(req: SkillsToggleFavoriteRequest): Promise<SkillsToggleFavoriteResult>
     toggleHidden(req: SkillsToggleHiddenRequest): Promise<SkillsToggleHiddenResult>
     rescan(): Promise<SkillsRescanResult>
+    onChanged(fn: () => void): () => void
+  }
+  readonly turns: {
+    listByConversation(req: TurnsListRequest): Promise<TurnsListResult>
+    updateFeedback(req: TurnsUpdateFeedbackRequest): Promise<TurnsUpdateFeedbackResult>
+    getFeedbackSummary(): Promise<TurnsFeedbackSummaryResult>
     onChanged(fn: () => void): () => void
   }
   readonly cc: {
