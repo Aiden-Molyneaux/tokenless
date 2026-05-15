@@ -16,6 +16,7 @@ import { spawnClaude } from './spawner'
 import type { PtyHandle, PtySpawnFn } from './types'
 import { CcParser } from './parser'
 import { Watchdog } from './watchdog'
+import { ResponseAccumulator } from './response-accumulator'
 
 export interface LifecycleStartOptions {
   readonly conversationId: number
@@ -48,6 +49,14 @@ export interface LifecycleCallbacks {
   // Phase 4C
   onCrashed(event: { conversationId: number; exitCode: number; signal?: number }): void
   onHung(event: { conversationId: number; idleMs: number; severity: 'warn' | 'error' }): void
+  // Phase 7B — fires on response-complete with the accumulated assistant
+  // response text + the most recent tokens-used count. Optional so existing
+  // callers that don't care don't break.
+  onAssistantTurn?(event: {
+    conversationId: number
+    text: string
+    responseTokens: number | null
+  }): void
 }
 
 export interface LifecycleConfig {
@@ -61,6 +70,7 @@ interface Slot {
   readonly pty: PtyHandle
   readonly parser: CcParser
   readonly watchdog: Watchdog
+  readonly accumulator: ResponseAccumulator
   // sawGracefulPrompt is set when the parser fires prompt-ready. Used by
   // the onExit handler to distinguish "claude crashed mid-response" from
   // "claude exited cleanly after returning to a prompt."
@@ -94,10 +104,19 @@ export class CcLifecycle {
       this.ptyFactory
     )
 
+    const accumulator = new ResponseAccumulator()
     const parser = new CcParser((event) => {
       if (event.kind === 'prompt-ready') {
         const s = this.slots.get(opts.conversationId)
         if (s) s.sawGracefulPrompt = true
+      }
+      if (accumulator.handle(event)) {
+        const drained = accumulator.drain()
+        this.cb.onAssistantTurn?.({
+          conversationId: opts.conversationId,
+          text: drained.text,
+          responseTokens: drained.responseTokens
+        })
       }
       this.cb.onEvent({ conversationId: opts.conversationId, event })
     })
@@ -107,6 +126,7 @@ export class CcLifecycle {
       sessionId,
       pty,
       parser,
+      accumulator,
       watchdog: new Watchdog({
         warnMs: this.config.watchdogWarnMs ?? 60_000,
         errorMs: this.config.watchdogErrorMs ?? 90_000,
@@ -162,10 +182,19 @@ export class CcLifecycle {
       this.ptyFactory
     )
 
+    const accumulator = new ResponseAccumulator()
     const parser = new CcParser((event) => {
       if (event.kind === 'prompt-ready') {
         const s = this.slots.get(opts.conversationId)
         if (s) s.sawGracefulPrompt = true
+      }
+      if (accumulator.handle(event)) {
+        const drained = accumulator.drain()
+        this.cb.onAssistantTurn?.({
+          conversationId: opts.conversationId,
+          text: drained.text,
+          responseTokens: drained.responseTokens
+        })
       }
       this.cb.onEvent({ conversationId: opts.conversationId, event })
     })
@@ -175,6 +204,7 @@ export class CcLifecycle {
       sessionId: opts.sessionId, // existing — don't generate
       pty,
       parser,
+      accumulator,
       watchdog: new Watchdog({
         warnMs: this.config.watchdogWarnMs ?? 60_000,
         errorMs: this.config.watchdogErrorMs ?? 90_000,
@@ -210,6 +240,14 @@ export class CcLifecycle {
     })
 
     return { sessionId: opts.sessionId, pid: pty.pid }
+  }
+
+  // Called by cc-handler.send after the user turn is written. Arms the
+  // accumulator so the next response-complete fires onAssistantTurn.
+  markUserSend(conversationId: number): void {
+    const slot = this.slots.get(conversationId)
+    if (!slot) return  // unknown conversation — no-op
+    slot.accumulator.startCollecting()
   }
 
   get(conversationId: number): PtyHandle | null {

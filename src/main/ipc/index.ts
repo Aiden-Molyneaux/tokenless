@@ -9,6 +9,8 @@ import type { Database } from 'better-sqlite3'
 import type { Logger } from '@main/observability'
 import * as pty from 'node-pty'
 
+import { TurnsDao } from '@main/db'
+
 import { IPC_CC_EVENT, IPC_CC_CRASHED, IPC_CC_HUNG } from '@shared/ipc/cc'
 import { IPC_TELEMETRY_TICK } from '@shared/ipc/telemetry'
 import { IPC_API_RETRY_ATTEMPT, type ApiRetryAttemptPayload } from '@shared/ipc/api-events'
@@ -112,6 +114,21 @@ export function registerIpcHandlers(
         severity: e.severity
       })
       broadcast(IPC_CC_HUNG, e)
+    },
+    onAssistantTurn: ({ conversationId, text, responseTokens }) => {
+      try {
+        TurnsDao.createAssistantTurn(db, {
+          conversationId,
+          responseText: text,
+          responseTokens,
+          modelUsed: null  // model not tracked per response yet — Phase 8 may add
+        })
+      } catch (err) {
+        logger.error('db', 'assistant-turn-write-failed', err instanceof Error ? err.message : String(err), {
+          conversationId,
+          errorString: String(err)
+        })
+      }
     }
   })
   const ccHandler = new CcHandler(db, logger, ccLifecycle)

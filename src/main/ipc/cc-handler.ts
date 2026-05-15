@@ -92,6 +92,7 @@ export class CcHandler {
       })
       const turnId = userTurn.id
 
+      this.lifecycle.markUserSend(req.conversationId)
       this.lifecycle.write(req.conversationId, req.prompt)
 
       // Bump conversation updated_at + clear any draft (drafts table is wired
