@@ -544,3 +544,36 @@ B) Plaintext in the existing `api_key_ref` column of the SQLite DB. Simple, no n
 
 **Discovered:** Phase 6B account+project CRUD work.
 
+
+## ADR-036 (2026-05-15) — Skills discovery: scan-on-boot + chokidar watcher; never delete rows, mark stale instead
+
+**Context:** Phase 6C lands the skills subsystem per spec §5.3. Three roots: `~/.claude/skills/`, `~/.claude/plugins/*/skills/`, `<project>/.claude/skills/`. Each skill = a directory containing a `SKILL.md` file with `name` + (optional) `description` in frontmatter.
+
+**Options considered for missing skills:**
+- A) DELETE rows whose paths are no longer on disk. Simple, but loses the user's favorited/hidden state if they uninstall+reinstall a skill.
+- B) Mark `last_seen_at` stale (older than the current scan timestamp). Preserves all state; downstream queries can filter `last_seen_at < cutoff` if they need "currently installed only".
+- C) Soft-delete flag (separate column). Same effect as B with more schema.
+
+**Choice:** B.
+
+**Reasoning:**
+- The user's favorited/hidden state is the only durable per-skill data we own. Losing it on a transient filesystem change (e.g., a plugin update temporarily renames a directory) is bad UX.
+- `last_seen_at` is already in the schema (Phase 3); using it as the staleness marker is the lowest-impact path.
+- The dropdown in Composer can still filter out skills with `last_seen_at < (now - 7days)` if "currently installed only" becomes a feature — defer that until a user complains.
+
+**Scanner architecture:**
+- `scanner.ts` is pure relative to fs: all calls go through an injectable `ScannerOptions` interface so unit tests use an in-memory map without touching disk.
+- `reconciler.ts` is pure relative to the DB. Owns the upsert + mark-stale logic.
+- `watcher.ts` wraps chokidar with a 1s debounce. `chokidarFactory` is injectable for tests.
+- The three are wired in `main/ipc/index.ts` at boot. Initial scan kicks off explicitly via `watcher.start()` — chokidar's `ignoreInitial: true` keeps boot-time `add` events from flooding the watcher (we'd otherwise get one event per existing skill file).
+
+**Frontmatter parser:**
+- Inline minimal YAML parser (key: value lines between `---` fences). Supports quoted strings. Does NOT support nested objects, arrays, or multiline strings — none of which the SKILL.md format requires.
+- Falls back to the body's first paragraph as description if frontmatter omits `description`.
+
+**Migration 002:** added `UNIQUE INDEX idx_skills_path ON skills(path)`. Required for the DAO's `ON CONFLICT(path) DO UPDATE` upsert. Phase 3's original `skills` table declared `path TEXT NOT NULL` without UNIQUE — corrected without rewriting migration 001 (append-only migrations is the project rule).
+
+**Project-local skills:** Phase 6C resolves `~/.claude/skills/` + `~/.claude/plugins/*/skills/` only. The `<project>/.claude/skills/` root is supported by `resolveSkillsRoots` but not wired in `main/ipc/index.ts` (active project tracking is Phase 7). When that lands, only the call site changes — the scanner/reconciler/watcher are already project-aware.
+
+**Discovered:** Phase 6C implementation.
+
