@@ -5,6 +5,7 @@ import { useConversations } from '../../hooks/use-conversations'
 import { useProjects } from '../../hooks/use-projects'
 import { useToast } from '../../hooks/use-toast'
 import { ConversationSidebar } from './ConversationSidebar'
+import { CreateAccountModal } from './CreateAccountModal'
 import { CreateProjectModal } from './CreateProjectModal'
 import { EmptyProjectsState } from './EmptyProjectsState'
 import { MainPane } from './MainPane'
@@ -34,10 +35,11 @@ function writeDismissed(v: boolean): void {
 
 export function AppShell(): JSX.Element {
   const { projects, loading: projectsLoading, create: createProject } = useProjects()
-  const { accounts } = useAccounts()
+  const { accounts, create: createAccount } = useAccounts()
   const [activeProjectId, setActiveProjectId] = useState<number | null>(null)
   const [activeAccountId, setActiveAccountId] = useState<number | null>(null)
   const [createProjectOpen, setCreateProjectOpen] = useState(false)
+  const [createAccountOpen, setCreateAccountOpen] = useState(false)
   const [claudeNotFoundOpen, setClaudeNotFoundOpen] = useState(false)
   const [onboardingDismissed, setOnboardingDismissed] = useState<boolean>(readDismissed)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
@@ -208,6 +210,18 @@ export function AppShell(): JSX.Element {
     }
   }
 
+  const handleCreateAccount = async (input: { label: string; configDir: string; apiKey: string }): Promise<void> => {
+    const created = await createAccount({
+      label: input.label,
+      configDir: input.configDir,
+      apiKey: input.apiKey || null
+    })
+    if (created) {
+      setActiveAccountId(created.id)
+      rendererLogger.info('ui', 'account-create', 'Account created', { accountId: created.id, label: created.label })
+    }
+  }
+
   const handleDismissOnboarding = (): void => {
     setOnboardingDismissed(true)
     writeDismissed(true)
@@ -225,6 +239,7 @@ export function AppShell(): JSX.Element {
         accounts={accounts}
         activeAccountId={activeAccountId}
         onSelectAccount={handleSelectAccount}
+        onCreateAccount={() => setCreateAccountOpen(true)}
         onOpenSettings={handleOpenSettings}
       />
       <OnboardingBanner
@@ -251,6 +266,11 @@ export function AppShell(): JSX.Element {
         open={createProjectOpen}
         onClose={() => setCreateProjectOpen(false)}
         onCreate={handleCreateProject}
+      />
+      <CreateAccountModal
+        open={createAccountOpen}
+        onClose={() => setCreateAccountOpen(false)}
+        onCreate={handleCreateAccount}
       />
       <ClaudeNotFoundModal
         open={claudeNotFoundOpen}

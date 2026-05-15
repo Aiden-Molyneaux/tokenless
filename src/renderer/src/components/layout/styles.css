@@ -333,3 +333,18 @@
   color: var(--tl-text-muted);
   margin-top: 0.15rem;
 }
+
+/* ===== AccountSwitcher — dropdown + add button ===== */
+
+.account-switcher { display: inline-flex; align-items: center; gap: 0.25rem; }
+.account-switcher__add {
+  background: transparent;
+  border: 1px solid var(--tl-rule-subtle);
+  border-radius: 4px;
+  width: 1.8rem;
+  height: 1.8rem;
+  font-size: 1.1rem;
+  cursor: pointer;
+  color: var(--tl-text-base);
+}
+.account-switcher__add:hover { background: var(--tl-bg-mute); }
