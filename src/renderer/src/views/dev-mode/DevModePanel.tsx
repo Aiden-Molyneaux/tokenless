@@ -16,7 +16,7 @@ interface DevModePanelProps {
 }
 
 export function DevModePanel({ useMockRecords = false, mockOnly = false }: DevModePanelProps): JSX.Element {
-  const records = useLogRecords({
+  const { records, isBackfilling } = useLogRecords({
     mockRecords: useMockRecords ? MOCK_RECORDS : [],
     mockOnly
   })
@@ -29,7 +29,7 @@ export function DevModePanel({ useMockRecords = false, mockOnly = false }: DevMo
       <div className="dev-mode-panel__header">
         <h2 className="dev-mode-panel__title">Developer Mode</h2>
         <span className="dev-mode-panel__count">
-          {visible.length} / {records.length} records
+          {visible.length} / {records.length} records{isBackfilling ? ' · loading history…' : ''}
         </span>
       </div>
       <Filters state={filters} onChange={setFilters} />

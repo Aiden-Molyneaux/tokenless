@@ -11,6 +11,11 @@ interface UseLogRecordsOptions {
   mockOnly?: boolean
 }
 
+export interface UseLogRecordsReturn {
+  readonly records: readonly LogRecord[]
+  readonly isBackfilling: boolean
+}
+
 // Hook that returns the current set of log records seen by the Dev Mode panel.
 // Subscribes to the live IPC stream on mount and unsubscribes on unmount.
 // Optionally seeds with mock records for dev/test workflows.
@@ -23,17 +28,25 @@ interface UseLogRecordsOptions {
 // If a future caller needs dynamic mocks, this hook needs to be reworked to
 // track mockRecords as a useEffect dependency.
 
-export function useLogRecords({ mockRecords = [], mockOnly = false }: UseLogRecordsOptions = {}): readonly LogRecord[] {
+export function useLogRecords({ mockRecords = [], mockOnly = false }: UseLogRecordsOptions = {}): UseLogRecordsReturn {
   const [records, setRecords] = useState<readonly LogRecord[]>(() => mockRecords)
+  const [isBackfilling, setIsBackfilling] = useState(true)
   const seenIds = useRef<Set<string>>(new Set(mockRecords.map((r) => r.id)))
 
   useEffect(() => {
-    if (mockOnly) return undefined
-    if (typeof window === 'undefined' || !window.tokenless?.log) return undefined
+    if (mockOnly) {
+      setIsBackfilling(false)
+      return undefined
+    }
+    if (typeof window === 'undefined' || !window.tokenless?.log) {
+      setIsBackfilling(false)
+      return undefined
+    }
 
-    // Fetch initial recent records so the panel doesn't start empty
+    // Fetch up to 5000 historical records on mount — matches the main-process
+    // ring buffer capacity (Logger constructed with `new Logger(fileSink, 5000)`).
     void window.tokenless.log
-      .getRecent(1000)
+      .getRecent(5000)
       .then((recent) => {
         setRecords((prev) => {
           const next = [...prev]
@@ -49,6 +62,7 @@ export function useLogRecords({ mockRecords = [], mockOnly = false }: UseLogReco
       .catch(() => {
         // Initial fetch failure is non-fatal — live stream still works
       })
+      .finally(() => setIsBackfilling(false))
 
     // Subscribe to the live stream
     const unsubscribe = window.tokenless.log.subscribe((record: LogRecord) => {
@@ -62,5 +76,5 @@ export function useLogRecords({ mockRecords = [], mockOnly = false }: UseLogReco
     return unsubscribe
   }, [mockOnly])
 
-  return records
+  return { records, isBackfilling }
 }
