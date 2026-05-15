@@ -122,6 +122,21 @@ export {
   type ApiRetryAttemptPayload
 } from './ipc/api-events'
 
+export {
+  IPC_DRAFTS_SAVE,
+  IPC_DRAFTS_GET,
+  IPC_DRAFTS_CLEAR,
+  type DraftsSaveRequest,
+  type DraftsSaveResponse,
+  type DraftsSaveResult,
+  type DraftsGetRequest,
+  type DraftsGetResponse,
+  type DraftsGetResult,
+  type DraftsClearRequest,
+  type DraftsClearResponse,
+  type DraftsClearResult
+} from './ipc/drafts'
+
 export type IpcChannelName =
   | typeof IPC_LOG_FROM_RENDERER
   | typeof IPC_LOG_TO_RENDERER
@@ -152,3 +167,6 @@ export type IpcChannelName =
   | 'telemetry:tick'
   | 'gearing:gear'
   | 'api:retry-attempt'
+  | 'drafts:save'
+  | 'drafts:get'
+  | 'drafts:clear'
