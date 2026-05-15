@@ -3,6 +3,20 @@ import { mkdtempSync, writeFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
+// Mock the parts of electron used by PathsHandler so tests run outside a real
+// Electron process. shell.openPath is not tested (it opens the OS file manager).
+vi.mock('electron', () => ({
+  app: {
+    getPath: (name: string): string => {
+      if (name === 'userData') return join(tmpdir(), 'tokenless-test-userdata')
+      return tmpdir()
+    }
+  },
+  shell: {
+    openPath: vi.fn().mockResolvedValue('')
+  }
+}))
+
 import { PathsHandler } from '../../ipc/paths-handler'
 import { Logger } from '../../observability/logger'
 
@@ -52,6 +66,19 @@ describe('ipc/paths-handler', () => {
       }
     } finally {
       rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('getAppPaths returns an object with userData, logs, and db as strings', async () => {
+    const result = await handler.getAppPaths()
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(typeof result.data.userData).toBe('string')
+      expect(typeof result.data.logs).toBe('string')
+      expect(typeof result.data.db).toBe('string')
+      // logs and db should be nested under userData
+      expect(result.data.logs).toContain(result.data.userData)
+      expect(result.data.db).toContain(result.data.userData)
     }
   })
 })

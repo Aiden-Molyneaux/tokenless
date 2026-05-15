@@ -18,6 +18,9 @@ import type {
   SettingsSetResult,
   PathsCheckDirRequest,
   PathsCheckDirResult,
+  PathsGetAppPathsResult,
+  PathsOpenFolderRequest,
+  PathsOpenFolderResult,
   SkillsListResult,
   SkillsToggleFavoriteRequest,
   SkillsToggleFavoriteResult,
@@ -167,6 +170,8 @@ export interface TokenlessApi {
   }
   readonly paths: {
     checkDir(req: PathsCheckDirRequest): Promise<PathsCheckDirResult>
+    getAppPaths(): Promise<PathsGetAppPathsResult>
+    openFolder(req: PathsOpenFolderRequest): Promise<PathsOpenFolderResult>
   }
   readonly pricing: {
     list(): Promise<PricingListResult>

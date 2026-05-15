@@ -102,8 +102,13 @@ import {
   type SettingsSetRequest,
   type SettingsSetResult,
   IPC_PATHS_CHECK_DIR,
+  IPC_PATHS_GET_APP_PATHS,
+  IPC_PATHS_OPEN_FOLDER,
   type PathsCheckDirRequest,
   type PathsCheckDirResult,
+  type PathsGetAppPathsResult,
+  type PathsOpenFolderRequest,
+  type PathsOpenFolderResult,
   IPC_SKILLS_LIST,
   IPC_SKILLS_TOGGLE_FAVORITE,
   IPC_SKILLS_TOGGLE_HIDDEN,
@@ -368,6 +373,12 @@ const api = {
   paths: {
     checkDir(req: PathsCheckDirRequest): Promise<PathsCheckDirResult> {
       return ipcRenderer.invoke(IPC_PATHS_CHECK_DIR, req) as Promise<PathsCheckDirResult>
+    },
+    getAppPaths(): Promise<PathsGetAppPathsResult> {
+      return ipcRenderer.invoke(IPC_PATHS_GET_APP_PATHS) as Promise<PathsGetAppPathsResult>
+    },
+    openFolder(req: PathsOpenFolderRequest): Promise<PathsOpenFolderResult> {
+      return ipcRenderer.invoke(IPC_PATHS_OPEN_FOLDER, req) as Promise<PathsOpenFolderResult>
     }
   },
   pricing: {

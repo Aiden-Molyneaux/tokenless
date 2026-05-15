@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { AppErrorBoundary } from './observability/error-boundary'
 import { AppShell } from './components/layout/AppShell'
 import { DevModePanel } from './views/dev-mode/DevModePanel'
+import { SettingsView } from './views/settings/SettingsView'
 import { rendererLogger } from './observability/logger-bridge'
 import { ToastProvider } from './hooks/use-toast'
 
@@ -25,6 +26,7 @@ function writeDevModeToStorage(on: boolean): void {
 
 function AppContent(): JSX.Element {
   const [devMode, setDevMode] = useState<boolean>(readDevModeFromStorage)
+  const [view, setView] = useState<'shell' | 'settings'>('shell')
 
   useEffect(() => {
     rendererLogger.info('ui', 'mount', 'App mounted', { devMode })
@@ -41,9 +43,18 @@ function AppContent(): JSX.Element {
     })
   }
 
+  const handleDevModeChange = (next: boolean): void => {
+    setDevMode(next)
+    writeDevModeToStorage(next)
+    rendererLogger.info('ui', 'dev-mode-toggle', `Dev Mode ${next ? 'enabled' : 'disabled'} via settings`, { devMode: next })
+  }
+
   return (
     <>
-      <AppShell />
+      {view === 'shell'
+        ? <AppShell onOpenSettings={() => setView('settings')} />
+        : <SettingsView onBack={() => setView('shell')} devMode={devMode} onDevModeChange={handleDevModeChange} />
+      }
       <button
         type="button"
         className={`app__dev-toggle ${devMode ? 'is-active' : ''}`}

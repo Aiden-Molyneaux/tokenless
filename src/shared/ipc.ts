@@ -175,7 +175,14 @@ export {
   IPC_PATHS_CHECK_DIR,
   type PathsCheckDirRequest,
   type PathsCheckDirResponse,
-  type PathsCheckDirResult
+  type PathsCheckDirResult,
+  IPC_PATHS_GET_APP_PATHS,
+  IPC_PATHS_OPEN_FOLDER,
+  type PathsGetAppPathsResponse,
+  type PathsGetAppPathsResult,
+  type PathsOpenFolderRequest,
+  type PathsOpenFolderResponse,
+  type PathsOpenFolderResult
 } from './ipc/paths'
 
 export {
@@ -285,6 +292,8 @@ export type IpcChannelName =
   | 'settings:get'
   | 'settings:set'
   | 'paths:check-dir'
+  | 'paths:get-app-paths'
+  | 'paths:open-folder'
   | 'skills:list'
   | 'skills:toggle-favorite'
   | 'skills:toggle-hidden'

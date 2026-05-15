@@ -43,7 +43,7 @@ function writeDismissed(v: boolean): void {
   }
 }
 
-export function AppShell(): JSX.Element {
+export function AppShell({ onOpenSettings }: { onOpenSettings: () => void }): JSX.Element {
   const { projects, loading: projectsLoading, create: createProject, update: updateProject, remove: removeProject } = useProjects()
   const { accounts, create: createAccount, update: updateAccount, remove: removeAccount } = useAccounts()
   const [activeProjectId, setActiveProjectId] = useState<number | null>(null)
@@ -290,10 +290,6 @@ export function AppShell(): JSX.Element {
     })
   }
 
-  const handleOpenSettings = (): void => {
-    rendererLogger.info('ui', 'settings-clicked', 'Settings button clicked (stub)')
-  }
-
   const handleToggleSidebar = (): void => {
     setSidebarCollapsed((c) => !c)
   }
@@ -396,7 +392,7 @@ export function AppShell(): JSX.Element {
         onSelectAccount={handleSelectAccount}
         onCreateAccount={() => setCreateAccountOpen(true)}
         onEditAccount={handleEditAccount}
-        onOpenSettings={handleOpenSettings}
+        onOpenSettings={onOpenSettings}
       />
       <OnboardingBanner
         visible={showOnboarding}

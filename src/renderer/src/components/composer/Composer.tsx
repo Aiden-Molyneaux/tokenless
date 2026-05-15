@@ -13,6 +13,7 @@ import type { DropdownItem } from '../common/Dropdown'
 import { GearReviewPane } from '../gear-review/GearReviewPane'
 import { useLiveCostEstimate } from '../../hooks/use-live-cost-estimate'
 import { AuthMissingModal } from '../notifications/AuthMissingModal'
+import { ConfirmModal } from '../common/ConfirmModal'
 import { useTurns } from '../../hooks/use-turns'
 import { ActionsRow } from './ActionsRow'
 import { TemplatePickerPopover } from './TemplatePickerPopover'
@@ -20,6 +21,13 @@ import { ConfigsRow } from './ConfigsRow'
 import { PromptTextarea } from './PromptTextarea'
 import { TelemetryStrip } from './TelemetryStrip'
 import { TurnFeedbackBar } from './TurnFeedbackBar'
+import {
+  SETTING_GEARING_DEFAULT_MODEL,
+  SETTING_GEARING_DEFAULT_BREADTH,
+  SETTING_GEARING_DEFAULT_FORMAT,
+  SETTING_GEARING_SEND_CONFIRM
+} from '@shared/types/settings-keys'
+import { readSetting } from '../../hooks/use-settings'
 import './styles.css'
 
 interface ComposerProps {
@@ -65,6 +73,9 @@ export function Composer({ conversationId, accountId, accountLabel, onBranch }: 
   const [authMissingOpen, setAuthMissingOpen] = useState(false)
   const [templatesOpen, setTemplatesOpen] = useState(false)
   const [lastCostPreview, setLastCostPreview] = useState<CostPreview | null>(null)
+  const [sendConfirm, setSendConfirm] = useState(false)
+  const [confirmSendOpen, setConfirmSendOpen] = useState(false)
+  const pendingSendRef = useRef<{ prompt: string; gearMeta: GearMeta | null } | null>(null)
   const promptRef = useRef(prompt)
   const { push: pushToast } = useToast()
   const liveEstimate = useLiveCostEstimate({ prompt, model, breadth })
@@ -73,6 +84,22 @@ export function Composer({ conversationId, accountId, accountLabel, onBranch }: 
   useEffect(() => {
     promptRef.current = prompt
   }, [prompt])
+
+  // Load gearing defaults and sendConfirm setting from the settings table on mount.
+  // GearingDefaultsSection writes to the same keys, so changes take effect on next Composer mount.
+  useEffect(() => {
+    void Promise.all([
+      readSetting(SETTING_GEARING_DEFAULT_MODEL),
+      readSetting(SETTING_GEARING_DEFAULT_BREADTH),
+      readSetting(SETTING_GEARING_DEFAULT_FORMAT),
+      readSetting(SETTING_GEARING_SEND_CONFIRM)
+    ]).then(([m, b, f, sc]) => {
+      if (m !== null) setModel(m)
+      if (b !== null) setBreadth(b)
+      if (f !== null) setFormat(f)
+      setSendConfirm(sc === '1')
+    })
+  }, [])
   const { skills, toggleFavorite, toggleHidden } = useSkills()
   const { turns, updateFeedback } = useTurns(conversationId)
   const lastTurn = turns.length > 0 ? turns[turns.length - 1] : null
@@ -178,7 +205,7 @@ export function Composer({ conversationId, accountId, accountLabel, onBranch }: 
     void runGear(prompt)
   }
 
-  const handleSend = async (finalPrompt: string, gearMeta: GearMeta | null = null): Promise<void> => {
+  const actuallySend = async (finalPrompt: string, gearMeta: GearMeta | null): Promise<void> => {
     if (conversationId === null) {
       rendererLogger.warn('ui', 'send-no-conversation', 'Send clicked with no active conversation')
       return
@@ -217,6 +244,22 @@ export function Composer({ conversationId, accountId, accountLabel, onBranch }: 
     } finally {
       setSending(false)
     }
+  }
+
+  const handleSend = async (finalPrompt: string, gearMeta: GearMeta | null = null): Promise<void> => {
+    if (sendConfirm) {
+      pendingSendRef.current = { prompt: finalPrompt, gearMeta }
+      setConfirmSendOpen(true)
+      return
+    }
+    await actuallySend(finalPrompt, gearMeta)
+  }
+
+  const handleConfirmSend = async (): Promise<void> => {
+    const pending = pendingSendRef.current
+    pendingSendRef.current = null
+    setConfirmSendOpen(false)
+    if (pending) await actuallySend(pending.prompt, pending.gearMeta)
   }
 
   const handleCommit = (): void => {
@@ -332,6 +375,14 @@ export function Composer({ conversationId, accountId, accountLabel, onBranch }: 
         </div>
       )}
       <AuthMissingModal open={authMissingOpen} onDismiss={() => setAuthMissingOpen(false)} accountLabel={accountLabel} />
+      <ConfirmModal
+        open={confirmSendOpen}
+        title="Send prompt?"
+        message="Send this prompt to Claude?"
+        confirmLabel="Send"
+        onConfirm={() => void handleConfirmSend()}
+        onCancel={() => { pendingSendRef.current = null; setConfirmSendOpen(false) }}
+      />
     </>
   )
 }
