@@ -9,6 +9,7 @@
 
 import type { IpcResult } from './envelope'
 import type { CcEvent } from '../types/cc-events'
+import type { GearMeta } from '../types/turns'
 
 export const IPC_CC_START = 'cc:start'
 export const IPC_CC_SEND = 'cc:send'
@@ -41,6 +42,10 @@ export interface CcSendRequest {
   readonly model: string | null
   readonly breadth: string | null
   readonly format: string | null
+  // Optional metadata from a GearReviewPane send — preserves the original
+  // text, the geared text, and token breakdowns in the user-turn row.
+  // null/undefined when sending plain text (no gearing).
+  readonly gearMeta?: GearMeta | null
 }
 
 export interface CcSendResponse {

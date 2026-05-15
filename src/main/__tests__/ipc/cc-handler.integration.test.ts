@@ -118,6 +118,48 @@ describe('ipc/cc-handler', () => {
     expect(turn.status).toBe('complete')
   })
 
+  it('send with gearMeta writes a complete user turn including geared fields', async () => {
+    await handler.start({ conversationId, cwd: 'C:/x', cols: 100, rows: 30, accountId })
+    const result = await handler.send({
+      conversationId,
+      prompt: 'hello claude',
+      model: 'sonnet',
+      breadth: 'normal',
+      format: 'prose',
+      gearMeta: {
+        originalPrompt: 'hello claude original',
+        gearedPrompt: 'hello claude geared',
+        originalTokens: 100,
+        gearedTokens: 80,
+        haikuMetaTokens: 10,
+        critiqueFlags: ['flag1', 'flag2']
+      }
+    })
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+
+    const turnId = result.data.turnId
+    const turn = db.prepare('SELECT * FROM turns WHERE id = ?').get(turnId) as {
+      role: string
+      original_prompt: string | null
+      geared_prompt: string | null
+      original_tokens: number | null
+      geared_tokens: number | null
+      haiku_meta_tokens: number | null
+      critique_flags_json: string | null
+      status: string
+    }
+
+    expect(turn.role).toBe('user')
+    expect(turn.original_prompt).toBe('hello claude original')
+    expect(turn.geared_prompt).toBe('hello claude geared')
+    expect(turn.original_tokens).toBe(100)
+    expect(turn.geared_tokens).toBe(80)
+    expect(turn.haiku_meta_tokens).toBe(10)
+    expect(turn.critique_flags_json).toBe(JSON.stringify(['flag1', 'flag2']))
+    expect(turn.status).toBe('complete')
+  })
+
   it('send to an unstarted conversation returns NOT_FOUND', async () => {
     const result = await handler.send({
       conversationId,
