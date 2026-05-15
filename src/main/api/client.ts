@@ -4,9 +4,13 @@
 //
 // Retry policy: exponential backoff with jitter. Base 500ms, factor 2, max 3
 // attempts. Network/auth/unknown errors are not retried.
+//
+// Optional Logger injection (Phase 5B): emits api-retry-attempt per retry
+// attempt and api-retry-exhausted when all retries are exhausted.
 
 import Anthropic from '@anthropic-ai/sdk'
 
+import type { Logger } from '../observability/logger'
 import type { AnthropicClientLike, ApiError, MessageRequest, MessageResponse, Result } from './types'
 
 interface AnthropicClientOptions {
@@ -16,6 +20,7 @@ interface AnthropicClientOptions {
   readonly timeoutMs?: number     // default 30_000
   // Test seam — production omits this; tests inject a fake delay function.
   readonly delay?: (ms: number) => Promise<void>
+  readonly logger?: Logger
 }
 
 const DEFAULT_OPTS = {
@@ -33,12 +38,14 @@ export class AnthropicClient implements AnthropicClientLike {
   private readonly maxRetries: number
   private readonly baseBackoffMs: number
   private readonly delay: (ms: number) => Promise<void>
+  private readonly logger: Logger | null
 
   constructor(opts: AnthropicClientOptions) {
     this.sdk = new Anthropic({ apiKey: opts.apiKey, timeout: opts.timeoutMs ?? DEFAULT_OPTS.timeoutMs })
     this.maxRetries = opts.maxRetries ?? DEFAULT_OPTS.maxRetries
     this.baseBackoffMs = opts.baseBackoffMs ?? DEFAULT_OPTS.baseBackoffMs
     this.delay = opts.delay ?? defaultDelay
+    this.logger = opts.logger ?? null
   }
 
   async complete(request: MessageRequest): Promise<Result<MessageResponse, ApiError>> {
@@ -67,15 +74,29 @@ export class AnthropicClient implements AnthropicClientLike {
         }
       } catch (err) {
         lastError = classifyError(err)
+        const isRetryable = lastError.code === 'API_RATE_LIMITED' || lastError.code === 'API_SERVER_ERROR'
         // Retryable only if it's a server / rate-limit AND we have attempts left
-        if (
-          (lastError.code === 'API_RATE_LIMITED' || lastError.code === 'API_SERVER_ERROR') &&
-          attempt < this.maxRetries
-        ) {
+        if (isRetryable && attempt < this.maxRetries) {
           const backoff = this.baseBackoffMs * Math.pow(2, attempt - 1)
           const jitter = Math.random() * backoff * 0.3
-          await this.delay(backoff + jitter)
+          const sleepMs = backoff + jitter
+          this.logger?.warn('api', 'api-retry-attempt', 'Anthropic API retry', {
+            attempt,
+            maxRetries: this.maxRetries,
+            code: lastError.code,
+            backoffMs: Math.round(sleepMs),
+            model: request.model
+          })
+          await this.delay(sleepMs)
           continue
+        }
+        // Retryable error but attempts exhausted — emit the exhaustion record
+        if (isRetryable) {
+          this.logger?.error('api', 'api-retry-exhausted', 'Anthropic API retries exhausted', {
+            finalCode: lastError.code,
+            attempts: this.maxRetries,
+            model: request.model
+          })
         }
         return { ok: false, error: lastError }
       }

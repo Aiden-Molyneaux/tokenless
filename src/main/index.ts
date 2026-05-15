@@ -105,7 +105,7 @@ app.whenReady().then(() => {
   if (!apiKey) {
     logger.warn('api', 'api-key-missing', 'ANTHROPIC_API_KEY not set — gearing will fail with API_AUTH_FAILED')
   }
-  const anthropicClient = new AnthropicClient({ apiKey })
+  const anthropicClient = new AnthropicClient({ apiKey, logger })
 
   const ipcRegistration = registerIpcHandlers(ipcMain, logger, broadcast, db, anthropicClient)
 
