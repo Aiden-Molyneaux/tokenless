@@ -2,6 +2,7 @@
 // receive the live Database connection from main/index.ts.
 
 import { randomUUID } from 'node:crypto'
+import { homedir } from 'node:os'
 
 import type { IpcMain } from 'electron'
 import type { Database } from 'better-sqlite3'
@@ -25,6 +26,11 @@ import type { PtySpawnFn, PtyHandle } from '@main/cc'
 import { AnthropicClientRegistry } from '@main/api'
 import { SummaryRefresher } from '@main/gearing/summary-refresher'
 import { GearingHandler } from './gearing-handler'
+import { reconcile, type ReconcileResult } from '@main/skills/reconciler'
+import { scanSkillsRoots } from '@main/skills/scanner'
+import { resolveSkillsRoots } from '@main/skills/roots'
+import { SkillsWatcher } from '@main/skills/watcher'
+import { SkillsHandler } from './skills-handler'
 
 export interface IpcRegistration {
   logBridge: LogBridge
@@ -37,6 +43,8 @@ export interface IpcRegistration {
   draftsHandler: DraftsHandler
   settingsHandler: SettingsHandler
   pathsHandler: PathsHandler
+  skillsHandler: SkillsHandler
+  skillsWatcher: SkillsWatcher
   uninstallAll: () => void
 }
 
@@ -121,6 +129,44 @@ export function registerIpcHandlers(
   const pathsHandler = new PathsHandler(logger)
   pathsHandler.install(ipcMain)
 
+  // Skills subsystem — user + plugin roots only this phase; project-local
+  // scanning lands when Phase 7 wires active-project tracking through here.
+  const skillsRoots = resolveSkillsRoots(homedir(), null)
+
+  const skillsRescan = async (): Promise<ReconcileResult> => {
+    try {
+      const discovered = await scanSkillsRoots(skillsRoots, null)
+      return reconcile(db, discovered, Date.now())
+    } catch (err) {
+      logger.error('skill', 'skills-rescan-failed', err instanceof Error ? err.message : String(err), {
+        errorString: String(err)
+      })
+      throw err
+    }
+  }
+
+  const skillsHandler = new SkillsHandler(db, logger, broadcast, skillsRescan)
+  skillsHandler.install(ipcMain)
+
+  const skillsBroadcast: (event: 'skills:changed', payload?: undefined) => void =
+    (event) => broadcast(event, undefined)
+
+  const skillsWatcher = new SkillsWatcher({
+    roots: skillsRoots,
+    scan: async () => {
+      try {
+        await skillsRescan()
+      } catch {
+        // Already logged inside skillsRescan; swallow so the watcher keeps running.
+      }
+    },
+    broadcast: skillsBroadcast
+  })
+  skillsWatcher.start()
+  logger.info('skill', 'skills-watcher-started', 'Skills filesystem watcher started', {
+    roots: skillsRoots
+  })
+
   // Subscribe to the Logger ring and re-broadcast api-retry-attempt records on
   // the dedicated IPC channel. This is ORTHOGONAL to LogBridge — same Logger,
   // different filter, different destination (Phase 5C's retry banner consumes it).
@@ -155,6 +201,8 @@ export function registerIpcHandlers(
     draftsHandler,
     settingsHandler,
     pathsHandler,
+    skillsHandler,
+    skillsWatcher,
     uninstallAll: () => {
       logBridge.uninstall()
       accountsHandler.uninstall(ipcMain)
@@ -167,6 +215,10 @@ export function registerIpcHandlers(
       draftsHandler.uninstall(ipcMain)
       settingsHandler.uninstall(ipcMain)
       pathsHandler.uninstall(ipcMain)
+      void skillsWatcher.stop().then(() => {
+        logger.info('skill', 'skills-watcher-stopped', 'Skills filesystem watcher stopped')
+      })
+      skillsHandler.uninstall(ipcMain)
       summaryRefresher.stop()
       unsubscribeRetryBroadcast()
     }
