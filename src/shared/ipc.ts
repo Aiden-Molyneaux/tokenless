@@ -120,6 +120,13 @@ export {
 } from './ipc/telemetry'
 
 export {
+  IPC_TELEMETRY_GET_SUMMARY,
+  type TelemetryGetSummaryRequest,
+  type TelemetryGetSummaryResponse,
+  type TelemetryGetSummaryResult
+} from './ipc/telemetry-summary'
+
+export {
   IPC_GEARING_GEAR,
   type GearingGearRequest,
   type GearingGearResult
@@ -226,6 +233,7 @@ export type IpcChannelName =
   | 'cc:crashed'
   | 'cc:hung'
   | 'telemetry:tick'
+  | 'telemetry:get-summary'
   | 'gearing:gear'
   | 'api:retry-attempt'
   | 'drafts:save'
