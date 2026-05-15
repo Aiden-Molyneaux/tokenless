@@ -1,5 +1,16 @@
 import type { LogRecord } from '@shared/observability'
-import type { TelemetryTick, GearingGearRequest, GearingGearResult, ApiRetryAttemptPayload } from '@shared/ipc'
+import type {
+  TelemetryTick,
+  GearingGearRequest,
+  GearingGearResult,
+  ApiRetryAttemptPayload,
+  DraftsSaveRequest,
+  DraftsSaveResult,
+  DraftsGetRequest,
+  DraftsGetResult,
+  DraftsClearRequest,
+  DraftsClearResult
+} from '@shared/ipc'
 import type {
   AccountsListResult,
   AccountsCreateRequest,
@@ -82,6 +93,11 @@ export interface TokenlessApi {
   }
   readonly api: {
     onRetryAttempt(fn: (payload: ApiRetryAttemptPayload) => void): () => void
+  }
+  readonly drafts: {
+    save(req: DraftsSaveRequest): Promise<DraftsSaveResult>
+    get(req: DraftsGetRequest): Promise<DraftsGetResult>
+    clear(req: DraftsClearRequest): Promise<DraftsClearResult>
   }
 }
 

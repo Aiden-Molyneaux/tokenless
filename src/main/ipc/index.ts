@@ -17,6 +17,7 @@ import { AccountsHandler } from './accounts-handler'
 import { ProjectsHandler } from './projects-handler'
 import { ConversationsHandler } from './conversations-handler'
 import { CcHandler } from './cc-handler'
+import { DraftsHandler } from './drafts-handler'
 import { CcLifecycle } from '@main/cc'
 import type { PtySpawnFn, PtyHandle } from '@main/cc'
 import type { AnthropicClientLike } from '@main/api'
@@ -32,6 +33,7 @@ export interface IpcRegistration {
   ccHandler: CcHandler
   ccLifecycle: CcLifecycle
   gearingHandler: GearingHandler
+  draftsHandler: DraftsHandler
   uninstallAll: () => void
 }
 
@@ -108,6 +110,9 @@ export function registerIpcHandlers(
   const gearingHandler = new GearingHandler(gearingEngine, logger)
   gearingHandler.install(ipcMain)
 
+  const draftsHandler = new DraftsHandler(db, logger)
+  draftsHandler.install(ipcMain)
+
   // Subscribe to the Logger ring and re-broadcast api-retry-attempt records on
   // the dedicated IPC channel. This is ORTHOGONAL to LogBridge — same Logger,
   // different filter, different destination (Phase 5C's retry banner consumes it).
@@ -139,6 +144,7 @@ export function registerIpcHandlers(
     ccHandler,
     ccLifecycle,
     gearingHandler,
+    draftsHandler,
     uninstallAll: () => {
       logBridge.uninstall()
       accountsHandler.uninstall(ipcMain)
@@ -148,6 +154,7 @@ export function registerIpcHandlers(
       ccLifecycle.closeAll()
       telemetryEmitter.stop()
       gearingHandler.uninstall(ipcMain)
+      draftsHandler.uninstall(ipcMain)
       summaryRefresher.stop()
       unsubscribeRetryBroadcast()
     }

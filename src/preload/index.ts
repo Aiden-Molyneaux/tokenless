@@ -70,7 +70,16 @@ import {
   type GearingGearRequest,
   type GearingGearResult,
   IPC_API_RETRY_ATTEMPT,
-  type ApiRetryAttemptPayload
+  type ApiRetryAttemptPayload,
+  IPC_DRAFTS_SAVE,
+  IPC_DRAFTS_GET,
+  IPC_DRAFTS_CLEAR,
+  type DraftsSaveRequest,
+  type DraftsSaveResult,
+  type DraftsGetRequest,
+  type DraftsGetResult,
+  type DraftsClearRequest,
+  type DraftsClearResult
 } from '@shared/ipc'
 
 const api = {
@@ -205,6 +214,17 @@ const api = {
       const listener = (_e: unknown, payload: ApiRetryAttemptPayload): void => fn(payload)
       ipcRenderer.on(IPC_API_RETRY_ATTEMPT, listener as never)
       return () => ipcRenderer.removeListener(IPC_API_RETRY_ATTEMPT, listener as never)
+    }
+  },
+  drafts: {
+    save(req: DraftsSaveRequest): Promise<DraftsSaveResult> {
+      return ipcRenderer.invoke(IPC_DRAFTS_SAVE, req) as Promise<DraftsSaveResult>
+    },
+    get(req: DraftsGetRequest): Promise<DraftsGetResult> {
+      return ipcRenderer.invoke(IPC_DRAFTS_GET, req) as Promise<DraftsGetResult>
+    },
+    clear(req: DraftsClearRequest): Promise<DraftsClearResult> {
+      return ipcRenderer.invoke(IPC_DRAFTS_CLEAR, req) as Promise<DraftsClearResult>
     }
   }
 }
