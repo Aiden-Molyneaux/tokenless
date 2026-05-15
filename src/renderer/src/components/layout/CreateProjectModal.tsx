@@ -11,6 +11,7 @@ export function CreateProjectModal({ open, onClose, onCreate }: CreateProjectMod
   const [rootPath, setRootPath] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [pathError, setPathError] = useState<string | null>(null)
   const firstFieldRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -18,6 +19,7 @@ export function CreateProjectModal({ open, onClose, onCreate }: CreateProjectMod
       setName('')
       setRootPath('')
       setError(null)
+      setPathError(null)
       setSubmitting(false)
       setTimeout(() => firstFieldRef.current?.focus(), 0)
     }
@@ -32,6 +34,25 @@ export function CreateProjectModal({ open, onClose, onCreate }: CreateProjectMod
     return () => document.removeEventListener('keydown', onKey)
   }, [open, onClose])
 
+  useEffect(() => {
+    const trimmed = rootPath.trim()
+    if (!trimmed) {
+      setPathError(null)
+      return undefined
+    }
+    const timer = setTimeout(async () => {
+      const result = await window.tokenless.paths.checkDir({ path: trimmed })
+      if (!result.ok) {
+        setPathError(null)
+        return
+      }
+      if (!result.data.exists) setPathError("Directory doesn't exist on disk.")
+      else if (!result.data.isDirectory) setPathError('Path points to a file, not a directory.')
+      else setPathError(null)
+    }, 400)
+    return () => clearTimeout(timer)
+  }, [rootPath])
+
   if (!open) return null
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
@@ -40,6 +61,10 @@ export function CreateProjectModal({ open, onClose, onCreate }: CreateProjectMod
     const trimmedPath = rootPath.trim()
     if (!trimmedName || !trimmedPath) {
       setError('Name and root path are both required.')
+      return
+    }
+    if (pathError) {
+      setError(pathError)
       return
     }
     setSubmitting(true)
@@ -84,6 +109,7 @@ export function CreateProjectModal({ open, onClose, onCreate }: CreateProjectMod
               placeholder="C:/path/to/project"
               autoComplete="off"
             />
+            {pathError && <span className="modal__field-error">{pathError}</span>}
           </label>
           {error && <p className="modal__error">{error}</p>}
           <div className="modal__actions">

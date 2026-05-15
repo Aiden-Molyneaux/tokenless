@@ -334,6 +334,12 @@
   margin-top: 0.15rem;
 }
 
+.modal__field-error {
+  font-size: 0.8rem;
+  color: var(--tl-color-danger, #d22);
+  margin-top: 0.15rem;
+}
+
 /* ===== AccountSwitcher — dropdown + add button ===== */
 
 .account-switcher { display: inline-flex; align-items: center; gap: 0.25rem; }
