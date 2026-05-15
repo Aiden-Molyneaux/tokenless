@@ -3,3 +3,4 @@ export type { AnthropicClientLike, ApiError, MessageRequest, MessageResponse, Re
 export { estimateCost, estimateInputTokens } from './cost'
 export { pricingFor, GEARING_MODEL, PRICING } from './pricing'
 export type { ModelPricing } from './pricing'
+export { AnthropicClientRegistry } from './client-registry'
