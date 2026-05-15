@@ -1,10 +1,9 @@
-// Per-model pricing — dollars per million tokens. Source: anthropic.com/pricing
-// as of 2026-05-14. Cached here as a versioned table; Phase 5B may add a
-// "refresh from registry" path if pricing changes.
+// Per-model pricing — dollars per million tokens. Pricing rates are
+// approximations as of 2026-05-15; refresh when anthropic.com/pricing updates.
 //
-// The keys match the model labels used in our config selectors ('haiku',
-// 'sonnet', 'opus'). The actual API model identifiers are looked up by these
-// keys (anthropic uses claude-3-5-haiku-latest, etc.).
+// The keys ('haiku', 'sonnet', 'opus') are stable internal slugs used by our
+// config selectors. The `apiModel` field is the literal identifier sent to
+// the Anthropic API — update these when Anthropic ships new model versions.
 
 export interface ModelPricing {
   readonly inputPerMillion: number
@@ -17,19 +16,19 @@ export interface ModelPricing {
 
 export const PRICING: Record<string, ModelPricing> = {
   haiku: {
-    apiModel: 'claude-3-5-haiku-latest',
-    displayName: 'Haiku 3.5',
+    apiModel: 'claude-haiku-4-5-20251001',
+    displayName: 'Haiku 4.5',
     inputPerMillion: 1.00,
     outputPerMillion: 5.00
   },
   sonnet: {
-    apiModel: 'claude-sonnet-4-7-latest',
-    displayName: 'Sonnet 4.7',
+    apiModel: 'claude-sonnet-4-6',
+    displayName: 'Sonnet 4.6',
     inputPerMillion: 3.00,
     outputPerMillion: 15.00
   },
   opus: {
-    apiModel: 'claude-opus-4-7-latest',
+    apiModel: 'claude-opus-4-7',
     displayName: 'Opus 4.7',
     inputPerMillion: 15.00,
     outputPerMillion: 75.00

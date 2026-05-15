@@ -175,6 +175,7 @@ export function Composer({ conversationId, accountId, accountLabel }: ComposerPr
           geared={gearState.gearedPrompt}
           critiqueFlags={gearState.critiqueFlags}
           costPreview={gearState.costPreview}
+          sendDisabled={conversationId === null}
           onSendOriginal={handleGearSendOriginal}
           onSendGeared={handleGearSendGeared}
           onReGear={handleGearReGear}

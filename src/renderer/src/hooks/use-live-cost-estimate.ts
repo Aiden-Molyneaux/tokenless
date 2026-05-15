@@ -6,8 +6,8 @@ import type { CostPreview } from '@shared/types/gearing'
 // pre-gear estimates. Keep in sync manually until Phase 6 introduces a pricing
 // IPC query (or a shared module if it makes sense).
 const PRICING: Record<string, { input: number; output: number; label: string }> = {
-  haiku:  { input: 1.00,  output: 5.00,  label: 'Haiku 3.5'  },
-  sonnet: { input: 3.00,  output: 15.00, label: 'Sonnet 4.7' },
+  haiku:  { input: 1.00,  output: 5.00,  label: 'Haiku 4.5'  },
+  sonnet: { input: 3.00,  output: 15.00, label: 'Sonnet 4.6' },
   opus:   { input: 15.00, output: 75.00, label: 'Opus 4.7'   }
 }
 

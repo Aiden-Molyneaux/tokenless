@@ -6,7 +6,7 @@ import type { DropdownItem } from '../components/common/Dropdown'
 
 export const MOCK_MODELS: readonly DropdownItem[] = [
   { value: 'haiku', label: 'Haiku 4.5', description: 'fastest · cheapest' },
-  { value: 'sonnet', label: 'Sonnet 4.5', description: 'balanced' },
+  { value: 'sonnet', label: 'Sonnet 4.6', description: 'balanced' },
   { value: 'opus', label: 'Opus 4.7', description: 'most capable · best for hard tasks' }
 ]
 

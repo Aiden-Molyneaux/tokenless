@@ -10,6 +10,8 @@ interface GearReviewPaneProps {
   geared: string
   critiqueFlags: readonly CritiqueFlag[]
   costPreview: CostPreview
+  /** When true, both Send buttons are disabled (no active claude PTY conversation). */
+  sendDisabled?: boolean
   onSendOriginal: () => void
   onSendGeared: (editedGeared: string) => void
   onReGear: () => void
@@ -31,6 +33,7 @@ export function GearReviewPane({
   geared,
   critiqueFlags,
   costPreview,
+  sendDisabled = false,
   onSendOriginal,
   onSendGeared,
   onReGear,
@@ -80,6 +83,11 @@ export function GearReviewPane({
           </span>
         )}
       </div>
+      {sendDisabled && (
+        <p className="gear-review-pane__send-hint">
+          Click <strong>New Conversation</strong> in the sidebar to start a Claude session before sending.
+        </p>
+      )}
       <div className="gear-review-pane__actions">
         <button
           type="button"
@@ -92,6 +100,8 @@ export function GearReviewPane({
           type="button"
           className="gear-review-pane__button"
           onClick={onSendOriginal}
+          disabled={sendDisabled}
+          title={sendDisabled ? 'No active conversation — start one first' : undefined}
         >
           Send original
         </button>
@@ -99,6 +109,8 @@ export function GearReviewPane({
           type="button"
           className="gear-review-pane__button gear-review-pane__button--primary"
           onClick={() => onSendGeared(editedGeared)}
+          disabled={sendDisabled}
+          title={sendDisabled ? 'No active conversation — start one first' : undefined}
         >
           Send geared
         </button>
