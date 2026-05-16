@@ -267,7 +267,7 @@ Detailed per-phase plans go in `docs/superpowers/plans/2026-05-16-phase-N-...` (
 |---|---|---|---|
 | 0 | `v2.0.0-phase-0-spec` | Branch + safety tag (`v1.0.0-final`, `release/v1`). Spec + initial plans committed to `v2/headless`. | shipped |
 | 1 | `v2.0.0-phase-1-strip-pty` | Delete `src/main/cc/`, `cc-handler.ts`, terminal renderer components + hooks, preload `cc` namespace, node-pty + @xterm/* deps, electron-builder unpacks. App still builds + runs with a placeholder MainPane. | shipped 2026-05-16 (12 commits, 292/292 unit/integration, build:unpack OK, E2E known failures as documented) |
-| 2 | `v2.0.0-phase-2-strip-dependents` | Remove branching UI, summary refresher, response accumulator, feedback UI, hung/crash modals, ClaudeNotFoundModal. DB migration `0010_headless.sql`. v1 backup export. |
+| 2 | `v2.0.0-phase-2-strip-dependents` | Remove branching UI, summary refresher, response accumulator, feedback UI, hung/crash modals, ClaudeNotFoundModal. DB migration `0010_headless.sql`. v1 backup export. | shipped 2026-05-16 (10 commits, 272/272 unit/integration, migration 003 verified, build:unpack OK, E2E 11/0/2-skipped). Plan adjusted migration filename to `003_v2_headless.sql`; v1 backup via existing whole-DB SQLite copy instead of JSONL — spec amendment in phase 6. |
 | 3 | `v2.0.0-phase-3-capture` | `clipboard:read-prompt` IPC, Capture button in Composer, validation + observability + tests. |
 | 4 | `v2.0.0-phase-4-send` | `clipboard:write-geared` IPC, Copy Geared button replacing old Send, success toast + tests. |
 | 5 | `v2.0.0-phase-5-layout` | Sidebar collapse, MainPane vertical reflow, TopBar compaction, half-screen scenarios + E2E. |
