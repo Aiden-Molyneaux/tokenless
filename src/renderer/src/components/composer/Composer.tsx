@@ -13,7 +13,6 @@ import type { DropdownItem } from '../common/Dropdown'
 import { GearReviewPane } from '../gear-review/GearReviewPane'
 import { useLiveCostEstimate } from '../../hooks/use-live-cost-estimate'
 import { AuthMissingModal } from '../notifications/AuthMissingModal'
-import { ConfirmModal } from '../common/ConfirmModal'
 import { ActionsRow } from './ActionsRow'
 import { TemplatePickerPopover } from './TemplatePickerPopover'
 import { ConfigsRow } from './ConfigsRow'
@@ -22,8 +21,7 @@ import { TelemetryStrip } from './TelemetryStrip'
 import {
   SETTING_GEARING_DEFAULT_MODEL,
   SETTING_GEARING_DEFAULT_BREADTH,
-  SETTING_GEARING_DEFAULT_FORMAT,
-  SETTING_GEARING_SEND_CONFIRM
+  SETTING_GEARING_DEFAULT_FORMAT
 } from '@shared/types/settings-keys'
 import { readSetting } from '../../hooks/use-settings'
 import './styles.css'
@@ -72,9 +70,6 @@ export function Composer({ conversationId, accountId, accountLabel }: ComposerPr
   const [authMissingOpen, setAuthMissingOpen] = useState(false)
   const [templatesOpen, setTemplatesOpen] = useState(false)
   const [lastCostPreview, setLastCostPreview] = useState<CostPreview | null>(null)
-  const [sendConfirm, setSendConfirm] = useState(false)
-  const [confirmSendOpen, setConfirmSendOpen] = useState(false)
-  const pendingSendRef = useRef<{ prompt: string; gearMeta: GearMeta | null } | null>(null)
   const promptRef = useRef(prompt)
   const { push: pushToast } = useToast()
   const liveEstimate = useLiveCostEstimate({ prompt, model, breadth })
@@ -84,19 +79,17 @@ export function Composer({ conversationId, accountId, accountLabel }: ComposerPr
     promptRef.current = prompt
   }, [prompt])
 
-  // Load gearing defaults and sendConfirm setting from the settings table on mount.
+  // Load gearing defaults from the settings table on mount.
   // GearingDefaultsSection writes to the same keys, so changes take effect on next Composer mount.
   useEffect(() => {
     void Promise.all([
       readSetting(SETTING_GEARING_DEFAULT_MODEL),
       readSetting(SETTING_GEARING_DEFAULT_BREADTH),
-      readSetting(SETTING_GEARING_DEFAULT_FORMAT),
-      readSetting(SETTING_GEARING_SEND_CONFIRM)
-    ]).then(([m, b, f, sc]) => {
+      readSetting(SETTING_GEARING_DEFAULT_FORMAT)
+    ]).then(([m, b, f]) => {
       if (m !== null) setModel(m)
       if (b !== null) setBreadth(b)
       if (f !== null) setFormat(f)
-      setSendConfirm(sc === '1')
     })
   }, [])
   const { skills, toggleFavorite, toggleHidden } = useSkills()
@@ -224,19 +217,7 @@ export function Composer({ conversationId, accountId, accountLabel }: ComposerPr
   }
 
   const handleSend = async (finalPrompt: string, gearMeta: GearMeta | null = null): Promise<void> => {
-    if (sendConfirm) {
-      pendingSendRef.current = { prompt: finalPrompt, gearMeta }
-      setConfirmSendOpen(true)
-      return
-    }
     await actuallySend(finalPrompt, gearMeta)
-  }
-
-  const handleConfirmSend = async (): Promise<void> => {
-    const pending = pendingSendRef.current
-    pendingSendRef.current = null
-    setConfirmSendOpen(false)
-    if (pending) await actuallySend(pending.prompt, pending.gearMeta)
   }
 
   const handleCommit = (): void => {
@@ -345,14 +326,6 @@ export function Composer({ conversationId, accountId, accountLabel }: ComposerPr
         </div>
       )}
       <AuthMissingModal open={authMissingOpen} onDismiss={() => setAuthMissingOpen(false)} accountLabel={accountLabel} />
-      <ConfirmModal
-        open={confirmSendOpen}
-        title="Send prompt?"
-        message="Send this prompt to Claude?"
-        confirmLabel="Send"
-        onConfirm={() => void handleConfirmSend()}
-        onCancel={() => { pendingSendRef.current = null; setConfirmSendOpen(false) }}
-      />
     </>
   )
 }
