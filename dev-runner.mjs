@@ -241,10 +241,14 @@ async function actionStartDev(state) {
   }
   process.stdout.write(`${C.cyan}Starting npm run dev…${C.reset}\n`)
   const start = Date.now()
+  // shell: true is required on Windows for Node 20+ to spawn .cmd shims
+  // (CVE-2024-27980 hardened spawn). On Unix, plain `npm` works without a shell.
+  // With shell: true + detached: true, proc.pid is the shell's PID; taskkill /T
+  // (used in killProcessTree) still walks the tree, so cleanup works.
   const proc = spawn(IS_WIN ? 'npm.cmd' : 'npm', ['run', 'dev'], {
     detached: true,
     stdio: ['ignore', 'pipe', 'pipe'],
-    shell: false
+    shell: IS_WIN
   })
   state.devPid = proc.pid
   state.devStartedAt = Date.now()
