@@ -73,10 +73,12 @@ test('composer renders with textarea, 4 config dropdowns, and action buttons', a
   await expect(page.locator('.prompt-textarea')).toBeVisible()
   await expect(page.locator('.configs-row .dropdown')).toHaveCount(4)
   await expect(page.locator('.actions-row__button--gear')).toBeVisible()
-  // Phase 2B → 7C: primary (Gear, Send) + secondary (Templates, Branch, Commit, Push) = 6 buttons.
+  // Phase 2 (v2 headless): primary (Gear, Send) + secondary (Templates, Commit, Push) = 5 buttons.
+  // Branch removed alongside the embedded PTY (its workflow doesn't exist in v2).
+  // Phase 4 will replace Send with Copy-Geared; Phase 5 may further reshape this row.
   // Bumping the count whenever a button lands here is intentional — a tight count
   // assertion catches accidental button additions/removals.
-  await expect(page.locator('.actions-row__button')).toHaveCount(6)
+  await expect(page.locator('.actions-row__button')).toHaveCount(5)
 })
 
 test('typing in the prompt textarea enables Gear and Send buttons', async () => {
