@@ -84,41 +84,6 @@ export {
   type ConversationsBranchResponse
 } from './ipc/conversations'
 
-export {
-  IPC_CC_START,
-  IPC_CC_SEND,
-  IPC_CC_RESIZE,
-  IPC_CC_OUTPUT_CHUNK,
-  IPC_CC_EXIT,
-  IPC_CC_EVENT,
-  IPC_CC_STOP,
-  IPC_CC_RESUME,
-  IPC_CC_CRASHED,
-  IPC_CC_HUNG,
-  IPC_CC_INPUT,
-  type CcStartRequest,
-  type CcStartResponse,
-  type CcStartResult,
-  type CcSendRequest,
-  type CcSendResponse,
-  type CcSendResult,
-  type CcResizeRequest,
-  type CcResizeResult,
-  type CcOutputChunkPayload,
-  type CcExitPayload,
-  type CcEventPayload,
-  type CcStopRequest,
-  type CcStopResult,
-  type CcResumeRequest,
-  type CcResumeResponse,
-  type CcResumeResult,
-  type CcCrashedPayload,
-  type CcHungPayload,
-  type CcInputRequest,
-  type CcInputResponse,
-  type CcInputResult
-} from './ipc/cc'
-
 export type { IpcResult, IpcOk, IpcError } from './ipc/envelope'
 
 export {
@@ -283,17 +248,6 @@ export type IpcChannelName =
   | 'conversations:delete'
   | 'conversations:changed'
   | 'conversations:branch'
-  | 'cc:start'
-  | 'cc:send'
-  | 'cc:resize'
-  | 'cc:output-chunk'
-  | 'cc:exit'
-  | 'cc:event'
-  | 'cc:stop'
-  | 'cc:resume'
-  | 'cc:crashed'
-  | 'cc:hung'
-  | 'cc:input'
   | 'telemetry:tick'
   | 'telemetry:get-summary'
   | 'gearing:gear'
