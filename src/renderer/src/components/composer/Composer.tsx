@@ -32,7 +32,6 @@ interface ComposerProps {
   conversationId: number | null
   accountId: number | null
   accountLabel: string | null
-  onBranch: () => void
 }
 
 // Error code → user-facing toast message map.
@@ -52,7 +51,7 @@ const GEAR_ERROR_MESSAGES: Record<string, string> = {
 // view to GearReviewPane. Phase 5 replaces the mock gear data with real
 // Haiku-driven output via IPC.
 
-export function Composer({ conversationId, accountId, accountLabel, onBranch }: ComposerProps): JSX.Element {
+export function Composer({ conversationId, accountId, accountLabel }: ComposerProps): JSX.Element {
   const pricing = usePricing()
   const modelItems = pricing.map((p) => ({
     value: p.key,
@@ -332,7 +331,6 @@ export function Composer({ conversationId, accountId, accountLabel, onBranch }: 
               onGear={handleGear}
               onSend={() => void handleSend(prompt)}
               onTemplates={() => setTemplatesOpen((v) => !v)}
-              onBranch={onBranch}
               onCommit={handleCommit}
               onPush={handlePush}
             />

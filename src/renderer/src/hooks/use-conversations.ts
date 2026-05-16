@@ -14,7 +14,6 @@ interface UseConversationsReturn {
   readonly create: (input: CreateConversationInput) => Promise<Conversation | null>
   readonly update: (input: UpdateConversationInput) => Promise<Conversation | null>
   readonly remove: (id: number) => Promise<boolean>
-  readonly branch: (parentConversationId: number) => Promise<Conversation | null>
 }
 
 export function useConversations(projectId: number | null): UseConversationsReturn {
@@ -80,10 +79,5 @@ export function useConversations(projectId: number | null): UseConversationsRetu
     return result.ok
   }, [])
 
-  const branch = useCallback(async (parentConversationId: number): Promise<Conversation | null> => {
-    const r = await window.tokenless.conversations.branch({ parentConversationId })
-    return r.ok ? r.data.conversation : null
-  }, [])
-
-  return { conversations, loading, error, refetch: fetchConversations, create, update, remove, branch }
+  return { conversations, loading, error, refetch: fetchConversations, create, update, remove }
 }

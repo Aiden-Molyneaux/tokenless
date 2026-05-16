@@ -11,7 +11,6 @@ interface ActionsRowProps {
   onGear: () => void
   onSend: () => void
   onTemplates: () => void
-  onBranch: () => void
   onCommit: () => void
   onPush: () => void
 }
@@ -21,7 +20,7 @@ interface ActionsRowProps {
 // Commit + Push pre-fill the composer with canned git prompts (Phase 7
 // wires that; Phase 2B stubs the callbacks).
 
-export function ActionsRow({ promptEmpty, disableGear = false, disableSend = false, onGear, onSend, onTemplates, onBranch, onCommit, onPush }: ActionsRowProps): JSX.Element {
+export function ActionsRow({ promptEmpty, disableGear = false, disableSend = false, onGear, onSend, onTemplates, onCommit, onPush }: ActionsRowProps): JSX.Element {
   return (
     <div className="actions-row">
       <div className="actions-row__primary">
@@ -54,15 +53,6 @@ export function ActionsRow({ promptEmpty, disableGear = false, disableSend = fal
             onClick={onTemplates}
           >
             Templates ▾
-          </button>
-        </InfoTooltip>
-        <InfoTooltip helperText="Create a new conversation that branches off from the latest turn here. Inherits the rolling summary for context.">
-          <button
-            type="button"
-            className="actions-row__button actions-row__button--secondary"
-            onClick={onBranch}
-          >
-            Branch
           </button>
         </InfoTooltip>
         <InfoTooltip helperText="Pre-fills the composer with this project's commit prompt (editable in Settings).">

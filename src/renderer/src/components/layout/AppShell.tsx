@@ -5,7 +5,6 @@ import type { UpdateProjectInput } from '@shared/types/projects'
 import { useAccounts } from '../../hooks/use-accounts'
 import { useConversations } from '../../hooks/use-conversations'
 import { useProjects } from '../../hooks/use-projects'
-import { useToast } from '../../hooks/use-toast'
 import {
   readSetting,
   writeSetting,
@@ -34,7 +33,7 @@ export function AppShell({ onOpenSettings }: { onOpenSettings: () => void }): JS
   const [editAccountOpen, setEditAccountOpen] = useState(false)
   const [editProjectOpen, setEditProjectOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const { push: pushToast } = useToast()
+
 
   // On-mount restore: read last-active ids from settings and pre-select them if
   // they still exist in the current lists. Uses functional setter form so we
@@ -96,7 +95,7 @@ export function AppShell({ onOpenSettings }: { onOpenSettings: () => void }): JS
     }
   }, [activeProjectId])
 
-  const { conversations, branch: branchConversation } = useConversations(activeProjectId)
+  const { conversations } = useConversations(activeProjectId)
   const [activeConversationId, setActiveConversationId] = useState<number | null>(null)
 
   // Reset active conversation when project changes.
@@ -143,33 +142,6 @@ export function AppShell({ onOpenSettings }: { onOpenSettings: () => void }): JS
     setActiveConversationId(created.data.conversation.id)
     rendererLogger.info('ui', 'new-conversation', 'New conversation created', {
       conversationId: created.data.conversation.id
-    })
-  }
-
-  const handleBranchConversation = async (): Promise<void> => {
-    if (activeConversationId === null || activeProjectId === null || activeAccountId === null) {
-      rendererLogger.warn('ui', 'branch-blocked', 'Branch clicked but no active conversation/project/account', {
-        activeConversationId, activeProjectId, activeAccountId
-      })
-      return
-    }
-    const branched = await branchConversation(activeConversationId)
-    if (!branched) {
-      rendererLogger.warn('ui', 'branch-failed', 'conversations.branch returned null', {
-        parentConversationId: activeConversationId
-      })
-      pushToast({
-        message: 'Could not branch — the conversation has no turns yet.',
-        severity: 'warn'
-      })
-      return
-    }
-
-    // v2-phase-4 will route the geared prompt to the clipboard; no PTY to start.
-    setActiveConversationId(branched.id)
-    rendererLogger.info('ui', 'branch-created', 'Conversation branched', {
-      parentConversationId: activeConversationId,
-      newConversationId: branched.id
     })
   }
 
@@ -283,7 +255,7 @@ export function AppShell({ onOpenSettings }: { onOpenSettings: () => void }): JS
         {showEmptyState ? (
           <EmptyProjectsState onCreate={handleOpenCreateProject} />
         ) : (
-          <MainPane conversationId={activeConversationId} accountId={activeAccountId} accountLabel={accounts.find((a) => a.id === activeAccountId)?.label ?? null} onBranch={() => void handleBranchConversation()} />
+          <MainPane conversationId={activeConversationId} accountId={activeAccountId} accountLabel={accounts.find((a) => a.id === activeAccountId)?.label ?? null} />
         )}
       </div>
       <CreateProjectModal
