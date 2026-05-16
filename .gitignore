@@ -32,6 +32,10 @@ logs/
 # vite cache
 .vite/
 
+# dev runner (npm run tl)
+.dev-runner-state.json
+.dev-runner-output.log
+
 # playwright test artifacts
 test-results/
 playwright-report/

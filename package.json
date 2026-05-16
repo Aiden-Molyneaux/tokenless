@@ -20,7 +20,8 @@
     "rebuild:electron": "electron-rebuild --force --module-dir node_modules/better-sqlite3 && electron-rebuild --force --module-dir node_modules/node-pty",
     "rebuild:node": "npm rebuild better-sqlite3 node-pty",
     "rebuild:native": "electron-rebuild --force",
-    "fixtures:record": "tsx scripts/record-fixtures.ts"
+    "fixtures:record": "tsx scripts/record-fixtures.ts",
+    "tl": "node dev-runner.mjs"
   },
   "engines": {
     "node": ">=20.0.0"
