@@ -263,10 +263,10 @@ Following the v1 cornerstone: every new feature must have unit + integration + s
 
 Detailed per-phase plans go in `docs/superpowers/plans/2026-05-16-phase-N-...` (via the `writing-plans` skill, next step after this spec).
 
-| Phase | Tag | Topic |
-|---|---|---|
-| 0 | `v2.0.0-phase-0-spec` | Branch + safety tag (`v1.0.0-final`, `release/v1`). Spec + initial plans committed to `v2/headless`. |
-| 1 | `v2.0.0-phase-1-strip-pty` | Delete `src/main/cc/`, `cc-handler.ts`, terminal renderer components + hooks, preload `cc` namespace, node-pty + @xterm/* deps, electron-builder unpacks. App still builds + runs with a placeholder MainPane. |
+| Phase | Tag | Topic | Status |
+|---|---|---|---|
+| 0 | `v2.0.0-phase-0-spec` | Branch + safety tag (`v1.0.0-final`, `release/v1`). Spec + initial plans committed to `v2/headless`. | shipped |
+| 1 | `v2.0.0-phase-1-strip-pty` | Delete `src/main/cc/`, `cc-handler.ts`, terminal renderer components + hooks, preload `cc` namespace, node-pty + @xterm/* deps, electron-builder unpacks. App still builds + runs with a placeholder MainPane. | shipped 2026-05-16 (12 commits, 292/292 unit/integration, build:unpack OK, E2E known failures as documented) |
 | 2 | `v2.0.0-phase-2-strip-dependents` | Remove branching UI, summary refresher, response accumulator, feedback UI, hung/crash modals, ClaudeNotFoundModal. DB migration `0010_headless.sql`. v1 backup export. |
 | 3 | `v2.0.0-phase-3-capture` | `clipboard:read-prompt` IPC, Capture button in Composer, validation + observability + tests. |
 | 4 | `v2.0.0-phase-4-send` | `clipboard:write-geared` IPC, Copy Geared button replacing old Send, success toast + tests. |
