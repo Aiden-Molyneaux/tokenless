@@ -104,21 +104,60 @@ function estimateSeconds(state, action) {
 // Detection
 // ────────────────────────────────────────────────────────────────────
 
-// Probe the current ABI by attempting to require better-sqlite3 from host Node.
-// If it loads → Node ABI. If it throws NODE_MODULE_VERSION mismatch → Electron ABI.
+// Probe ABI by trying to load better-sqlite3 in both runtimes. The result
+// indicates which runtime(s) can actually use the current native binary.
+//
+// IMPORTANT: don't trust state.abi — it can drift when an rebuild silently
+// no-ops, or when `npm install` reverts to a prebuild after the user runs
+// electron-rebuild. Always probe the ground truth before deciding to rebuild.
+//
+// Returns: 'node' | 'electron' | 'both' | 'unknown'
 function detectABI() {
+  const nodeOk = canLoadInNode()
+  const electronOk = canLoadInElectron()
+  if (nodeOk && electronOk) return 'both'  // N-API prebuild — universal
+  if (electronOk) return 'electron'
+  if (nodeOk) return 'node'
+  return 'unknown'
+}
+
+function canLoadInNode() {
   try {
     execSync(
-      `node -e "require('better-sqlite3'); console.log('ok')"`,
+      `node -e "require('better-sqlite3'); process.exit(0)"`,
       { stdio: 'pipe', cwd: process.cwd() }
     )
-    return 'node'
-  } catch (err) {
-    const msg = err.stderr?.toString() ?? err.message
-    if (/NODE_MODULE_VERSION/.test(msg)) return 'electron'
-    // Module not found, or some other failure — return unknown
-    return 'unknown'
+    return true
+  } catch {
+    return false
   }
+}
+
+function canLoadInElectron() {
+  const electronPath = resolve('node_modules/electron/dist/electron.exe')
+  if (!existsSync(electronPath)) return false
+  try {
+    // ELECTRON_RUN_AS_NODE makes Electron behave like a plain Node interpreter
+    // so we can run a one-liner without needing a window or app context.
+    execSync(
+      `"${electronPath}" -e "require('better-sqlite3'); process.exit(0)"`,
+      { stdio: 'pipe', cwd: process.cwd(), env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' } }
+    )
+    return true
+  } catch {
+    return false
+  }
+}
+
+// ABI for menu display purposes: collapse 'both' to 'electron' since either
+// works for dev, and that's what the user cares about visually.
+function displayABI(abi) {
+  return abi === 'both' ? 'electron' : abi
+}
+
+// Can we start dev right now? Need Electron-compatible native modules.
+function isElectronCompatible(abi) {
+  return abi === 'electron' || abi === 'both'
 }
 
 function isProcessAlive(pid) {
@@ -158,13 +197,11 @@ async function rebuildForElectron(state) {
   process.stdout.write(`${C.cyan}Rebuilding better-sqlite3 + node-pty for Electron ABI…${C.reset}\n`)
   // Try electron-rebuild first; if it fails (e.g. no VS Build Tools), fall back
   // to prebuild-install for better-sqlite3. node-pty's N-API prebuilds work in both.
-  let ok = false
   try {
     execSync(
-      `npx electron-rebuild --module-dir node_modules/better-sqlite3`,
+      `npx electron-rebuild --force --module-dir node_modules/better-sqlite3`,
       { stdio: 'inherit' }
     )
-    ok = true
   } catch {
     process.stdout.write(`${C.yellow}electron-rebuild failed (likely no VS Build Tools). Trying prebuild-install fallback…${C.reset}\n`)
     try {
@@ -173,21 +210,24 @@ async function rebuildForElectron(state) {
         `npx prebuild-install --runtime=electron --target=${electronVersion}`,
         { stdio: 'inherit', cwd: resolve('node_modules/better-sqlite3') }
       )
-      ok = true
     } catch (err) {
       process.stdout.write(`${C.red}prebuild-install failed: ${err.message}${C.reset}\n`)
     }
   }
+  // Don't trust the rebuild's exit code (electron-rebuild often exits 0
+  // without actually rebuilding). Probe the actual loaded ABI to verify.
+  process.stdout.write(`${C.dim}Verifying ABI…${C.reset}\n`)
+  const detected = detectABI()
+  state.abi = detected
+  saveState(state)
   const elapsed = (Date.now() - start) / 1000
-  if (ok) {
-    state.abi = 'electron'
-    saveState(state)
+  if (isElectronCompatible(detected)) {
     recordTiming(state, 'rebuildElectron', elapsed)
-    process.stdout.write(`${C.green}✓ ABI switched to Electron (${elapsed.toFixed(1)}s)${C.reset}\n`)
-  } else {
-    process.stdout.write(`${C.red}✗ ABI switch failed${C.reset}\n`)
+    process.stdout.write(`${C.green}✓ ABI is now Electron-compatible (${elapsed.toFixed(1)}s, detected: ${detected})${C.reset}\n`)
+    return true
   }
-  return ok
+  process.stdout.write(`${C.red}✗ ABI switch failed: still ${detected} after rebuild. Install Visual Studio Build Tools or check npm output above for errors.${C.reset}\n`)
+  return false
 }
 
 async function rebuildForNode(state) {
@@ -195,16 +235,22 @@ async function rebuildForNode(state) {
   process.stdout.write(`${C.cyan}Rebuilding better-sqlite3 + node-pty for Node ABI…${C.reset}\n`)
   try {
     execSync(`npm rebuild better-sqlite3 node-pty`, { stdio: 'inherit' })
-    const elapsed = (Date.now() - start) / 1000
-    state.abi = 'node'
-    saveState(state)
-    recordTiming(state, 'rebuildNode', elapsed)
-    process.stdout.write(`${C.green}✓ ABI switched to Node (${elapsed.toFixed(1)}s)${C.reset}\n`)
-    return true
   } catch (err) {
-    process.stdout.write(`${C.red}✗ rebuild failed: ${err.message}${C.reset}\n`)
-    return false
+    process.stdout.write(`${C.red}✗ rebuild command failed: ${err.message}${C.reset}\n`)
   }
+  process.stdout.write(`${C.dim}Verifying ABI…${C.reset}\n`)
+  const detected = detectABI()
+  state.abi = detected
+  saveState(state)
+  const elapsed = (Date.now() - start) / 1000
+  // 'node' or 'both' both mean Node tests will work
+  if (detected === 'node' || detected === 'both') {
+    recordTiming(state, 'rebuildNode', elapsed)
+    process.stdout.write(`${C.green}✓ ABI is now Node-compatible (${elapsed.toFixed(1)}s, detected: ${detected})${C.reset}\n`)
+    return true
+  }
+  process.stdout.write(`${C.red}✗ ABI switch failed: detected ${detected}${C.reset}\n`)
+  return false
 }
 
 function readElectronVersion() {
@@ -219,9 +265,16 @@ function readElectronVersion() {
 }
 
 async function ensureABI(target, state) {
-  if (state.abi === target) return true
-  if (target === 'electron') return rebuildForElectron(state)
-  if (target === 'node') return rebuildForNode(state)
+  // 'both' satisfies any target (N-API binaries work everywhere)
+  if (state.abi === 'both') return true
+  if (target === 'electron') {
+    if (isElectronCompatible(state.abi)) return true
+    return rebuildForElectron(state)
+  }
+  if (target === 'node') {
+    if (state.abi === 'node') return true
+    return rebuildForNode(state)
+  }
   return false
 }
 
@@ -234,12 +287,15 @@ async function actionStartDev(state) {
     process.stdout.write(`${C.yellow}Dev server already running (PID ${state.devPid}). Use [r] to restart.${C.reset}\n`)
     return
   }
-  if (state.abi !== 'electron') {
-    process.stdout.write(`${C.dim}ABI is ${state.abi}; switching to Electron first…${C.reset}\n`)
+  if (!isElectronCompatible(state.abi)) {
+    process.stdout.write(`${C.dim}ABI is ${state.abi}; rebuilding for Electron first…${C.reset}\n`)
     const ok = await ensureABI('electron', state)
-    if (!ok) return
+    if (!ok) {
+      process.stdout.write(`${C.red}Cannot start dev without Electron-compatible native modules.${C.reset}\n`)
+      return
+    }
   }
-  process.stdout.write(`${C.cyan}Starting npm run dev…${C.reset}\n`)
+  process.stdout.write(`${C.cyan}Starting electron-vite dev…${C.reset}\n`)
   const start = Date.now()
   const logPath = resolve('.dev-runner-output.log')
   const fs = await import('node:fs')
@@ -343,7 +399,7 @@ async function actionRunTests(state) {
     process.stdout.write(`${C.yellow}Press [k] first if you want to keep dev's state.${C.reset}\n`)
     return
   }
-  if (state.abi !== 'node') {
+  if (state.abi !== 'node' && state.abi !== 'both') {
     const ok = await ensureABI('node', state)
     if (!ok) return
   }
@@ -375,7 +431,7 @@ async function actionBuildUnpack(state) {
     process.stdout.write(`${C.yellow}Dev server is running. Stop it first (or this build will conflict on file locks).${C.reset}\n`)
     return
   }
-  if (state.abi !== 'electron') {
+  if (!isElectronCompatible(state.abi)) {
     const ok = await ensureABI('electron', state)
     if (!ok) return
   }
@@ -454,6 +510,7 @@ function clearScreen() {
 function abiBadge(abi) {
   if (abi === 'electron') return `${C.magenta}Electron${C.reset}`
   if (abi === 'node') return `${C.cyan}Node${C.reset}`
+  if (abi === 'both') return `${C.green}Both (N-API)${C.reset}`
   return `${C.yellow}unknown${C.reset}`
 }
 
@@ -506,7 +563,7 @@ function menuLine(key, label, estSeconds) {
 
 function estimateStart(state) {
   const dev = estimateSeconds(state, 'devStart')
-  if (state.abi === 'electron') return dev
+  if (isElectronCompatible(state.abi)) return dev
   return dev + estimateSeconds(state, 'rebuildElectron')
 }
 
@@ -517,13 +574,13 @@ function estimateRestart(state) {
 
 function estimateTests(state) {
   const t = estimateSeconds(state, 'testRun')
-  if (state.abi === 'node') return t
+  if (state.abi === 'node' || state.abi === 'both') return t
   return t + estimateSeconds(state, 'rebuildNode')
 }
 
 function estimateBuild(state) {
   const b = estimateSeconds(state, 'buildUnpack')
-  if (state.abi === 'electron') return b
+  if (isElectronCompatible(state.abi)) return b
   return b + estimateSeconds(state, 'rebuildElectron')
 }
 
@@ -534,12 +591,13 @@ function estimateBuild(state) {
 async function main() {
   let state = loadState()
 
-  // First-launch ABI detection: if state says 'unknown' or stale, probe.
-  if (state.abi === 'unknown' || !isProcessAlive(state.devPid)) {
-    process.stdout.write(`${C.dim}Probing current ABI…${C.reset}\n`)
-    state.abi = detectABI()
-    saveState(state)
-  }
+  // Always probe ABI on startup — the state file can drift (electron-rebuild
+  // sometimes no-ops with exit 0, npm install reverts to prebuild, etc).
+  // Probing takes ~1s (one Node + one Electron spawn) and prevents silent
+  // dev-startup failures from ABI mismatch.
+  process.stdout.write(`${C.dim}Probing current ABI…${C.reset}\n`)
+  state.abi = detectABI()
+  saveState(state)
 
   // Use raw mode for single-keypress input. Only available on TTYs.
   const isTTY = process.stdin.isTTY === true
