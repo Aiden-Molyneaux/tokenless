@@ -126,13 +126,8 @@ test('Cancel button in GearReviewPane returns to Composer with prompt preserved'
   await expect(page.locator('.prompt-textarea')).toHaveValue('Cancel test prompt')
 })
 
-test('terminal section is visible with toolbar + meter + xterm pane', async () => {
-  const page = await app.firstWindow()
-  await page.waitForLoadState('domcontentloaded')
-  await ensureProjectExists(page)
-
-  await expect(page.locator('.terminal-section')).toBeVisible()
-  await expect(page.locator('.terminal-toolbar__stop')).toBeVisible()
-  await expect(page.locator('.terminal-toolbar__meter')).toBeVisible()
-  await expect(page.locator('.terminal-pane')).toBeVisible()
+// v2: embedded terminal removed. Phase 4 will replace this with E2E coverage
+// for the Capture/Gear/Copy clipboard round-trip.
+test.skip('terminal section is visible with toolbar + meter + xterm pane', async () => {
+  // intentionally empty — preserved as a TODO marker
 })

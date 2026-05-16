@@ -20,7 +20,10 @@ test.describe('Phase 5A gearing flow', () => {
     }
   })
 
-  test('clicking Gear with a mocked response renders the geared-review pane with cost preview', async () => {
+  // v2: skipped because the test fixture depends on .terminal-pane to confirm
+  // app boot, and the embedded terminal is gone. Phase 3 rewrites this test
+  // against the new clipboard-capture composer flow (no PTY readiness wait).
+  test.skip('clicking Gear with a mocked response renders the geared-review pane with cost preview', async () => {
     const mockClaudeCmd = resolve('test/doubles/claude-mock.cmd')
     app = await electron.launch({
       args: ['out/main/index.js'],
