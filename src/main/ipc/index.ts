@@ -16,7 +16,6 @@ import { DraftsHandler } from './drafts-handler'
 import { SettingsHandler } from './settings-handler'
 import { PathsHandler } from './paths-handler'
 import { AnthropicClientRegistry } from '@main/api'
-import { SummaryRefresher } from '@main/gearing/summary-refresher'
 import { GearingHandler } from './gearing-handler'
 import { reconcile, type ReconcileResult } from '@main/skills/reconciler'
 import { scanSkillsRoots } from '@main/skills/scanner'
@@ -70,10 +69,6 @@ export function registerIpcHandlers(
 
   const conversationsHandler = new ConversationsHandler(db, logger, broadcast)
   conversationsHandler.install(ipcMain)
-
-  const summaryRefresher = new SummaryRefresher({
-    db, registry: clientRegistry, logger
-  })
 
   const gearingHandler = new GearingHandler(db, logger, clientRegistry)
   gearingHandler.install(ipcMain)
@@ -217,7 +212,6 @@ export function registerIpcHandlers(
         logger.info('skill', 'skills-watcher-stopped', 'Skills filesystem watcher stopped')
       })
       skillsHandler.uninstall(ipcMain)
-      summaryRefresher.stop()
       unsubscribeRetryBroadcast()
     }
   }
