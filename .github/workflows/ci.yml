@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, v2/headless]
   pull_request:
-    branches: [main]
+    branches: [main, v2/headless]
 
 jobs:
   unit-and-integration:
