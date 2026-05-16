@@ -241,54 +241,69 @@ async function actionStartDev(state) {
   }
   process.stdout.write(`${C.cyan}Starting npm run dev…${C.reset}\n`)
   const start = Date.now()
-  // shell: true is required on Windows for Node 20+ to spawn .cmd shims
-  // (CVE-2024-27980 hardened spawn). On Unix, plain `npm` works without a shell.
-  // With shell: true + detached: true, proc.pid is the shell's PID; taskkill /T
-  // (used in killProcessTree) still walks the tree, so cleanup works.
-  const proc = spawn(IS_WIN ? 'npm.cmd' : 'npm', ['run', 'dev'], {
-    detached: true,
-    stdio: ['ignore', 'pipe', 'pipe'],
-    shell: IS_WIN
-  })
+  const logPath = resolve('.dev-runner-output.log')
+  const fs = await import('node:fs')
+  // Truncate any prior log so polling sees only this run's output
+  fs.writeFileSync(logPath, '')
+
+  // Windows note: `detached: true` opens a new console for the child, which
+  // breaks `stdio: pipe` (the pipes attach to that new console, not us, so
+  // proc.stdout never emits 'data'). Workaround: invoke cmd.exe with shell
+  // output redirection so the child writes the log file directly. On Unix
+  // the standard detached + piped stdio pattern works fine.
+  let proc
+  if (IS_WIN) {
+    proc = spawn('cmd.exe', ['/d', '/s', '/c', `npm run dev > "${logPath}" 2>&1`], {
+      detached: true,
+      stdio: 'ignore',
+      windowsHide: true
+    })
+  } else {
+    proc = spawn('npm', ['run', 'dev'], {
+      detached: true,
+      stdio: ['ignore', 'pipe', 'pipe']
+    })
+    const logStream = fs.createWriteStream(logPath, { flags: 'w' })
+    proc.stdout.pipe(logStream)
+    proc.stderr.pipe(logStream)
+  }
   state.devPid = proc.pid
   state.devStartedAt = Date.now()
   saveState(state)
-
-  // Pipe child output to a log file so we don't lose it
-  const logPath = resolve('.dev-runner-output.log')
-  const fs = await import('node:fs')
-  const logStream = fs.createWriteStream(logPath, { flags: 'w' })
-  proc.stdout.pipe(logStream)
-  proc.stderr.pipe(logStream)
-
-  // Watch for "start electron app..." line — signals the window is opening
-  let readyTimer = null
-  let sawReady = false
-  proc.stdout.on('data', (chunk) => {
-    if (sawReady) return
-    if (/start electron app/i.test(chunk.toString())) {
-      sawReady = true
-      const elapsed = (Date.now() - start) / 1000
-      recordTiming(state, 'devStart', elapsed)
-      process.stdout.write(`${C.green}✓ Electron starting up (${elapsed.toFixed(1)}s; window appearing momentarily)${C.reset}\n`)
-      process.stdout.write(`${C.dim}  PID: ${proc.pid} · output streaming to ${logPath}${C.reset}\n`)
-      if (readyTimer) clearTimeout(readyTimer)
-    }
-  })
-
-  // If we don't see the ready line in 60s, surface the partial output so the user can diagnose
-  readyTimer = setTimeout(() => {
-    if (!sawReady) {
-      process.stdout.write(`${C.yellow}Dev server didn't reach "start electron app" within 60s. Check ${logPath} for details.${C.reset}\n`)
-    }
-  }, 60_000)
-
-  // Don't unref — we want the menu loop to keep watching the child
-  // Actually DO unref so quitting the runner doesn't kill dev
   proc.unref()
 
-  // Wait briefly so the next render shows the live PID
-  await sleep(1500)
+  // Poll the log file for "start electron app" — works on both platforms,
+  // and is the only option on Windows where stdio pipes aren't reachable.
+  process.stdout.write(`${C.dim}Waiting for Electron to start (up to 60s)…${C.reset}\n`)
+  let sawReady = false
+  const deadline = Date.now() + 60_000
+  while (Date.now() < deadline && !sawReady) {
+    await sleep(500)
+    try {
+      const log = fs.readFileSync(logPath, 'utf8')
+      if (/start electron app/i.test(log)) {
+        sawReady = true
+        const elapsed = (Date.now() - start) / 1000
+        recordTiming(state, 'devStart', elapsed)
+        process.stdout.write(`${C.green}✓ Electron starting up (${elapsed.toFixed(1)}s; window appearing momentarily)${C.reset}\n`)
+        process.stdout.write(`${C.dim}  PID: ${proc.pid} · output streaming to ${logPath}${C.reset}\n`)
+        break
+      }
+      // Surface any build errors early instead of waiting the full 60s
+      if (/\b(EADDRINUSE|MODULE_NOT_FOUND|Cannot find module|error TS\d+|ENOENT)\b/.test(log) && log.length > 0) {
+        // Keep polling — these may be transient, but tail will show them
+      }
+    } catch { /* log not yet written */ }
+  }
+  if (!sawReady) {
+    process.stdout.write(`${C.yellow}Dev server didn't reach "start electron app" within 60s. Last lines of log:${C.reset}\n`)
+    try {
+      const log = fs.readFileSync(logPath, 'utf8')
+      const lines = log.split('\n').slice(-20)
+      process.stdout.write(`${C.gray}${lines.join('\n')}${C.reset}\n`)
+    } catch { /* nothing to show */ }
+    process.stdout.write(`${C.yellow}Full log: ${logPath}${C.reset}\n`)
+  }
 }
 
 async function actionRestartDev(state) {
