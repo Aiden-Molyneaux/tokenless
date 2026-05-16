@@ -155,29 +155,6 @@
   color: var(--tl-mute);
 }
 
-/* ===== TurnFeedbackBar ===== */
-
-.turn-feedback-bar {
-  display: inline-flex;
-  gap: var(--tl-space-2);
-  padding: var(--tl-space-1) 0;
-  margin-top: var(--tl-space-2);
-}
-.turn-feedback-bar__button {
-  background: transparent;
-  border: 1px solid var(--tl-rule);
-  border-radius: var(--tl-radius-sm);
-  padding: 4px 10px;
-  font-size: 16px;
-  line-height: 1;
-  cursor: pointer;
-}
-.turn-feedback-bar__button:hover { background: var(--tl-hover); }
-.turn-feedback-bar__button:focus-visible {
-  outline: 1px solid var(--tl-blue);
-  outline-offset: 1px;
-}
-
 /* ===== TemplatePickerPopover ===== */
 
 .actions-row-host { position: relative; }

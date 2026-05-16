@@ -14,13 +14,11 @@ import { GearReviewPane } from '../gear-review/GearReviewPane'
 import { useLiveCostEstimate } from '../../hooks/use-live-cost-estimate'
 import { AuthMissingModal } from '../notifications/AuthMissingModal'
 import { ConfirmModal } from '../common/ConfirmModal'
-import { useTurns } from '../../hooks/use-turns'
 import { ActionsRow } from './ActionsRow'
 import { TemplatePickerPopover } from './TemplatePickerPopover'
 import { ConfigsRow } from './ConfigsRow'
 import { PromptTextarea } from './PromptTextarea'
 import { TelemetryStrip } from './TelemetryStrip'
-import { TurnFeedbackBar } from './TurnFeedbackBar'
 import {
   SETTING_GEARING_DEFAULT_MODEL,
   SETTING_GEARING_DEFAULT_BREADTH,
@@ -103,11 +101,6 @@ export function Composer({ conversationId, accountId, accountLabel, onBranch }: 
     })
   }, [])
   const { skills, toggleFavorite, toggleHidden } = useSkills()
-  const { turns, updateFeedback } = useTurns(conversationId)
-  const lastTurn = turns.length > 0 ? turns[turns.length - 1] : null
-  const showFeedbackBar = lastTurn !== null
-    && lastTurn.role === 'assistant'
-    && lastTurn.feedback === null
 
   const skillItems: readonly DropdownItem[] = useMemo(() => [
     { value: '', label: 'None', description: 'no skill requested' },
@@ -351,12 +344,6 @@ export function Composer({ conversationId, accountId, accountLabel, onBranch }: 
             )}
           </div>
           <TelemetryStrip liveEstimate={liveEstimate} lastCostPreview={lastCostPreview} prompt={prompt} />
-          {showFeedbackBar && lastTurn && (
-            <TurnFeedbackBar
-              turnId={lastTurn.id}
-              onSubmit={(id, feedback) => { void updateFeedback(id, feedback) }}
-            />
-          )}
         </div>
       )}
       <AuthMissingModal open={authMissingOpen} onDismiss={() => setAuthMissingOpen(false)} accountLabel={accountLabel} />
