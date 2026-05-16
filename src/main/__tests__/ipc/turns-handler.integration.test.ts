@@ -17,14 +17,12 @@ function makeLogger(): Logger {
 
 describe('ipc/turns-handler', () => {
   let db: Database
-  let broadcast: ReturnType<typeof vi.fn>
   let handler: TurnsHandler
   let conversationId: number
 
   beforeEach(() => {
     db = createTestDb()
-    broadcast = vi.fn()
-    handler = new TurnsHandler(db, makeLogger(), broadcast)
+    handler = new TurnsHandler(db, makeLogger())
 
     // Seed: create account -> project -> conversation
     const acct = AccountsDao.createAccount(db, {
@@ -43,18 +41,18 @@ describe('ipc/turns-handler', () => {
     })
     conversationId = conv.id
 
-    // Create a couple of assistant turns to query
-    TurnsDao.createAssistantTurn(db, {
+    // Create a couple of user turns to query
+    TurnsDao.createUserTurn(db, {
       conversationId,
-      responseText: 'Response 1',
-      responseTokens: 100,
-      modelUsed: null
+      originalPrompt: 'Prompt 1',
+      modelUsed: null,
+      gearMeta: null
     })
-    TurnsDao.createAssistantTurn(db, {
+    TurnsDao.createUserTurn(db, {
       conversationId,
-      responseText: 'Response 2',
-      responseTokens: 150,
-      modelUsed: null
+      originalPrompt: 'Prompt 2',
+      modelUsed: null,
+      gearMeta: null
     })
   })
 
@@ -63,9 +61,8 @@ describe('ipc/turns-handler', () => {
     expect(r.ok).toBe(true)
     if (r.ok) {
       expect(r.data.turns).toHaveLength(2)
-      expect(r.data.turns[0].role).toBe('assistant')
-      expect(r.data.turns[0].responseText).toBe('Response 1')
-      expect(r.data.turns[1].responseText).toBe('Response 2')
+      expect(r.data.turns[0].originalPrompt).toBe('Prompt 1')
+      expect(r.data.turns[1].originalPrompt).toBe('Prompt 2')
     }
   })
 
@@ -87,42 +84,5 @@ describe('ipc/turns-handler', () => {
     const r = await handler.listByConversation({ conversationId: conv.id })
     expect(r.ok).toBe(true)
     if (r.ok) expect(r.data.turns).toHaveLength(0)
-  })
-
-  it('updateFeedback flips the feedback bit + broadcasts turns:changed', async () => {
-    const turns = TurnsDao.listByConversation(db, conversationId)
-    const t = turns[0]
-    const r = await handler.updateFeedback({ id: t.id, feedback: 'up' })
-    expect(r.ok).toBe(true)
-    if (r.ok) {
-      expect(r.data.id).toBe(t.id)
-      expect(r.data.feedback).toBe('up')
-    }
-    expect(broadcast).toHaveBeenCalledWith('turns:changed', undefined)
-    // Verify the DB was updated
-    const updated = TurnsDao.getById(db, t.id)
-    expect(updated?.feedback).toBe('up')
-  })
-
-  it('updateFeedback returns NOT_FOUND for unknown turn id', async () => {
-    const r = await handler.updateFeedback({ id: 99999, feedback: 'down' })
-    expect(r.ok).toBe(false)
-    if (!r.ok) expect(r.error.code).toBe('NOT_FOUND')
-  })
-
-  it('getFeedbackSummary returns aggregate feedback counts', async () => {
-    // Update some feedback
-    const turns = TurnsDao.listByConversation(db, conversationId)
-    TurnsDao.updateFeedback(db, turns[0].id, 'up')
-    TurnsDao.updateFeedback(db, turns[1].id, 'down')
-
-    const r = await handler.getFeedbackSummary()
-    expect(r.ok).toBe(true)
-    if (r.ok) {
-      expect(r.data.summary.up).toBe(1)
-      expect(r.data.summary.down).toBe(1)
-      expect(r.data.summary.shrug).toBe(0)
-      expect(r.data.summary.unrated).toBe(0)
-    }
   })
 })

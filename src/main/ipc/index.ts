@@ -82,7 +82,7 @@ export function registerIpcHandlers(
   const pathsHandler = new PathsHandler(logger)
   pathsHandler.install(ipcMain)
 
-  const turnsHandler = new TurnsHandler(db, logger, broadcast)
+  const turnsHandler = new TurnsHandler(db, logger)
   turnsHandler.install(ipcMain)
 
   const templatesHandler = new TemplatesHandler(db, logger, broadcast)

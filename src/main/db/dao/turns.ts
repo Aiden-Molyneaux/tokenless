@@ -1,6 +1,6 @@
 import type { Database } from 'better-sqlite3'
 
-import type { Turn, TurnRole, TurnStatus, Feedback, FeedbackSummary, GearMeta } from '@shared/types/turns'
+import type { Turn, TurnRole, TurnStatus, Feedback, GearMeta } from '@shared/types/turns'
 
 interface TurnRow {
   id: number
@@ -75,31 +75,6 @@ export function createUserTurn(db: Database, input: CreateUserTurnInput): Turn {
   return created
 }
 
-export interface CreateAssistantTurnInput {
-  readonly conversationId: number
-  readonly responseText: string
-  readonly responseTokens: number | null
-  readonly modelUsed: string | null
-}
-
-export function createAssistantTurn(db: Database, input: CreateAssistantTurnInput): Turn {
-  const now = Date.now()
-  const result = db.prepare(`
-    INSERT INTO turns (
-      conversation_id, role, response_text, response_tokens, model_used, status, sent_at
-    ) VALUES (?, 'assistant', ?, ?, ?, 'complete', ?)
-  `).run(input.conversationId, input.responseText, input.responseTokens, input.modelUsed, now)
-  const created = getById(db, Number(result.lastInsertRowid))
-  if (!created) throw new Error('createAssistantTurn: SELECT after INSERT returned no row')
-  return created
-}
-
-// Constrained to role = 'assistant' — guards against accidentally writing feedback on user turns.
-export function updateFeedback(db: Database, id: number, feedback: Feedback): boolean {
-  const r = db.prepare("UPDATE turns SET feedback = ? WHERE id = ? AND role = 'assistant'").run(feedback, id)
-  return r.changes > 0
-}
-
 export function getById(db: Database, id: number): Turn | null {
   const row = db.prepare<[number], TurnRow>('SELECT * FROM turns WHERE id = ?').get(id)
   return row ? rowToTurn(row) : null
@@ -121,30 +96,6 @@ export function listByConversation(db: Database, conversationId: number): readon
     )
     .all(conversationId)
   return rows.map(rowToTurn)
-}
-
-interface FeedbackSummaryRow {
-  up: number
-  down: number
-  shrug: number
-  unrated: number
-}
-
-export function getFeedbackSummary(db: Database): FeedbackSummary {
-  const row = db.prepare<[], FeedbackSummaryRow>(`
-    SELECT
-      SUM(CASE WHEN feedback = 'up' THEN 1 ELSE 0 END) AS up,
-      SUM(CASE WHEN feedback = 'down' THEN 1 ELSE 0 END) AS down,
-      SUM(CASE WHEN feedback = 'shrug' THEN 1 ELSE 0 END) AS shrug,
-      SUM(CASE WHEN feedback IS NULL THEN 1 ELSE 0 END) AS unrated
-    FROM turns WHERE role = 'assistant'
-  `).get()
-  return {
-    up: row?.up ?? 0,
-    down: row?.down ?? 0,
-    shrug: row?.shrug ?? 0,
-    unrated: row?.unrated ?? 0
-  }
 }
 
 export interface ModelTokenBreakdown {

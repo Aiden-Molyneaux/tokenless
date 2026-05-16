@@ -170,17 +170,10 @@ export {
 
 export {
   IPC_TURNS_LIST_BY_CONVERSATION,
-  IPC_TURNS_UPDATE_FEEDBACK,
-  IPC_TURNS_FEEDBACK_SUMMARY,
   IPC_TURNS_CHANGED,
   type TurnsListRequest,
   type TurnsListResponse,
-  type TurnsListResult,
-  type TurnsUpdateFeedbackRequest,
-  type TurnsUpdateFeedbackResponse,
-  type TurnsUpdateFeedbackResult,
-  type TurnsFeedbackSummaryResponse,
-  type TurnsFeedbackSummaryResult
+  type TurnsListResult
 } from './ipc/turns'
 
 export {
@@ -271,8 +264,6 @@ export type IpcChannelName =
   | 'templates:delete'
   | 'templates:changed'
   | 'turns:list-by-conversation'
-  | 'turns:update-feedback'
-  | 'turns:feedback-summary'
   | 'turns:changed'
   | 'pricing:list'
   | 'ai:analyze-error'

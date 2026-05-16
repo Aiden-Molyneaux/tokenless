@@ -44,6 +44,8 @@ describe('ipc/telemetry-summary-handler', () => {
     const acc = AccountsDao.createAccount(db, { label: 'P', configDir: '/p', apiKey: 'sk-test' })
     const pr = ProjectsDao.createProject(db, { name: 'X', rootPath: '/x', defaultAccountId: acc.id })
     const conv = ConversationsDao.createConversation(db, { projectId: pr.id, accountId: acc.id })
+    // v2: only user turns exist (assistant turns are gone). Telemetry captures
+    // gearing cost (haiku meta tokens) + input savings (original vs geared tokens).
     TurnsDao.createUserTurn(db, {
       conversationId: conv.id,
       originalPrompt: 'q',
@@ -57,19 +59,17 @@ describe('ipc/telemetry-summary-handler', () => {
         critiqueFlags: []
       }
     })
-    TurnsDao.createAssistantTurn(db, {
-      conversationId: conv.id,
-      responseText: 'r',
-      responseTokens: 50_000,
-      modelUsed: 'sonnet'
-    })
     const r = await handler.getSummary({ sinceMs: null })
     expect(r.ok).toBe(true)
     if (r.ok) {
       const s = r.data.summary
+      // haikuCostDollars = 1_000_000 * (0.5 / 1_000_000) = 0.5
       expect(s.haikuCostDollars).toBeCloseTo(0.5, 5)
-      expect(s.spendDollars).toBeCloseTo(0.35, 5)
+      // spendDollars: geared input = 100_000 tokens at sonnet input rate (1 / 1M) = 0.1
+      expect(s.spendDollars).toBeCloseTo(0.1, 5)
+      // grossSavingsDollars: (200_000 - 100_000) * (1 / 1M) = 0.1
       expect(s.grossSavingsDollars).toBeCloseTo(0.1, 5)
+      // netSavingsDollars: grossSavings - haikuCost = 0.1 - 0.5 = -0.4
       expect(s.netSavingsDollars).toBeCloseTo(-0.4, 5)
       expect(s.byModel).toHaveLength(1)
       expect(s.byModel[0].model).toBe('sonnet')

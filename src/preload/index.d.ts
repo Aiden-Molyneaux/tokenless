@@ -36,9 +36,6 @@ import type {
   TemplatesDeleteResult,
   TurnsListRequest,
   TurnsListResult,
-  TurnsUpdateFeedbackRequest,
-  TurnsUpdateFeedbackResult,
-  TurnsFeedbackSummaryResult,
   PricingListResult,
   AiAnalyzeErrorRequest,
   AiAnalyzeErrorResult
@@ -121,8 +118,6 @@ export interface TokenlessApi {
   }
   readonly turns: {
     listByConversation(req: TurnsListRequest): Promise<TurnsListResult>
-    updateFeedback(req: TurnsUpdateFeedbackRequest): Promise<TurnsUpdateFeedbackResult>
-    getFeedbackSummary(): Promise<TurnsFeedbackSummaryResult>
     onChanged(fn: () => void): () => void
   }
   readonly telemetry: {
