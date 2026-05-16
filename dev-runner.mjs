@@ -246,27 +246,27 @@ async function actionStartDev(state) {
   // Truncate any prior log so polling sees only this run's output
   fs.writeFileSync(logPath, '')
 
-  // Windows note: `detached: true` opens a new console for the child, which
-  // breaks `stdio: pipe` (the pipes attach to that new console, not us, so
-  // proc.stdout never emits 'data'). Workaround: invoke cmd.exe with shell
-  // output redirection so the child writes the log file directly. On Unix
-  // the standard detached + piped stdio pattern works fine.
-  let proc
-  if (IS_WIN) {
-    proc = spawn('cmd.exe', ['/d', '/s', '/c', `npm run dev > "${logPath}" 2>&1`], {
-      detached: true,
-      stdio: 'ignore',
-      windowsHide: true
-    })
-  } else {
-    proc = spawn('npm', ['run', 'dev'], {
-      detached: true,
-      stdio: ['ignore', 'pipe', 'pipe']
-    })
-    const logStream = fs.createWriteStream(logPath, { flags: 'w' })
-    proc.stdout.pipe(logStream)
-    proc.stderr.pipe(logStream)
+  // We spawn electron-vite directly via `node node_modules/.../electron-vite.js dev`
+  // instead of `npm run dev`. Two Windows-specific reasons:
+  //   1. Node 20+ won't spawn .cmd shims (npm.cmd) without shell: true.
+  //   2. shell: true + detached: true + piped stdio is broken on Windows —
+  //      pipes attach to a new console, not us, so the log file stays empty.
+  // Going straight to node + the script bypasses both problems. We also pass
+  // the log file as an FD into stdio so the kernel writes directly to it —
+  // no Node-side pipe involved, survives detach.
+  const evScript = resolve('node_modules/electron-vite/bin/electron-vite.js')
+  if (!existsSync(evScript)) {
+    process.stdout.write(`${C.red}electron-vite not found at ${evScript}. Run npm install first.${C.reset}\n`)
+    return
   }
+  const logFd = fs.openSync(logPath, 'a')
+  const proc = spawn(process.execPath, [evScript, 'dev'], {
+    detached: true,
+    stdio: ['ignore', logFd, logFd],
+    windowsHide: true
+  })
+  // Once spawn has duplicated the FD into the child, we can close ours
+  fs.closeSync(logFd)
   state.devPid = proc.pid
   state.devStartedAt = Date.now()
   saveState(state)
