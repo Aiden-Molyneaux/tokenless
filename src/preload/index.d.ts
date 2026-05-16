@@ -73,24 +73,7 @@ import type {
   ConversationsDeleteRequest,
   ConversationsDeleteResult,
   ConversationsBranchRequest,
-  ConversationsBranchResult,
-  CcStartRequest,
-  CcStartResult,
-  CcSendRequest,
-  CcSendResult,
-  CcResizeRequest,
-  CcResizeResult,
-  CcOutputChunkPayload,
-  CcExitPayload,
-  CcEventPayload,
-  CcStopRequest,
-  CcStopResult,
-  CcResumeRequest,
-  CcResumeResult,
-  CcCrashedPayload,
-  CcHungPayload,
-  CcInputRequest,
-  CcInputResult
+  ConversationsBranchResult
 } from '@shared/ipc'
 
 export interface TokenlessApi {
@@ -141,19 +124,6 @@ export interface TokenlessApi {
     updateFeedback(req: TurnsUpdateFeedbackRequest): Promise<TurnsUpdateFeedbackResult>
     getFeedbackSummary(): Promise<TurnsFeedbackSummaryResult>
     onChanged(fn: () => void): () => void
-  }
-  readonly cc: {
-    start(req: CcStartRequest): Promise<CcStartResult>
-    send(req: CcSendRequest): Promise<CcSendResult>
-    resize(req: CcResizeRequest): Promise<CcResizeResult>
-    onOutputChunk(fn: (payload: CcOutputChunkPayload) => void): () => void
-    onExit(fn: (payload: CcExitPayload) => void): () => void
-    onEvent(fn: (payload: CcEventPayload) => void): () => void
-    stop(req: CcStopRequest): Promise<CcStopResult>
-    resume(req: CcResumeRequest): Promise<CcResumeResult>
-    onCrashed(fn: (payload: CcCrashedPayload) => void): () => void
-    onHung(fn: (payload: CcHungPayload) => void): () => void
-    input(req: CcInputRequest): Promise<CcInputResult>
   }
   readonly telemetry: {
     onTick(fn: (tick: TelemetryTick) => void): () => void
