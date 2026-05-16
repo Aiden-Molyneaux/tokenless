@@ -13,6 +13,7 @@ export const CATEGORIES = [
   'skill',
   'auth',
   'gearing',
+  'clipboard',
   'fs',
   'observability'
 ] as const
