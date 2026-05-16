@@ -68,7 +68,9 @@ export function Composer({ conversationId, accountId, accountLabel, onBranch }: 
   const [format, setFormat] = useState<string>(MOCK_FORMATS[0].value) // prose default
   const [skill, setSkill] = useState<string>('') // none default (empty string = "None" entry)
   const [gearState, setGearState] = useState<GearResult | null>(null)
-  const [sending, setSending] = useState(false)
+  // Phase 1: sending is always false now that cc.send is a no-op; kept so
+  // ActionsRow's disableSend / disableGear props compile unchanged.
+  const sending = false
   const [gearing, setGearing] = useState(false)
   const [authMissingOpen, setAuthMissingOpen] = useState(false)
   const [templatesOpen, setTemplatesOpen] = useState(false)
@@ -205,45 +207,28 @@ export function Composer({ conversationId, accountId, accountLabel, onBranch }: 
     void runGear(prompt)
   }
 
-  const actuallySend = async (finalPrompt: string, gearMeta: GearMeta | null): Promise<void> => {
+  const actuallySend = async (_finalPrompt: string, _gearMeta: GearMeta | null): Promise<void> => {
     if (conversationId === null) {
       rendererLogger.warn('ui', 'send-no-conversation', 'Send clicked with no active conversation')
       return
     }
-    setSending(true)
-    try {
-      const result = await window.tokenless.cc.send({
-        conversationId,
-        prompt: finalPrompt,
-        model,
-        breadth,
-        format,
-        gearMeta
+    // Phase 1: PTY is gone. Phase 4 will route the geared prompt to the clipboard.
+    // For now the Send button does nothing visible; in dev-mode we surface a hint.
+    if (import.meta.env.DEV) {
+      window.tokenless.log.send({
+        id: `composer-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+        ts: Date.now(),
+        severity: 'info',
+        category: 'ui',
+        event: 'send-button-noop',
+        message: 'Send button is a no-op in v2-phase-1; clipboard send arrives in phase 4.',
+        fingerprint: 'composer-send-noop',
+        source: 'renderer',
+        context: {}
       })
-      if (result.ok) {
-        setPrompt('')
-        void clearDraft()  // clears the persisted draft for this conversation
-        rendererLogger.info('ui', 'send-success', 'Prompt sent', {
-          conversationId,
-          turnId: result.data.turnId,
-          promptLength: finalPrompt.length
-        })
-      } else {
-        rendererLogger.error('ui', 'send-failed', result.error.message, {
-          conversationId,
-          code: result.error.code,
-          logId: result.error.logId
-        })
-        if (result.error.code === 'PTY_WRITE_FAILED') {
-          pushToast({
-            message: "Couldn't send prompt — PTY connection lost. Restart the conversation.",
-            severity: 'error'
-          })
-        }
-      }
-    } finally {
-      setSending(false)
     }
+    setPrompt('')
+    void clearDraft()  // clears the persisted draft for this conversation
   }
 
   const handleSend = async (finalPrompt: string, gearMeta: GearMeta | null = null): Promise<void> => {
