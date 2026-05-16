@@ -19,7 +19,6 @@ import {
   IPC_CONVERSATIONS_UPDATE,
   IPC_CONVERSATIONS_DELETE,
   IPC_CONVERSATIONS_CHANGED,
-  IPC_CONVERSATIONS_BRANCH,
   IPC_TELEMETRY_TICK,
   IPC_TELEMETRY_GET_SUMMARY,
   type TelemetryTick,
@@ -51,8 +50,6 @@ import {
   type ConversationsUpdateResult,
   type ConversationsDeleteRequest,
   type ConversationsDeleteResult,
-  type ConversationsBranchRequest,
-  type ConversationsBranchResult,
   IPC_GEARING_GEAR,
   type GearingGearRequest,
   type GearingGearResult,
@@ -194,9 +191,6 @@ const api = {
     },
     delete(req: ConversationsDeleteRequest): Promise<ConversationsDeleteResult> {
       return ipcRenderer.invoke(IPC_CONVERSATIONS_DELETE, req) as Promise<ConversationsDeleteResult>
-    },
-    branch(req: ConversationsBranchRequest): Promise<ConversationsBranchResult> {
-      return ipcRenderer.invoke(IPC_CONVERSATIONS_BRANCH, req) as Promise<ConversationsBranchResult>
     },
     onChanged(fn: () => void): () => void {
       const listener = (): void => fn()

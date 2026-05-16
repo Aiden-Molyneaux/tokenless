@@ -66,12 +66,10 @@ export {
   IPC_CONVERSATIONS_UPDATE,
   IPC_CONVERSATIONS_DELETE,
   IPC_CONVERSATIONS_CHANGED,
-  IPC_CONVERSATIONS_BRANCH,
   type ConversationsListResult,
   type ConversationsCreateResult,
   type ConversationsUpdateResult,
   type ConversationsDeleteResult,
-  type ConversationsBranchResult,
   type ConversationsListRequest,
   type ConversationsListResponse,
   type ConversationsCreateRequest,
@@ -79,9 +77,7 @@ export {
   type ConversationsUpdateRequest,
   type ConversationsUpdateResponse,
   type ConversationsDeleteRequest,
-  type ConversationsDeleteResponse,
-  type ConversationsBranchRequest,
-  type ConversationsBranchResponse
+  type ConversationsDeleteResponse
 } from './ipc/conversations'
 
 export type { IpcResult, IpcOk, IpcError } from './ipc/envelope'
@@ -240,7 +236,6 @@ export type IpcChannelName =
   | 'conversations:update'
   | 'conversations:delete'
   | 'conversations:changed'
-  | 'conversations:branch'
   | 'telemetry:tick'
   | 'telemetry:get-summary'
   | 'gearing:gear'

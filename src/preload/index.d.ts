@@ -68,9 +68,7 @@ import type {
   ConversationsUpdateRequest,
   ConversationsUpdateResult,
   ConversationsDeleteRequest,
-  ConversationsDeleteResult,
-  ConversationsBranchRequest,
-  ConversationsBranchResult
+  ConversationsDeleteResult
 } from '@shared/ipc'
 
 export interface TokenlessApi {
@@ -99,7 +97,6 @@ export interface TokenlessApi {
     create(req: ConversationsCreateRequest): Promise<ConversationsCreateResult>
     update(req: ConversationsUpdateRequest): Promise<ConversationsUpdateResult>
     delete(req: ConversationsDeleteRequest): Promise<ConversationsDeleteResult>
-    branch(req: ConversationsBranchRequest): Promise<ConversationsBranchResult>
     onChanged(fn: () => void): () => void
   }
   readonly skills: {

@@ -5,7 +5,7 @@
 import type { IpcMain, IpcMainInvokeEvent } from 'electron'
 import type { Database } from 'better-sqlite3'
 
-import { ConversationsDao, TurnsDao } from '../db'
+import { ConversationsDao } from '../db'
 import { Logger } from '../observability/logger'
 import { withIpcResult } from './with-ipc-result'
 import {
@@ -14,7 +14,6 @@ import {
   IPC_CONVERSATIONS_UPDATE,
   IPC_CONVERSATIONS_DELETE,
   IPC_CONVERSATIONS_CHANGED,
-  IPC_CONVERSATIONS_BRANCH,
   type ConversationsListRequest,
   type ConversationsListResult,
   type ConversationsCreateRequest,
@@ -22,9 +21,7 @@ import {
   type ConversationsUpdateRequest,
   type ConversationsUpdateResult,
   type ConversationsDeleteRequest,
-  type ConversationsDeleteResult,
-  type ConversationsBranchRequest,
-  type ConversationsBranchResult
+  type ConversationsDeleteResult
 } from '@shared/ipc/conversations'
 
 export type Broadcast = (channel: string, payload: unknown) => void
@@ -75,28 +72,6 @@ export class ConversationsHandler {
       return { id: req.id }
     })
 
-  branch = async (req: ConversationsBranchRequest): Promise<ConversationsBranchResult> =>
-    withIpcResult(this.logger, 'db', 'conversations-branch', async () => {
-      const parent = ConversationsDao.getConversationById(this.db, req.parentConversationId)
-      if (!parent) {
-        const e = new Error('Parent conversation not found') as Error & { code?: string }
-        e.code = 'NOT_FOUND'
-        throw e
-      }
-      const lastTurn = TurnsDao.getLastByConversation(this.db, parent.id)
-      if (!lastTurn) {
-        const e = new Error('Cannot branch a conversation with no turns') as Error & { code?: string }
-        e.code = 'BRANCH_EMPTY_CONVERSATION'
-        throw e
-      }
-      const conversation = ConversationsDao.createBranchConversation(this.db, {
-        parentConversationId: parent.id,
-        branchedAtTurnId: lastTurn.id
-      })
-      this.broadcast(IPC_CONVERSATIONS_CHANGED, undefined)
-      return { conversation }
-    })
-
   install(ipcMain: IpcMain): void {
     const wrap = <Req, Res>(channel: string, fn: (req: Req) => Promise<Res>): void => {
       ipcMain.handle(channel, async (_e: IpcMainInvokeEvent, req: Req) => fn(req))
@@ -106,10 +81,6 @@ export class ConversationsHandler {
     wrap<ConversationsCreateRequest, ConversationsCreateResult>(IPC_CONVERSATIONS_CREATE, this.create)
     wrap<ConversationsUpdateRequest, ConversationsUpdateResult>(IPC_CONVERSATIONS_UPDATE, this.update)
     wrap<ConversationsDeleteRequest, ConversationsDeleteResult>(IPC_CONVERSATIONS_DELETE, this.delete)
-    ipcMain.handle(IPC_CONVERSATIONS_BRANCH, async (_e: IpcMainInvokeEvent, req: ConversationsBranchRequest) =>
-      this.branch(req)
-    )
-    this.installedHandlers.push(IPC_CONVERSATIONS_BRANCH)
   }
 
   uninstall(ipcMain: IpcMain): void {

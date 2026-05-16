@@ -7,8 +7,7 @@ import type {
   Conversation,
   CreateConversationInput,
   UpdateConversationInput,
-  ConversationStatus,
-  BranchConversationInput
+  ConversationStatus
 } from '@shared/types/conversations'
 import type { ModelHint, BreadthHint, FormatHint } from '@shared/types/projects'
 
@@ -137,37 +136,4 @@ export function updateConversation(
 export function deleteConversation(db: Database, id: number): boolean {
   const result = db.prepare('DELETE FROM conversations WHERE id = ?').run(id)
   return result.changes > 0
-}
-
-export function createBranchConversation(db: Database, input: BranchConversationInput): Conversation {
-  const parent = getConversationById(db, input.parentConversationId)
-  if (!parent) {
-    const e = new Error(`PARENT_NOT_FOUND: parent conversation ${input.parentConversationId} does not exist`) as Error & { code?: string }
-    e.code = 'PARENT_NOT_FOUND'
-    throw e
-  }
-  const now = Date.now()
-  const title = `↳ ${parent.title ?? 'Untitled'}`
-  const result = db.prepare(`
-    INSERT INTO conversations (
-      project_id, account_id, title, model, breadth, format,
-      status, summary, parent_conversation_id, branched_at_turn_id,
-      created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?, ?, ?, ?)
-  `).run(
-    parent.projectId,
-    parent.accountId,
-    title,
-    parent.model,
-    parent.breadth,
-    parent.format,
-    parent.summary,
-    input.parentConversationId,
-    input.branchedAtTurnId,
-    now,
-    now
-  )
-  const created = getConversationById(db, Number(result.lastInsertRowid))
-  if (!created) throw new Error('createBranchConversation: SELECT after INSERT returned no row')
-  return created
 }
