@@ -241,12 +241,6 @@
   overflow: hidden;
 }
 
-.main-pane__terminal-area {
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-}
-
 /* ===== Modal — used by CreateProjectModal and future modals ===== */
 
 .modal-backdrop {
