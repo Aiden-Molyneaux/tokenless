@@ -217,6 +217,13 @@ export {
   type CrashRestartResult
 } from './ipc/crash'
 
+export {
+  IPC_CLIPBOARD_READ_PROMPT,
+  type ClipboardReadFailureCode,
+  type ClipboardReadPromptResponse,
+  type ClipboardReadPromptResult
+} from './ipc/clipboard'
+
 export type IpcChannelName =
   | typeof IPC_LOG_FROM_RENDERER
   | typeof IPC_LOG_TO_RENDERER
@@ -226,23 +233,19 @@ export type IpcChannelName =
   | 'accounts:update'
   | 'accounts:delete'
   | 'accounts:changed'
-  | 'projects:list'
-  | 'projects:create'
-  | 'projects:update'
-  | 'projects:delete'
-  | 'projects:changed'
+  | 'api:retry-attempt'
+  | 'clipboard:read-prompt'
   | 'conversations:list-by-project'
   | 'conversations:create'
   | 'conversations:update'
   | 'conversations:delete'
   | 'conversations:changed'
-  | 'telemetry:tick'
-  | 'telemetry:get-summary'
-  | 'gearing:gear'
-  | 'api:retry-attempt'
-  | 'drafts:save'
-  | 'drafts:get'
+  | 'crash:get-report'
+  | 'crash:restart'
+  | 'crash:show'
   | 'drafts:clear'
+  | 'drafts:get'
+  | 'drafts:save'
   | 'settings:get'
   | 'settings:set'
   | 'paths:check-dir'
@@ -258,10 +261,10 @@ export type IpcChannelName =
   | 'templates:update'
   | 'templates:delete'
   | 'templates:changed'
+  | 'telemetry:get-summary'
+  | 'telemetry:tick'
   | 'turns:list-by-conversation'
   | 'turns:changed'
+  | 'gearing:gear'
   | 'pricing:list'
   | 'ai:analyze-error'
-  | 'crash:show'
-  | 'crash:restart'
-  | 'crash:get-report'
