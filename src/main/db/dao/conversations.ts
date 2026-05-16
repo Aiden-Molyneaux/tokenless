@@ -15,16 +15,11 @@ interface ConversationRow {
   id: number
   project_id: number
   account_id: number | null
-  cc_session_id: string | null
   title: string | null
   model: string | null
   breadth: string | null
   format: string | null
   status: string
-  summary: string | null
-  summary_updated_at: number | null
-  parent_conversation_id: number | null
-  branched_at_turn_id: number | null
   created_at: number
   updated_at: number
   ended_at: number | null
@@ -36,16 +31,11 @@ function rowToConversation(r: ConversationRow): Conversation {
     id: r.id,
     projectId: r.project_id,
     accountId: r.account_id,
-    ccSessionId: r.cc_session_id,
     title: r.title,
     model: r.model as ModelHint | null,
     breadth: r.breadth as BreadthHint | null,
     format: r.format as FormatHint | null,
     status: r.status as ConversationStatus,
-    summary: r.summary,
-    summaryUpdatedAt: r.summary_updated_at,
-    parentConversationId: r.parent_conversation_id,
-    branchedAtTurnId: r.branched_at_turn_id,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
     endedAt: r.ended_at,
@@ -115,17 +105,13 @@ export function updateConversation(
   db.prepare(`
     UPDATE conversations SET
       title = ?,
-      cc_session_id = ?,
       status = ?,
-      summary = ?,
       updated_at = ?,
       ended_at = ?
     WHERE id = ?
   `).run(
     input.title !== undefined ? input.title : current.title,
-    input.ccSessionId !== undefined ? input.ccSessionId : current.ccSessionId,
     status,
-    input.summary !== undefined ? input.summary : current.summary,
     now,
     endedAt,
     input.id

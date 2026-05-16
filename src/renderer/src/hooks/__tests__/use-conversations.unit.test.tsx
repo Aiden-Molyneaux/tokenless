@@ -8,10 +8,8 @@ import { useConversations } from '../use-conversations'
 
 function makeConv(id: number, projectId: number, title: string): Conversation {
   return {
-    id, projectId, accountId: null, ccSessionId: null, title,
+    id, projectId, accountId: null, title,
     model: null, breadth: null, format: null, status: 'active',
-    summary: null, summaryUpdatedAt: null,
-    parentConversationId: null, branchedAtTurnId: null,
     createdAt: 0, updatedAt: 0, endedAt: null, archivedAt: null
   }
 }

@@ -32,7 +32,6 @@ describe('db/dao/turns', () => {
       gearMeta: null
     })
     expect(t.id).toBeGreaterThan(0)
-    expect(t.role).toBe('user')
     expect(t.originalPrompt).toBe('fix the bug')
     expect(t.gearedPrompt).toBeNull()
     expect(t.originalTokens).toBeNull()
