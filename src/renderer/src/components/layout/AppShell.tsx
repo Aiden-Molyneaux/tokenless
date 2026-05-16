@@ -20,7 +20,6 @@ import { EditProjectModal } from './EditProjectModal'
 import { EmptyProjectsState } from './EmptyProjectsState'
 import { MainPane } from './MainPane'
 import { TopBar } from './TopBar'
-import { ClaudeNotFoundModal } from '../notifications/ClaudeNotFoundModal'
 import { ToastHost } from '../notifications/ToastHost'
 import './styles.css'
 
@@ -34,7 +33,6 @@ export function AppShell({ onOpenSettings }: { onOpenSettings: () => void }): JS
   const [createAccountOpen, setCreateAccountOpen] = useState(false)
   const [editAccountOpen, setEditAccountOpen] = useState(false)
   const [editProjectOpen, setEditProjectOpen] = useState(false)
-  const [claudeNotFoundOpen, setClaudeNotFoundOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const { push: pushToast } = useToast()
 
@@ -98,21 +96,6 @@ export function AppShell({ onOpenSettings }: { onOpenSettings: () => void }): JS
     }
   }, [activeProjectId])
 
-  useEffect(() => {
-    const unsubCrashed = window.tokenless.cc.onCrashed((payload) => {
-      rendererLogger.warn('ui', 'cc-crash-toast', 'cc:crashed event received', {
-        conversationId: payload.conversationId,
-        exitCode: payload.exitCode,
-        logId: payload.logId
-      })
-      pushToast({
-        message: `Claude Code crashed (exit ${payload.exitCode}). Conversation saved — try resuming.`,
-        severity: 'error'
-      })
-    })
-    return () => unsubCrashed()
-  }, [pushToast])
-
   const { conversations, branch: branchConversation } = useConversations(activeProjectId)
   const [activeConversationId, setActiveConversationId] = useState<number | null>(null)
 
@@ -134,31 +117,6 @@ export function AppShell({ onOpenSettings }: { onOpenSettings: () => void }): JS
   const handleSelectConversation = (id: number): void => {
     setActiveConversationId(id)
     rendererLogger.info('ui', 'conversation-select', 'Selected conversation', { conversationId: id })
-    // Resume the underlying PTY if it has a stored session. Idempotent — the
-    // backend handles "already active" by no-oping.
-    const conv = conversations.find((c) => c.id === id)
-    if (conv?.ccSessionId && activeProjectId !== null && activeAccountId !== null) {
-      const activeProject = projects.find((p) => p.id === activeProjectId)
-      if (!activeProject) return
-      void window.tokenless.cc.resume({
-        conversationId: id,
-        cwd: activeProject.rootPath,
-        cols: 100,
-        rows: 30,
-        accountId: activeAccountId
-      }).then((result) => {
-        if (!result.ok) {
-          rendererLogger.warn('ui', 'cc-resume-failed', result.error.message, {
-            conversationId: id,
-            code: result.error.code,
-            logId: result.error.logId
-          })
-          if (result.error.code === 'CLAUDE_NOT_FOUND') {
-            setClaudeNotFoundOpen(true)
-          }
-        }
-      })
-    }
   }
 
   const handleNewConversation = async (): Promise<void> => {
@@ -167,11 +125,6 @@ export function AppShell({ onOpenSettings }: { onOpenSettings: () => void }): JS
         projectId: activeProjectId,
         accountId: activeAccountId
       })
-      return
-    }
-    const activeProject = projects.find((p) => p.id === activeProjectId)
-    if (!activeProject) {
-      rendererLogger.warn('ui', 'new-conversation-blocked', 'Active project not found in list')
       return
     }
     // 1. Create the conversation row
@@ -185,42 +138,11 @@ export function AppShell({ onOpenSettings }: { onOpenSettings: () => void }): JS
       })
       return
     }
-    // 2. Start the cc subprocess
-    const started = await window.tokenless.cc.start({
-      conversationId: created.data.conversation.id,
-      cwd: activeProject.rootPath,
-      cols: 100, // xterm will resize on mount
-      rows: 30,
-      accountId: activeAccountId
-    })
-    if (!started.ok) {
-      rendererLogger.error('ui', 'new-conversation-start-failed', started.error.message, {
-        code: started.error.code,
-        logId: started.error.logId,
-        conversationId: created.data.conversation.id
-      })
-      if (started.error.code === 'CLAUDE_NOT_FOUND') {
-        setClaudeNotFoundOpen(true)
-      }
-      // Cleanup the orphan conversation row — it was created in step 1 but step 2
-      // (cc:start) failed so there's no PTY for it. Phase 4C deletes it; Phase 7's
-      // branching feature may want to keep these around with a status='aborted'
-      // marker — revisit then.
-      const deleted = await window.tokenless.conversations.delete({ id: created.data.conversation.id })
-      if (!deleted.ok) {
-        rendererLogger.warn('ui', 'orphan-conversation-cleanup-failed', deleted.error.message, {
-          conversationId: created.data.conversation.id,
-          code: deleted.error.code
-        })
-      }
-      return
-    }
-    // 3. Activate the conversation in the sidebar
+    // v2-phase-4 will route the geared prompt to the clipboard; no PTY to start.
+    // 2. Activate the conversation in the sidebar
     setActiveConversationId(created.data.conversation.id)
-    rendererLogger.info('ui', 'new-conversation', 'New conversation started', {
-      conversationId: created.data.conversation.id,
-      sessionId: started.data.sessionId,
-      pid: started.data.pid
+    rendererLogger.info('ui', 'new-conversation', 'New conversation created', {
+      conversationId: created.data.conversation.id
     })
   }
 
@@ -231,9 +153,6 @@ export function AppShell({ onOpenSettings }: { onOpenSettings: () => void }): JS
       })
       return
     }
-    const activeProject = projects.find((p) => p.id === activeProjectId)
-    if (!activeProject) return
-
     const branched = await branchConversation(activeConversationId)
     if (!branched) {
       rendererLogger.warn('ui', 'branch-failed', 'conversations.branch returned null', {
@@ -246,24 +165,7 @@ export function AppShell({ onOpenSettings }: { onOpenSettings: () => void }): JS
       return
     }
 
-    const started = await window.tokenless.cc.start({
-      conversationId: branched.id,
-      cwd: activeProject.rootPath,
-      cols: 100,
-      rows: 30,
-      accountId: activeAccountId
-    })
-    if (!started.ok) {
-      rendererLogger.error('ui', 'branch-cc-start-failed', started.error.message, {
-        conversationId: branched.id,
-        code: started.error.code,
-        logId: started.error.logId
-      })
-      if (started.error.code === 'CLAUDE_NOT_FOUND') {
-        setClaudeNotFoundOpen(true)
-      }
-      return
-    }
+    // v2-phase-4 will route the geared prompt to the clipboard; no PTY to start.
     setActiveConversationId(branched.id)
     rendererLogger.info('ui', 'branch-created', 'Conversation branched', {
       parentConversationId: activeConversationId,
@@ -407,10 +309,6 @@ export function AppShell({ onOpenSettings }: { onOpenSettings: () => void }): JS
         onClose={() => setEditProjectOpen(false)}
         onUpdate={handleUpdateProject}
         onDelete={handleDeleteProject}
-      />
-      <ClaudeNotFoundModal
-        open={claudeNotFoundOpen}
-        onDismiss={() => setClaudeNotFoundOpen(false)}
       />
       <ToastHost />
     </div>
