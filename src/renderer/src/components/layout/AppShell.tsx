@@ -5,13 +5,13 @@ import type { UpdateProjectInput } from '@shared/types/projects'
 import { useAccounts } from '../../hooks/use-accounts'
 import { useConversations } from '../../hooks/use-conversations'
 import { useProjects } from '../../hooks/use-projects'
-import { useToast } from '../../hooks/use-toast'
 import {
   readSetting,
   writeSetting,
   SETTING_LAST_ACTIVE_ACCOUNT_ID,
   SETTING_LAST_ACTIVE_PROJECT_ID
 } from '../../hooks/use-settings'
+import { SETTING_LAYOUT_SIDEBAR_COLLAPSED } from '@shared/types/settings-keys'
 import { ConversationSidebar } from './ConversationSidebar'
 import { CreateAccountModal } from './CreateAccountModal'
 import { EditAccountModal } from './EditAccountModal'
@@ -20,12 +20,16 @@ import { EditProjectModal } from './EditProjectModal'
 import { EmptyProjectsState } from './EmptyProjectsState'
 import { MainPane } from './MainPane'
 import { TopBar } from './TopBar'
-import { ClaudeNotFoundModal } from '../notifications/ClaudeNotFoundModal'
 import { ToastHost } from '../notifications/ToastHost'
 import './styles.css'
 
-
-export function AppShell({ onOpenSettings }: { onOpenSettings: () => void }): JSX.Element {
+export function AppShell({
+  onOpenSettings,
+  onOpenDevMode
+}: {
+  onOpenSettings: () => void
+  onOpenDevMode: () => void
+}): JSX.Element {
   const { projects, loading: projectsLoading, create: createProject, update: updateProject, remove: removeProject } = useProjects()
   const { accounts, create: createAccount, update: updateAccount, remove: removeAccount } = useAccounts()
   const [activeProjectId, setActiveProjectId] = useState<number | null>(null)
@@ -34,9 +38,24 @@ export function AppShell({ onOpenSettings }: { onOpenSettings: () => void }): JS
   const [createAccountOpen, setCreateAccountOpen] = useState(false)
   const [editAccountOpen, setEditAccountOpen] = useState(false)
   const [editProjectOpen, setEditProjectOpen] = useState(false)
-  const [claudeNotFoundOpen, setClaudeNotFoundOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const { push: pushToast } = useToast()
+
+  // Hydrate sidebar-collapsed state from persisted setting; fall back to width-aware default.
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      const value = await readSetting(SETTING_LAYOUT_SIDEBAR_COLLAPSED)
+      if (cancelled) return
+      if (value !== null) {
+        setSidebarCollapsed(value === 'true')
+      } else {
+        setSidebarCollapsed(window.innerWidth < 900)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   // On-mount restore: read last-active ids from settings and pre-select them if
   // they still exist in the current lists. Uses functional setter form so we
@@ -98,22 +117,7 @@ export function AppShell({ onOpenSettings }: { onOpenSettings: () => void }): JS
     }
   }, [activeProjectId])
 
-  useEffect(() => {
-    const unsubCrashed = window.tokenless.cc.onCrashed((payload) => {
-      rendererLogger.warn('ui', 'cc-crash-toast', 'cc:crashed event received', {
-        conversationId: payload.conversationId,
-        exitCode: payload.exitCode,
-        logId: payload.logId
-      })
-      pushToast({
-        message: `Claude Code crashed (exit ${payload.exitCode}). Conversation saved — try resuming.`,
-        severity: 'error'
-      })
-    })
-    return () => unsubCrashed()
-  }, [pushToast])
-
-  const { conversations, branch: branchConversation } = useConversations(activeProjectId)
+  const { conversations } = useConversations(activeProjectId)
   const [activeConversationId, setActiveConversationId] = useState<number | null>(null)
 
   // Reset active conversation when project changes.
@@ -134,31 +138,6 @@ export function AppShell({ onOpenSettings }: { onOpenSettings: () => void }): JS
   const handleSelectConversation = (id: number): void => {
     setActiveConversationId(id)
     rendererLogger.info('ui', 'conversation-select', 'Selected conversation', { conversationId: id })
-    // Resume the underlying PTY if it has a stored session. Idempotent — the
-    // backend handles "already active" by no-oping.
-    const conv = conversations.find((c) => c.id === id)
-    if (conv?.ccSessionId && activeProjectId !== null && activeAccountId !== null) {
-      const activeProject = projects.find((p) => p.id === activeProjectId)
-      if (!activeProject) return
-      void window.tokenless.cc.resume({
-        conversationId: id,
-        cwd: activeProject.rootPath,
-        cols: 100,
-        rows: 30,
-        accountId: activeAccountId
-      }).then((result) => {
-        if (!result.ok) {
-          rendererLogger.warn('ui', 'cc-resume-failed', result.error.message, {
-            conversationId: id,
-            code: result.error.code,
-            logId: result.error.logId
-          })
-          if (result.error.code === 'CLAUDE_NOT_FOUND') {
-            setClaudeNotFoundOpen(true)
-          }
-        }
-      })
-    }
   }
 
   const handleNewConversation = async (): Promise<void> => {
@@ -167,11 +146,6 @@ export function AppShell({ onOpenSettings }: { onOpenSettings: () => void }): JS
         projectId: activeProjectId,
         accountId: activeAccountId
       })
-      return
-    }
-    const activeProject = projects.find((p) => p.id === activeProjectId)
-    if (!activeProject) {
-      rendererLogger.warn('ui', 'new-conversation-blocked', 'Active project not found in list')
       return
     }
     // 1. Create the conversation row
@@ -185,94 +159,24 @@ export function AppShell({ onOpenSettings }: { onOpenSettings: () => void }): JS
       })
       return
     }
-    // 2. Start the cc subprocess
-    const started = await window.tokenless.cc.start({
-      conversationId: created.data.conversation.id,
-      cwd: activeProject.rootPath,
-      cols: 100, // xterm will resize on mount
-      rows: 30,
-      accountId: activeAccountId
-    })
-    if (!started.ok) {
-      rendererLogger.error('ui', 'new-conversation-start-failed', started.error.message, {
-        code: started.error.code,
-        logId: started.error.logId,
-        conversationId: created.data.conversation.id
-      })
-      if (started.error.code === 'CLAUDE_NOT_FOUND') {
-        setClaudeNotFoundOpen(true)
-      }
-      // Cleanup the orphan conversation row — it was created in step 1 but step 2
-      // (cc:start) failed so there's no PTY for it. Phase 4C deletes it; Phase 7's
-      // branching feature may want to keep these around with a status='aborted'
-      // marker — revisit then.
-      const deleted = await window.tokenless.conversations.delete({ id: created.data.conversation.id })
-      if (!deleted.ok) {
-        rendererLogger.warn('ui', 'orphan-conversation-cleanup-failed', deleted.error.message, {
-          conversationId: created.data.conversation.id,
-          code: deleted.error.code
-        })
-      }
-      return
-    }
-    // 3. Activate the conversation in the sidebar
+    // v2-phase-4 will route the geared prompt to the clipboard; no PTY to start.
+    // 2. Activate the conversation in the sidebar
     setActiveConversationId(created.data.conversation.id)
-    rendererLogger.info('ui', 'new-conversation', 'New conversation started', {
-      conversationId: created.data.conversation.id,
-      sessionId: started.data.sessionId,
-      pid: started.data.pid
-    })
-  }
-
-  const handleBranchConversation = async (): Promise<void> => {
-    if (activeConversationId === null || activeProjectId === null || activeAccountId === null) {
-      rendererLogger.warn('ui', 'branch-blocked', 'Branch clicked but no active conversation/project/account', {
-        activeConversationId, activeProjectId, activeAccountId
-      })
-      return
-    }
-    const activeProject = projects.find((p) => p.id === activeProjectId)
-    if (!activeProject) return
-
-    const branched = await branchConversation(activeConversationId)
-    if (!branched) {
-      rendererLogger.warn('ui', 'branch-failed', 'conversations.branch returned null', {
-        parentConversationId: activeConversationId
-      })
-      pushToast({
-        message: 'Could not branch — the conversation has no turns yet.',
-        severity: 'warn'
-      })
-      return
-    }
-
-    const started = await window.tokenless.cc.start({
-      conversationId: branched.id,
-      cwd: activeProject.rootPath,
-      cols: 100,
-      rows: 30,
-      accountId: activeAccountId
-    })
-    if (!started.ok) {
-      rendererLogger.error('ui', 'branch-cc-start-failed', started.error.message, {
-        conversationId: branched.id,
-        code: started.error.code,
-        logId: started.error.logId
-      })
-      if (started.error.code === 'CLAUDE_NOT_FOUND') {
-        setClaudeNotFoundOpen(true)
-      }
-      return
-    }
-    setActiveConversationId(branched.id)
-    rendererLogger.info('ui', 'branch-created', 'Conversation branched', {
-      parentConversationId: activeConversationId,
-      newConversationId: branched.id
+    rendererLogger.info('ui', 'new-conversation', 'New conversation created', {
+      conversationId: created.data.conversation.id
     })
   }
 
   const handleToggleSidebar = (): void => {
-    setSidebarCollapsed((c) => !c)
+    setSidebarCollapsed((prev) => {
+      const next = !prev
+      void writeSetting(SETTING_LAYOUT_SIDEBAR_COLLAPSED, next ? 'true' : 'false').catch((err) => {
+        rendererLogger.warn('ui', 'settings-write-failed', 'Failed to persist sidebarCollapsed', {
+          errorString: err instanceof Error ? err.message : String(err)
+        })
+      })
+      return next
+    })
   }
 
   const handleOpenCreateProject = (): void => {
@@ -377,11 +281,14 @@ export function AppShell({ onOpenSettings }: { onOpenSettings: () => void }): JS
           collapsed={sidebarCollapsed}
           onToggleCollapsed={handleToggleSidebar}
           onNewConversation={() => void handleNewConversation()}
+          activeProjectName={activeProject?.name ?? null}
+          onOpenSettings={onOpenSettings}
+          onOpenDevMode={onOpenDevMode}
         />
         {showEmptyState ? (
           <EmptyProjectsState onCreate={handleOpenCreateProject} />
         ) : (
-          <MainPane conversationId={activeConversationId} accountId={activeAccountId} accountLabel={accounts.find((a) => a.id === activeAccountId)?.label ?? null} onBranch={() => void handleBranchConversation()} />
+          <MainPane conversationId={activeConversationId} accountId={activeAccountId} accountLabel={accounts.find((a) => a.id === activeAccountId)?.label ?? null} />
         )}
       </div>
       <CreateProjectModal
@@ -407,10 +314,6 @@ export function AppShell({ onOpenSettings }: { onOpenSettings: () => void }): JS
         onClose={() => setEditProjectOpen(false)}
         onUpdate={handleUpdateProject}
         onDelete={handleDeleteProject}
-      />
-      <ClaudeNotFoundModal
-        open={claudeNotFoundOpen}
-        onDismiss={() => setClaudeNotFoundOpen(false)}
       />
       <ToastHost />
     </div>

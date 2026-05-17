@@ -2,28 +2,6 @@
    lives in src/renderer/src/components/layout/styles.css — imported globally.
    These rules add only the notification-specific overrides. */
 
-.claude-not-found-modal {
-  max-width: 400px;
-}
-
-.claude-not-found-modal__title {
-  color: var(--tl-error, #c44);
-}
-
-.claude-not-found-modal__body {
-  margin: 0;
-  font-size: var(--tl-text-md, 14px);
-  line-height: var(--tl-leading-normal, 1.55);
-  color: var(--tl-fg, #2a2624);
-}
-
-.claude-not-found-modal__body code {
-  font-family: var(--tl-font-mono, monospace);
-  background: var(--tl-bg-mute, rgba(42, 38, 36, 0.06));
-  padding: 1px 4px;
-  border-radius: var(--tl-radius-sm, 4px);
-}
-
 .toast-host {
   position: fixed;
   bottom: 1rem;

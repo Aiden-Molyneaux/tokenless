@@ -52,16 +52,14 @@ describe('db/dao/conversations', () => {
     expect(list.map((c) => c.id)).toEqual([c2.id, c1.id])
   })
 
-  it('updateConversation patches title + ccSessionId and bumps updatedAt', async () => {
+  it('updateConversation patches title and bumps updatedAt', async () => {
     const c = createConversation(db, { projectId, title: 'before' })
     await new Promise((r) => setTimeout(r, 5))
     const updated = updateConversation(db, {
       id: c.id,
-      title: 'after',
-      ccSessionId: 'uuid-123'
+      title: 'after'
     })
     expect(updated?.title).toBe('after')
-    expect(updated?.ccSessionId).toBe('uuid-123')
     expect(updated?.updatedAt).toBeGreaterThan(c.updatedAt)
   })
 

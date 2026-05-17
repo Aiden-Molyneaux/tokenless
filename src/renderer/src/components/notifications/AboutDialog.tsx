@@ -43,7 +43,7 @@ export function AboutDialog({ open, onClose }: AboutDialogProps): JSX.Element | 
           <dd>Private — personal use</dd>
         </dl>
         <p className="about-dialog__tagline">
-          A token-optimizing wrapper around Claude Code. Built with Electron + React.
+          A clipboard-based prompt-gearing tool for Claude Code. Capture your prompt, optimize it with Haiku, copy the geared version back. Built with Electron + React.
         </p>
         <div className="modal__actions">
           <button

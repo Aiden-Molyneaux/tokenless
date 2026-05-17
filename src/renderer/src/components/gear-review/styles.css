@@ -37,7 +37,7 @@
 
 .gear-review-pane__cancel:hover {
   background: var(--tl-hover);
-  color: var(--tl-fg);
+  color: var(--tl-orange);
 }
 
 /* ===== Critique flags ===== */
@@ -87,6 +87,12 @@
   gap: var(--tl-space-3);
   flex: 1;
   min-height: 0;
+}
+
+@media (max-width: 600px) {
+  .gear-review-pane__panes {
+    grid-template-columns: 1fr;
+  }
 }
 
 .original-pane,
@@ -235,14 +241,3 @@
 .gear-review-pane__cost-meta {
   color: var(--tl-mute);
 }
-
-.gear-review-pane__send-hint {
-  margin: 0;
-  padding: 0.5rem 0.75rem;
-  background: rgba(212, 160, 23, 0.12);
-  border-left: 3px solid #d4a017;
-  border-radius: 4px;
-  font-size: 0.85rem;
-  color: var(--tl-text-base);
-}
-.gear-review-pane__send-hint strong { color: #d4a017; }

@@ -2,29 +2,35 @@ import { InfoTooltip } from '../common/InfoTooltip'
 
 interface ActionsRowProps {
   promptEmpty: boolean
-  /** True when an IPC send is in flight — disables Gear AND Send to prevent re-entrancy. */
+  /** True when a gearing IPC call is in flight — disables Gear to prevent re-entrancy. */
   disableGear?: boolean
-  /** Additionally disables Send when there's no active conversation. Gearing
-   *  is an Anthropic-API operation that does NOT need a live PTY (Phase 5
-   *  may want conversationId for rolling-summary context but can handle null). */
-  disableSend?: boolean
+  /** Disables Copy Geared when no gear result is available (gearState === null). */
+  copyDisabled?: boolean
+  onCapture: () => void
+  captureDisabled?: boolean
   onGear: () => void
-  onSend: () => void
+  onCopyGeared: () => void
+  onDiscard: () => void
   onTemplates: () => void
-  onBranch: () => void
-  onCommit: () => void
-  onPush: () => void
 }
 
-// The button row beneath ConfigsRow. Gear is primary (orange). Send is
-// neutral but enabled when a prompt is present + a conversation is active.
-// Commit + Push pre-fill the composer with canned git prompts (Phase 7
-// wires that; Phase 2B stubs the callbacks).
+// The button row beneath ConfigsRow. Gear is primary (orange). Copy Geared is
+// enabled once a gear result is present. Discard clears the prompt + gear state.
+// Final shape (v2): Capture, Gear, Copy Geared, Discard (primary) + Templates (secondary).
 
-export function ActionsRow({ promptEmpty, disableGear = false, disableSend = false, onGear, onSend, onTemplates, onBranch, onCommit, onPush }: ActionsRowProps): JSX.Element {
+export function ActionsRow({ promptEmpty, disableGear = false, copyDisabled = false, onCapture, captureDisabled = false, onGear, onCopyGeared, onDiscard, onTemplates }: ActionsRowProps): JSX.Element {
   return (
     <div className="actions-row">
       <div className="actions-row__primary">
+        <button
+          type="button"
+          className="actions-row__button actions-row__button--capture"
+          onClick={onCapture}
+          disabled={captureDisabled}
+          aria-label="Capture prompt from clipboard"
+        >
+          Capture
+        </button>
         <InfoTooltip helperText="Rewrite your prompt for token efficiency. Haiku optimizes for the selected configs.">
           <button
             type="button"
@@ -35,14 +41,25 @@ export function ActionsRow({ promptEmpty, disableGear = false, disableSend = fal
             Gear
           </button>
         </InfoTooltip>
-        <InfoTooltip helperText="Send the prompt without gearing first. Original tokens preserved.">
+        <InfoTooltip helperText="Copy the geared prompt to the clipboard. Disabled until you've run Gear.">
           <button
             type="button"
-            className="actions-row__button"
-            disabled={promptEmpty || disableSend}
-            onClick={onSend}
+            className="actions-row__button actions-row__button--copy-geared"
+            disabled={copyDisabled}
+            onClick={onCopyGeared}
+            aria-label="Copy geared prompt to clipboard"
           >
-            Send
+            Copy Geared
+          </button>
+        </InfoTooltip>
+        <InfoTooltip helperText="Clear the composer + close the gear review.">
+          <button
+            type="button"
+            className="actions-row__button actions-row__button--discard"
+            onClick={onDiscard}
+            aria-label="Discard composer + gear review"
+          >
+            Discard
           </button>
         </InfoTooltip>
       </div>
@@ -54,33 +71,6 @@ export function ActionsRow({ promptEmpty, disableGear = false, disableSend = fal
             onClick={onTemplates}
           >
             Templates ▾
-          </button>
-        </InfoTooltip>
-        <InfoTooltip helperText="Create a new conversation that branches off from the latest turn here. Inherits the rolling summary for context.">
-          <button
-            type="button"
-            className="actions-row__button actions-row__button--secondary"
-            onClick={onBranch}
-          >
-            Branch
-          </button>
-        </InfoTooltip>
-        <InfoTooltip helperText="Pre-fills the composer with this project's commit prompt (editable in Settings).">
-          <button
-            type="button"
-            className="actions-row__button actions-row__button--secondary"
-            onClick={onCommit}
-          >
-            Commit
-          </button>
-        </InfoTooltip>
-        <InfoTooltip helperText="Pre-fills the composer with this project's push prompt.">
-          <button
-            type="button"
-            className="actions-row__button actions-row__button--secondary"
-            onClick={onPush}
-          >
-            Push
           </button>
         </InfoTooltip>
       </div>

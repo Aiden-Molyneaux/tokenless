@@ -46,7 +46,7 @@ describe('ipc/error-analysis-handler', () => {
 
   it('returns API_AUTH_FAILED when no account has an apiKey', async () => {
     AccountsDao.createAccount(db, { label: 'NoKey', configDir: '/p' })
-    logger.error('cc', 'test-event', 'msg', {})
+    logger.error('observability', 'test-event', 'msg', {})
     const recent = logger.getRecent()
     const errorId = recent[recent.length - 1].id
     const r = await handler.analyzeError({ errorRecordId: errorId })
@@ -63,7 +63,7 @@ describe('ipc/error-analysis-handler', () => {
 
   it('returns the analysis when account + record + Haiku all succeed', async () => {
     AccountsDao.createAccount(db, { label: 'P', configDir: '/p', apiKey: 'sk-ant-x' })
-    logger.error('cc', 'test-event', 'something failed', { foo: 'bar' })
+    logger.error('observability', 'test-event', 'something failed', { foo: 'bar' })
     const recent = logger.getRecent()
     const errorId = recent[recent.length - 1].id
 

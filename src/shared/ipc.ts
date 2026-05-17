@@ -66,12 +66,10 @@ export {
   IPC_CONVERSATIONS_UPDATE,
   IPC_CONVERSATIONS_DELETE,
   IPC_CONVERSATIONS_CHANGED,
-  IPC_CONVERSATIONS_BRANCH,
   type ConversationsListResult,
   type ConversationsCreateResult,
   type ConversationsUpdateResult,
   type ConversationsDeleteResult,
-  type ConversationsBranchResult,
   type ConversationsListRequest,
   type ConversationsListResponse,
   type ConversationsCreateRequest,
@@ -79,45 +77,8 @@ export {
   type ConversationsUpdateRequest,
   type ConversationsUpdateResponse,
   type ConversationsDeleteRequest,
-  type ConversationsDeleteResponse,
-  type ConversationsBranchRequest,
-  type ConversationsBranchResponse
+  type ConversationsDeleteResponse
 } from './ipc/conversations'
-
-export {
-  IPC_CC_START,
-  IPC_CC_SEND,
-  IPC_CC_RESIZE,
-  IPC_CC_OUTPUT_CHUNK,
-  IPC_CC_EXIT,
-  IPC_CC_EVENT,
-  IPC_CC_STOP,
-  IPC_CC_RESUME,
-  IPC_CC_CRASHED,
-  IPC_CC_HUNG,
-  IPC_CC_INPUT,
-  type CcStartRequest,
-  type CcStartResponse,
-  type CcStartResult,
-  type CcSendRequest,
-  type CcSendResponse,
-  type CcSendResult,
-  type CcResizeRequest,
-  type CcResizeResult,
-  type CcOutputChunkPayload,
-  type CcExitPayload,
-  type CcEventPayload,
-  type CcStopRequest,
-  type CcStopResult,
-  type CcResumeRequest,
-  type CcResumeResponse,
-  type CcResumeResult,
-  type CcCrashedPayload,
-  type CcHungPayload,
-  type CcInputRequest,
-  type CcInputResponse,
-  type CcInputResult
-} from './ipc/cc'
 
 export type { IpcResult, IpcOk, IpcError } from './ipc/envelope'
 
@@ -205,17 +166,10 @@ export {
 
 export {
   IPC_TURNS_LIST_BY_CONVERSATION,
-  IPC_TURNS_UPDATE_FEEDBACK,
-  IPC_TURNS_FEEDBACK_SUMMARY,
   IPC_TURNS_CHANGED,
   type TurnsListRequest,
   type TurnsListResponse,
-  type TurnsListResult,
-  type TurnsUpdateFeedbackRequest,
-  type TurnsUpdateFeedbackResponse,
-  type TurnsUpdateFeedbackResult,
-  type TurnsFeedbackSummaryResponse,
-  type TurnsFeedbackSummaryResult
+  type TurnsListResult
 } from './ipc/turns'
 
 export {
@@ -263,6 +217,17 @@ export {
   type CrashRestartResult
 } from './ipc/crash'
 
+export {
+  IPC_CLIPBOARD_READ_PROMPT,
+  IPC_CLIPBOARD_WRITE_GEARED,
+  type ClipboardReadFailureCode,
+  type ClipboardReadPromptResponse,
+  type ClipboardReadPromptResult,
+  type ClipboardWriteFailureCode,
+  type ClipboardWriteGearedRequest,
+  type ClipboardWriteGearedResult
+} from './ipc/clipboard'
+
 export type IpcChannelName =
   | typeof IPC_LOG_FROM_RENDERER
   | typeof IPC_LOG_TO_RENDERER
@@ -272,35 +237,20 @@ export type IpcChannelName =
   | 'accounts:update'
   | 'accounts:delete'
   | 'accounts:changed'
-  | 'projects:list'
-  | 'projects:create'
-  | 'projects:update'
-  | 'projects:delete'
-  | 'projects:changed'
+  | 'api:retry-attempt'
+  | 'clipboard:read-prompt'
+  | 'clipboard:write-geared'
   | 'conversations:list-by-project'
   | 'conversations:create'
   | 'conversations:update'
   | 'conversations:delete'
   | 'conversations:changed'
-  | 'conversations:branch'
-  | 'cc:start'
-  | 'cc:send'
-  | 'cc:resize'
-  | 'cc:output-chunk'
-  | 'cc:exit'
-  | 'cc:event'
-  | 'cc:stop'
-  | 'cc:resume'
-  | 'cc:crashed'
-  | 'cc:hung'
-  | 'cc:input'
-  | 'telemetry:tick'
-  | 'telemetry:get-summary'
-  | 'gearing:gear'
-  | 'api:retry-attempt'
-  | 'drafts:save'
-  | 'drafts:get'
+  | 'crash:get-report'
+  | 'crash:restart'
+  | 'crash:show'
   | 'drafts:clear'
+  | 'drafts:get'
+  | 'drafts:save'
   | 'settings:get'
   | 'settings:set'
   | 'paths:check-dir'
@@ -316,12 +266,10 @@ export type IpcChannelName =
   | 'templates:update'
   | 'templates:delete'
   | 'templates:changed'
+  | 'telemetry:get-summary'
+  | 'telemetry:tick'
   | 'turns:list-by-conversation'
-  | 'turns:update-feedback'
-  | 'turns:feedback-summary'
   | 'turns:changed'
+  | 'gearing:gear'
   | 'pricing:list'
   | 'ai:analyze-error'
-  | 'crash:show'
-  | 'crash:restart'
-  | 'crash:get-report'

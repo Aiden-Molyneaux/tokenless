@@ -19,18 +19,6 @@ import {
   IPC_CONVERSATIONS_UPDATE,
   IPC_CONVERSATIONS_DELETE,
   IPC_CONVERSATIONS_CHANGED,
-  IPC_CONVERSATIONS_BRANCH,
-  IPC_CC_START,
-  IPC_CC_SEND,
-  IPC_CC_RESIZE,
-  IPC_CC_OUTPUT_CHUNK,
-  IPC_CC_EXIT,
-  IPC_CC_EVENT,
-  IPC_CC_STOP,
-  IPC_CC_RESUME,
-  IPC_CC_CRASHED,
-  IPC_CC_HUNG,
-  IPC_CC_INPUT,
   IPC_TELEMETRY_TICK,
   IPC_TELEMETRY_GET_SUMMARY,
   type TelemetryTick,
@@ -62,25 +50,6 @@ import {
   type ConversationsUpdateResult,
   type ConversationsDeleteRequest,
   type ConversationsDeleteResult,
-  type ConversationsBranchRequest,
-  type ConversationsBranchResult,
-  type CcStartRequest,
-  type CcStartResult,
-  type CcSendRequest,
-  type CcSendResult,
-  type CcResizeRequest,
-  type CcResizeResult,
-  type CcOutputChunkPayload,
-  type CcExitPayload,
-  type CcEventPayload,
-  type CcStopRequest,
-  type CcStopResult,
-  type CcResumeRequest,
-  type CcResumeResult,
-  type CcCrashedPayload,
-  type CcHungPayload,
-  type CcInputRequest,
-  type CcInputResult,
   IPC_GEARING_GEAR,
   type GearingGearRequest,
   type GearingGearResult,
@@ -133,14 +102,9 @@ import {
   type TemplatesDeleteRequest,
   type TemplatesDeleteResult,
   IPC_TURNS_LIST_BY_CONVERSATION,
-  IPC_TURNS_UPDATE_FEEDBACK,
-  IPC_TURNS_FEEDBACK_SUMMARY,
   IPC_TURNS_CHANGED,
   type TurnsListRequest,
   type TurnsListResult,
-  type TurnsUpdateFeedbackRequest,
-  type TurnsUpdateFeedbackResult,
-  type TurnsFeedbackSummaryResult,
   IPC_PRICING_LIST,
   type PricingListResult,
   IPC_AI_ANALYZE_ERROR,
@@ -152,7 +116,12 @@ import {
   type CrashShowPayload,
   type CrashGetReportRequest,
   type CrashGetReportResult,
-  type CrashRestartResult
+  type CrashRestartResult,
+  IPC_CLIPBOARD_READ_PROMPT,
+  IPC_CLIPBOARD_WRITE_GEARED,
+  type ClipboardReadPromptResult,
+  type ClipboardWriteGearedRequest,
+  type ClipboardWriteGearedResult
 } from '@shared/ipc'
 
 const api = {
@@ -228,9 +197,6 @@ const api = {
     delete(req: ConversationsDeleteRequest): Promise<ConversationsDeleteResult> {
       return ipcRenderer.invoke(IPC_CONVERSATIONS_DELETE, req) as Promise<ConversationsDeleteResult>
     },
-    branch(req: ConversationsBranchRequest): Promise<ConversationsBranchResult> {
-      return ipcRenderer.invoke(IPC_CONVERSATIONS_BRANCH, req) as Promise<ConversationsBranchResult>
-    },
     onChanged(fn: () => void): () => void {
       const listener = (): void => fn()
       ipcRenderer.on(IPC_CONVERSATIONS_CHANGED, listener as never)
@@ -279,61 +245,10 @@ const api = {
     listByConversation(req: TurnsListRequest): Promise<TurnsListResult> {
       return ipcRenderer.invoke(IPC_TURNS_LIST_BY_CONVERSATION, req) as Promise<TurnsListResult>
     },
-    updateFeedback(req: TurnsUpdateFeedbackRequest): Promise<TurnsUpdateFeedbackResult> {
-      return ipcRenderer.invoke(IPC_TURNS_UPDATE_FEEDBACK, req) as Promise<TurnsUpdateFeedbackResult>
-    },
-    getFeedbackSummary(): Promise<TurnsFeedbackSummaryResult> {
-      return ipcRenderer.invoke(IPC_TURNS_FEEDBACK_SUMMARY) as Promise<TurnsFeedbackSummaryResult>
-    },
     onChanged(fn: () => void): () => void {
       const listener = (): void => fn()
       ipcRenderer.on(IPC_TURNS_CHANGED, listener as never)
       return () => ipcRenderer.removeListener(IPC_TURNS_CHANGED, listener as never)
-    }
-  },
-  cc: {
-    start(req: CcStartRequest): Promise<CcStartResult> {
-      return ipcRenderer.invoke(IPC_CC_START, req) as Promise<CcStartResult>
-    },
-    send(req: CcSendRequest): Promise<CcSendResult> {
-      return ipcRenderer.invoke(IPC_CC_SEND, req) as Promise<CcSendResult>
-    },
-    resize(req: CcResizeRequest): Promise<CcResizeResult> {
-      return ipcRenderer.invoke(IPC_CC_RESIZE, req) as Promise<CcResizeResult>
-    },
-    onOutputChunk(fn: (payload: CcOutputChunkPayload) => void): () => void {
-      const listener = (_e: unknown, payload: CcOutputChunkPayload): void => fn(payload)
-      ipcRenderer.on(IPC_CC_OUTPUT_CHUNK, listener as never)
-      return () => ipcRenderer.removeListener(IPC_CC_OUTPUT_CHUNK, listener as never)
-    },
-    onExit(fn: (payload: CcExitPayload) => void): () => void {
-      const listener = (_e: unknown, payload: CcExitPayload): void => fn(payload)
-      ipcRenderer.on(IPC_CC_EXIT, listener as never)
-      return () => ipcRenderer.removeListener(IPC_CC_EXIT, listener as never)
-    },
-    onEvent(fn: (payload: CcEventPayload) => void): () => void {
-      const listener = (_e: unknown, payload: CcEventPayload): void => fn(payload)
-      ipcRenderer.on(IPC_CC_EVENT, listener as never)
-      return () => ipcRenderer.removeListener(IPC_CC_EVENT, listener as never)
-    },
-    stop(req: CcStopRequest): Promise<CcStopResult> {
-      return ipcRenderer.invoke(IPC_CC_STOP, req) as Promise<CcStopResult>
-    },
-    resume(req: CcResumeRequest): Promise<CcResumeResult> {
-      return ipcRenderer.invoke(IPC_CC_RESUME, req) as Promise<CcResumeResult>
-    },
-    onCrashed(fn: (payload: CcCrashedPayload) => void): () => void {
-      const listener = (_e: unknown, payload: CcCrashedPayload): void => fn(payload)
-      ipcRenderer.on(IPC_CC_CRASHED, listener as never)
-      return () => ipcRenderer.removeListener(IPC_CC_CRASHED, listener as never)
-    },
-    onHung(fn: (payload: CcHungPayload) => void): () => void {
-      const listener = (_e: unknown, payload: CcHungPayload): void => fn(payload)
-      ipcRenderer.on(IPC_CC_HUNG, listener as never)
-      return () => ipcRenderer.removeListener(IPC_CC_HUNG, listener as never)
-    },
-    input(req: CcInputRequest): Promise<CcInputResult> {
-      return ipcRenderer.invoke(IPC_CC_INPUT, req) as Promise<CcInputResult>
     }
   },
   telemetry: {
@@ -349,6 +264,15 @@ const api = {
   gearing: {
     gear(req: GearingGearRequest): Promise<GearingGearResult> {
       return ipcRenderer.invoke(IPC_GEARING_GEAR, req) as Promise<GearingGearResult>
+    }
+  },
+  clipboard: {
+    readPrompt(): Promise<ClipboardReadPromptResult> {
+      return ipcRenderer.invoke(IPC_CLIPBOARD_READ_PROMPT) as Promise<ClipboardReadPromptResult>
+    },
+    writeGeared(text: string): Promise<ClipboardWriteGearedResult> {
+      const req: ClipboardWriteGearedRequest = { text }
+      return ipcRenderer.invoke(IPC_CLIPBOARD_WRITE_GEARED, req) as Promise<ClipboardWriteGearedResult>
     }
   },
   api: {

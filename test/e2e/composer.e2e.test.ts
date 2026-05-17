@@ -73,13 +73,12 @@ test('composer renders with textarea, 4 config dropdowns, and action buttons', a
   await expect(page.locator('.prompt-textarea')).toBeVisible()
   await expect(page.locator('.configs-row .dropdown')).toHaveCount(4)
   await expect(page.locator('.actions-row__button--gear')).toBeVisible()
-  // Phase 2B → 7C: primary (Gear, Send) + secondary (Templates, Branch, Commit, Push) = 6 buttons.
-  // Bumping the count whenever a button lands here is intentional — a tight count
-  // assertion catches accidental button additions/removals.
-  await expect(page.locator('.actions-row__button')).toHaveCount(6)
+  // Phase 5 (v2 headless): Capture + Gear + Copy Geared + Discard + Templates = 5 buttons.
+  // Commit + Push removed; Discard added (v2 users run git in their own terminal).
+  await expect(page.locator('.actions-row__button')).toHaveCount(5)
 })
 
-test('typing in the prompt textarea enables Gear and Send buttons', async () => {
+test('typing in the prompt textarea enables the Gear button', async () => {
   const page = await app.firstWindow()
   await page.waitForLoadState('domcontentloaded')
   await ensureProjectExists(page)
@@ -89,6 +88,7 @@ test('typing in the prompt textarea enables Gear and Send buttons', async () => 
 
   await page.locator('.prompt-textarea').fill('Refactor the auth middleware to flatten conditionals')
   await expect(gearButton).toBeEnabled()
+  // Note: Copy Geared is NOT enabled by typing — it only enables after Gear has run.
 })
 
 test('clicking Gear swaps to GearReviewPane with original + geared text', async () => {
@@ -126,13 +126,8 @@ test('Cancel button in GearReviewPane returns to Composer with prompt preserved'
   await expect(page.locator('.prompt-textarea')).toHaveValue('Cancel test prompt')
 })
 
-test('terminal section is visible with toolbar + meter + xterm pane', async () => {
-  const page = await app.firstWindow()
-  await page.waitForLoadState('domcontentloaded')
-  await ensureProjectExists(page)
-
-  await expect(page.locator('.terminal-section')).toBeVisible()
-  await expect(page.locator('.terminal-toolbar__stop')).toBeVisible()
-  await expect(page.locator('.terminal-toolbar__meter')).toBeVisible()
-  await expect(page.locator('.terminal-pane')).toBeVisible()
+// v2: embedded terminal removed. Phase 4 will replace this with E2E coverage
+// for the Capture/Gear/Copy clipboard round-trip.
+test.skip('terminal section is visible with toolbar + meter + xterm pane', async () => {
+  // intentionally empty — preserved as a TODO marker
 })

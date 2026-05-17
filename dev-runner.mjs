@@ -32,7 +32,7 @@ const IS_WIN = process.platform === 'win32'
 // these once we have measurements.
 const BASELINE_ESTIMATES = {
   rebuildElectron: 25,  // electron-rebuild or prebuild-install fallback
-  rebuildNode: 15,      // npm rebuild better-sqlite3 node-pty
+  rebuildNode: 15,      // npm rebuild better-sqlite3
   devStart: 12,         // npm run dev → Electron window appears
   devStop: 3,           // taskkill / pkill the dev tree
   testRun: 18,          // npm run test:run (vitest run)
@@ -194,9 +194,9 @@ function killProcessTree(pid) {
 
 async function rebuildForElectron(state) {
   const start = Date.now()
-  process.stdout.write(`${C.cyan}Rebuilding better-sqlite3 + node-pty for Electron ABI…${C.reset}\n`)
+  process.stdout.write(`${C.cyan}Rebuilding better-sqlite3 for Electron ABI…${C.reset}\n`)
   // Try electron-rebuild first; if it fails (e.g. no VS Build Tools), fall back
-  // to prebuild-install for better-sqlite3. node-pty's N-API prebuilds work in both.
+  // to prebuild-install for better-sqlite3.
   try {
     execSync(
       `npx electron-rebuild --force --module-dir node_modules/better-sqlite3`,
@@ -232,9 +232,9 @@ async function rebuildForElectron(state) {
 
 async function rebuildForNode(state) {
   const start = Date.now()
-  process.stdout.write(`${C.cyan}Rebuilding better-sqlite3 + node-pty for Node ABI…${C.reset}\n`)
+  process.stdout.write(`${C.cyan}Rebuilding better-sqlite3 for Node ABI…${C.reset}\n`)
   try {
-    execSync(`npm rebuild better-sqlite3 node-pty`, { stdio: 'inherit' })
+    execSync(`npm rebuild better-sqlite3`, { stdio: 'inherit' })
   } catch (err) {
     process.stdout.write(`${C.red}✗ rebuild command failed: ${err.message}${C.reset}\n`)
   }

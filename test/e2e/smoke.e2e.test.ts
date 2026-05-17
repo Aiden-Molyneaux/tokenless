@@ -41,7 +41,7 @@ test('window opens with the TokenLess title', async () => {
   await expect(page).toHaveTitle('TokenLess')
 })
 
-test('app shell renders TopBar brand + ConversationSidebar + MainPane with composer + terminal', async () => {
+test('app shell renders TopBar brand + ConversationSidebar + MainPane with composer', async () => {
   const page = await app.firstWindow()
   await page.waitForLoadState('domcontentloaded')
   await ensureProjectExists(page)
@@ -55,9 +55,9 @@ test('app shell renders TopBar brand + ConversationSidebar + MainPane with compo
   const mainPane = page.locator('.main-pane')
   await expect(mainPane).toBeVisible()
 
-  // Phase 2B additions:
-  await expect(page.locator('.composer')).toBeVisible()
-  await expect(page.locator('.terminal-section')).toBeVisible()
+  await expect(page.locator('.composer-shell')).toBeVisible()
+  // v2: embedded terminal removed; the user runs Claude Code in their own
+  // terminal and TokenLess captures prompts via the clipboard (phase 3).
 })
 
 test('preload exposes window.tokenless.version', async () => {

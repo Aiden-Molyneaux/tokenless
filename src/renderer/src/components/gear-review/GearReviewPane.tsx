@@ -10,18 +10,16 @@ interface GearReviewPaneProps {
   geared: string
   critiqueFlags: readonly CritiqueFlag[]
   costPreview: CostPreview
-  /** When true, both Send buttons are disabled (no active claude PTY conversation). */
-  sendDisabled?: boolean
-  onSendOriginal: () => void
-  onSendGeared: (editedGeared: string) => void
+  onCopyOriginal: () => void
+  onCopyGeared: (editedGeared: string) => void
   onReGear: () => void
-  onCancel: () => void
+  onClose: () => void
 }
 
 // Replaces Composer's main view after the user clicks Gear. Shows the
 // original (read-only) next to the geared (editable). Critique flags
-// surface above. The user can re-gear, cancel back to compose, send
-// the original (un-geared), or send the (possibly edited) geared version.
+// surface above. The user can re-gear, cancel back to compose, copy
+// the original (un-geared), or copy the (possibly edited) geared version.
 
 // Rough token estimate (4 chars per token average — close enough for UI).
 function estimateTokens(text: string): number {
@@ -33,11 +31,10 @@ export function GearReviewPane({
   geared,
   critiqueFlags,
   costPreview,
-  sendDisabled = false,
-  onSendOriginal,
-  onSendGeared,
+  onCopyOriginal,
+  onCopyGeared,
   onReGear,
-  onCancel
+  onClose
 }: GearReviewPaneProps): JSX.Element {
   const [editedGeared, setEditedGeared] = useState(geared)
 
@@ -53,10 +50,11 @@ export function GearReviewPane({
         <button
           type="button"
           className="gear-review-pane__cancel"
-          onClick={onCancel}
-          aria-label="Cancel and return to composer"
+          onClick={onClose}
+          aria-label="Close gear review and discard"
+          title="Close and discard the geared prompt"
         >
-          ✕
+          ▾
         </button>
       </div>
       <CritiqueFlags flags={critiqueFlags} />
@@ -83,11 +81,6 @@ export function GearReviewPane({
           </span>
         )}
       </div>
-      {sendDisabled && (
-        <p className="gear-review-pane__send-hint">
-          Click <strong>New Conversation</strong> in the sidebar to start a Claude session before sending.
-        </p>
-      )}
       <div className="gear-review-pane__actions">
         <button
           type="button"
@@ -99,20 +92,16 @@ export function GearReviewPane({
         <button
           type="button"
           className="gear-review-pane__button"
-          onClick={onSendOriginal}
-          disabled={sendDisabled}
-          title={sendDisabled ? 'No active conversation — start one first' : undefined}
+          onClick={onCopyOriginal}
         >
-          Send original
+          Copy original
         </button>
         <button
           type="button"
           className="gear-review-pane__button gear-review-pane__button--primary"
-          onClick={() => onSendGeared(editedGeared)}
-          disabled={sendDisabled}
-          title={sendDisabled ? 'No active conversation — start one first' : undefined}
+          onClick={() => onCopyGeared(editedGeared)}
         >
-          Send geared
+          Copy geared
         </button>
       </div>
     </div>

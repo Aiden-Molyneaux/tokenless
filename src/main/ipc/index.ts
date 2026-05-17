@@ -1,33 +1,21 @@
 // Single registration point for all IPC handlers. The DB-backed handlers
 // receive the live Database connection from main/index.ts.
 
-import { randomUUID } from 'node:crypto'
 import { homedir } from 'node:os'
 
 import type { IpcMain } from 'electron'
 import type { Database } from 'better-sqlite3'
 import type { Logger } from '@main/observability'
-import * as pty from 'node-pty'
 
-import { TurnsDao } from '@main/db'
-
-import { IPC_CC_EVENT, IPC_CC_CRASHED, IPC_CC_HUNG } from '@shared/ipc/cc'
-import { IPC_TURNS_CHANGED } from '@shared/ipc/turns'
-import { IPC_TELEMETRY_TICK } from '@shared/ipc/telemetry'
 import { IPC_API_RETRY_ATTEMPT, type ApiRetryAttemptPayload } from '@shared/ipc/api-events'
-import { TelemetryEmitter } from '@main/cc/telemetry-emitter'
 import { LogBridge, type Broadcast } from './log-bridge'
 import { AccountsHandler } from './accounts-handler'
 import { ProjectsHandler } from './projects-handler'
 import { ConversationsHandler } from './conversations-handler'
-import { CcHandler } from './cc-handler'
 import { DraftsHandler } from './drafts-handler'
 import { SettingsHandler } from './settings-handler'
 import { PathsHandler } from './paths-handler'
-import { CcLifecycle } from '@main/cc'
-import type { PtySpawnFn, PtyHandle } from '@main/cc'
 import { AnthropicClientRegistry } from '@main/api'
-import { SummaryRefresher } from '@main/gearing/summary-refresher'
 import { GearingHandler } from './gearing-handler'
 import { reconcile, type ReconcileResult } from '@main/skills/reconciler'
 import { scanSkillsRoots } from '@main/skills/scanner'
@@ -42,14 +30,13 @@ import { PricingHandler } from './pricing-handler'
 import type { PricingEntry } from '@shared/ipc/pricing'
 import { ErrorAnalysisHandler } from './error-analysis-handler'
 import { CrashHandler } from './crash-handler'
+import { ClipboardHandler } from './clipboard-handler'
 
 export interface IpcRegistration {
   logBridge: LogBridge
   accountsHandler: AccountsHandler
   projectsHandler: ProjectsHandler
   conversationsHandler: ConversationsHandler
-  ccHandler: CcHandler
-  ccLifecycle: CcLifecycle
   gearingHandler: GearingHandler
   draftsHandler: DraftsHandler
   settingsHandler: SettingsHandler
@@ -61,14 +48,10 @@ export interface IpcRegistration {
   pricingHandler: PricingHandler
   errorAnalysisHandler: ErrorAnalysisHandler
   crashHandler: CrashHandler
+  clipboardHandler: ClipboardHandler
   skillsWatcher: SkillsWatcher
   uninstallAll: () => void
 }
-
-// Production PtySpawnFn — adapter from our PtyHandle shape to node-pty's IPty.
-// node-pty's IPty is structurally compatible; we just type-narrow.
-const productionPtyFactory: PtySpawnFn = (binary, args, opts) =>
-  pty.spawn(binary, args.slice(), opts) as PtyHandle
 
 export function registerIpcHandlers(
   ipcMain: IpcMain,
@@ -89,67 +72,6 @@ export function registerIpcHandlers(
   const conversationsHandler = new ConversationsHandler(db, logger, broadcast)
   conversationsHandler.install(ipcMain)
 
-  const telemetryEmitter = new TelemetryEmitter({
-    intervalMs: 3000,
-    emit: (tick) => broadcast(IPC_TELEMETRY_TICK, { tick })
-  })
-  telemetryEmitter.start()
-
-  const summaryRefresher = new SummaryRefresher({
-    db, registry: clientRegistry, logger
-  })
-
-  const ccLifecycle = new CcLifecycle(productionPtyFactory, {
-    onChunk: (e) => broadcast('cc:output-chunk', e),
-    onExit: (e) => {
-      telemetryEmitter.removeConversation(e.conversationId)
-      broadcast('cc:exit', e)
-    },
-    onEvent: (e) => {
-      telemetryEmitter.handle(e)
-      if (e.event.kind === 'response-complete') {
-        summaryRefresher.onResponseComplete(e.conversationId)
-      }
-      broadcast(IPC_CC_EVENT, e)
-    },
-    onCrashed: (e) => {
-      const logId = randomUUID()
-      logger.error('cc', 'cc-crashed', `claude exited non-zero (code=${e.exitCode})`, {
-        conversationId: e.conversationId,
-        exitCode: e.exitCode,
-        signal: e.signal,
-        logId
-      })
-      broadcast(IPC_CC_CRASHED, { ...e, logId })
-    },
-    onHung: (e) => {
-      logger.warn('cc', 'cc-hung', `claude idle for ${e.idleMs}ms (${e.severity})`, {
-        conversationId: e.conversationId,
-        idleMs: e.idleMs,
-        severity: e.severity
-      })
-      broadcast(IPC_CC_HUNG, e)
-    },
-    onAssistantTurn: ({ conversationId, text, responseTokens }) => {
-      try {
-        TurnsDao.createAssistantTurn(db, {
-          conversationId,
-          responseText: text,
-          responseTokens,
-          modelUsed: null  // model not tracked per response yet — Phase 8 may add
-        })
-        broadcast(IPC_TURNS_CHANGED, undefined)
-      } catch (err) {
-        logger.error('db', 'assistant-turn-write-failed', err instanceof Error ? err.message : String(err), {
-          conversationId,
-          errorString: String(err)
-        })
-      }
-    }
-  })
-  const ccHandler = new CcHandler(db, logger, ccLifecycle)
-  ccHandler.install(ipcMain)
-
   const gearingHandler = new GearingHandler(db, logger, clientRegistry)
   gearingHandler.install(ipcMain)
 
@@ -162,7 +84,7 @@ export function registerIpcHandlers(
   const pathsHandler = new PathsHandler(logger)
   pathsHandler.install(ipcMain)
 
-  const turnsHandler = new TurnsHandler(db, logger, broadcast)
+  const turnsHandler = new TurnsHandler(db, logger)
   turnsHandler.install(ipcMain)
 
   const templatesHandler = new TemplatesHandler(db, logger, broadcast)
@@ -194,6 +116,9 @@ export function registerIpcHandlers(
   const crashHandler = new CrashHandler(logger, broadcast)
   crashHandler.install(ipcMain)
   crashHandler.installUncaughtHandlers()
+
+  const clipboardHandler = new ClipboardHandler(logger)
+  clipboardHandler.install(ipcMain)
 
   // Skills subsystem — user + plugin roots only this phase; project-local
   // scanning lands when Phase 7 wires active-project tracking through here.
@@ -261,8 +186,6 @@ export function registerIpcHandlers(
     accountsHandler,
     projectsHandler,
     conversationsHandler,
-    ccHandler,
-    ccLifecycle,
     gearingHandler,
     draftsHandler,
     settingsHandler,
@@ -273,6 +196,7 @@ export function registerIpcHandlers(
     pricingHandler,
     errorAnalysisHandler,
     crashHandler,
+    clipboardHandler,
     skillsHandler,
     skillsWatcher,
     uninstallAll: () => {
@@ -280,9 +204,6 @@ export function registerIpcHandlers(
       accountsHandler.uninstall(ipcMain)
       projectsHandler.uninstall(ipcMain)
       conversationsHandler.uninstall(ipcMain)
-      ccHandler.uninstall(ipcMain)
-      ccLifecycle.closeAll()
-      telemetryEmitter.stop()
       gearingHandler.uninstall(ipcMain)
       draftsHandler.uninstall(ipcMain)
       settingsHandler.uninstall(ipcMain)
@@ -293,11 +214,11 @@ export function registerIpcHandlers(
       pricingHandler.uninstall(ipcMain)
       errorAnalysisHandler.uninstall(ipcMain)
       crashHandler.uninstall(ipcMain)
+      clipboardHandler.uninstall(ipcMain)
       void skillsWatcher.stop().then(() => {
         logger.info('skill', 'skills-watcher-stopped', 'Skills filesystem watcher stopped')
       })
       skillsHandler.uninstall(ipcMain)
-      summaryRefresher.stop()
       unsubscribeRetryBroadcast()
     }
   }

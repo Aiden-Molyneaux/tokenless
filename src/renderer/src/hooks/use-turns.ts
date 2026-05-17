@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-import type { Turn, Feedback, FeedbackSummary } from '@shared/types/turns'
+import type { Turn } from '@shared/types/turns'
 
 interface UseTurnsReturn {
   readonly turns: readonly Turn[]
   readonly loading: boolean
   readonly error: string | null
   readonly refetch: () => Promise<void>
-  readonly updateFeedback: (id: number, feedback: Feedback) => Promise<boolean>
 }
 
 export function useTurns(conversationId: number | null): UseTurnsReturn {
@@ -46,25 +45,5 @@ export function useTurns(conversationId: number | null): UseTurnsReturn {
     return () => { mountedRef.current = false; unsubscribe() }
   }, [fetchTurns])
 
-  const updateFeedback = useCallback(async (id: number, feedback: Feedback): Promise<boolean> => {
-    const r = await window.tokenless.turns.updateFeedback({ id, feedback })
-    return r.ok
-  }, [])
-
-  return { turns, loading, error, refetch: fetchTurns, updateFeedback }
-}
-
-export function useFeedbackSummary(): FeedbackSummary | null {
-  const [summary, setSummary] = useState<FeedbackSummary | null>(null)
-  useEffect(() => {
-    let cancelled = false
-    const fetch = async (): Promise<void> => {
-      const r = await window.tokenless.turns.getFeedbackSummary()
-      if (!cancelled && r.ok) setSummary(r.data.summary)
-    }
-    void fetch()
-    const unsub = window.tokenless.turns.onChanged(() => { void fetch() })
-    return () => { cancelled = true; unsub() }
-  }, [])
-  return summary
+  return { turns, loading, error, refetch: fetchTurns }
 }

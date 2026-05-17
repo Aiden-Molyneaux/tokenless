@@ -27,8 +27,8 @@ export function TelemetryPill(): JSX.Element | null {
   if (summary.haikuMetaTokens === 0 && summary.responseOutputTokens === 0) return null
 
   const isSavings = summary.netSavingsDollars >= 0
-  const label = isSavings ? 'Saved' : 'Cost'
-  const cls = `telemetry-pill ${isSavings ? 'is-savings' : 'is-cost'}`
+  const cls = `telemetry-pill telemetry-pill--compact ${isSavings ? 'is-savings' : 'is-cost'}`
+  const ariaLabel = `${isSavings ? 'Saved' : 'Cost'} ${formatDollars(summary.netSavingsDollars)} this week — click for breakdown`
 
   return (
     <div className="telemetry-pill-host" ref={hostRef}>
@@ -36,10 +36,11 @@ export function TelemetryPill(): JSX.Element | null {
         type="button"
         className={cls}
         onClick={() => setOpen((v) => !v)}
-        aria-label="Show telemetry summary"
+        aria-label={ariaLabel}
         aria-expanded={open}
+        title={ariaLabel}
       >
-        {label} {formatDollars(summary.netSavingsDollars)} <span className="telemetry-pill__suffix">this week</span>
+        {formatDollars(summary.netSavingsDollars)}
       </button>
       {open && (
         <TelemetrySummaryPopover

@@ -7,8 +7,7 @@ import type {
   Conversation,
   CreateConversationInput,
   UpdateConversationInput,
-  ConversationStatus,
-  BranchConversationInput
+  ConversationStatus
 } from '@shared/types/conversations'
 import type { ModelHint, BreadthHint, FormatHint } from '@shared/types/projects'
 
@@ -16,16 +15,11 @@ interface ConversationRow {
   id: number
   project_id: number
   account_id: number | null
-  cc_session_id: string | null
   title: string | null
   model: string | null
   breadth: string | null
   format: string | null
   status: string
-  summary: string | null
-  summary_updated_at: number | null
-  parent_conversation_id: number | null
-  branched_at_turn_id: number | null
   created_at: number
   updated_at: number
   ended_at: number | null
@@ -37,16 +31,11 @@ function rowToConversation(r: ConversationRow): Conversation {
     id: r.id,
     projectId: r.project_id,
     accountId: r.account_id,
-    ccSessionId: r.cc_session_id,
     title: r.title,
     model: r.model as ModelHint | null,
     breadth: r.breadth as BreadthHint | null,
     format: r.format as FormatHint | null,
     status: r.status as ConversationStatus,
-    summary: r.summary,
-    summaryUpdatedAt: r.summary_updated_at,
-    parentConversationId: r.parent_conversation_id,
-    branchedAtTurnId: r.branched_at_turn_id,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
     endedAt: r.ended_at,
@@ -116,17 +105,13 @@ export function updateConversation(
   db.prepare(`
     UPDATE conversations SET
       title = ?,
-      cc_session_id = ?,
       status = ?,
-      summary = ?,
       updated_at = ?,
       ended_at = ?
     WHERE id = ?
   `).run(
     input.title !== undefined ? input.title : current.title,
-    input.ccSessionId !== undefined ? input.ccSessionId : current.ccSessionId,
     status,
-    input.summary !== undefined ? input.summary : current.summary,
     now,
     endedAt,
     input.id
@@ -137,37 +122,4 @@ export function updateConversation(
 export function deleteConversation(db: Database, id: number): boolean {
   const result = db.prepare('DELETE FROM conversations WHERE id = ?').run(id)
   return result.changes > 0
-}
-
-export function createBranchConversation(db: Database, input: BranchConversationInput): Conversation {
-  const parent = getConversationById(db, input.parentConversationId)
-  if (!parent) {
-    const e = new Error(`PARENT_NOT_FOUND: parent conversation ${input.parentConversationId} does not exist`) as Error & { code?: string }
-    e.code = 'PARENT_NOT_FOUND'
-    throw e
-  }
-  const now = Date.now()
-  const title = `↳ ${parent.title ?? 'Untitled'}`
-  const result = db.prepare(`
-    INSERT INTO conversations (
-      project_id, account_id, title, model, breadth, format,
-      status, summary, parent_conversation_id, branched_at_turn_id,
-      created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?, ?, ?, ?)
-  `).run(
-    parent.projectId,
-    parent.accountId,
-    title,
-    parent.model,
-    parent.breadth,
-    parent.format,
-    parent.summary,
-    input.parentConversationId,
-    input.branchedAtTurnId,
-    now,
-    now
-  )
-  const created = getConversationById(db, Number(result.lastInsertRowid))
-  if (!created) throw new Error('createBranchConversation: SELECT after INSERT returned no row')
-  return created
 }

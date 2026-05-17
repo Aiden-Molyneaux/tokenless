@@ -747,3 +747,156 @@ B) Plaintext in the existing `api_key_ref` column of the SQLite DB. Simple, no n
 
 **Discovered:** Phase 8B scope conversation + implementation.
 
+
+## ADR-043 (2026-05-16) — Remove the embedded Claude Code PTY
+
+**Context:** v1 hosted Claude Code in-app via node-pty + xterm.js. The trade-off: TokenLess can't easily keep up with first-party features (slash commands, file pickers, IDE bindings, hooks, status line, MCP UI). Users hit a feature gap between the embedded terminal and upstream Claude Code releases. Every new upstream feature requires a PTY-layer update before TokenLess users can access it.
+
+**Options considered:**
+- A) Keep PTY + try to mirror upstream features. Perpetual catch-up; the feature gap widens faster than it can be closed.
+- B) Drop PTY entirely. User runs Claude Code in their own terminal; TokenLess sits beside it as a prompt-side gearing tool with clipboard as the transport.
+- C) Hybrid — embedded terminal as one of multiple panes; let user toggle.
+
+**Choice:** B.
+
+**Reasoning:** The gearing engine — the part that justifies TokenLess existing — doesn't need the PTY to do its job. Removing it means users get all first-party Claude Code features for free (the full upstream CLI, Claude Code Desktop, IDE integrations). TokenLess shrinks to its essential value: rewriting prompts via Haiku to reduce token waste. The scope reduction also removes the largest class of native-module build pain (node-pty ABI switching).
+
+**Discovered:** v2 scope planning session; the embedded terminal feature gap was the primary user complaint.
+
+
+## ADR-044 (2026-05-16) — Long-lived `v2/headless` branch for the refactor
+
+**Context:** v1 shipped at `v1.0.0-phase-8b`. The v2 refactor is too large for the "commit straight to main + tag phases" pattern — it spans thousands of lines deleted across many phases and multiple major subsystems (PTY, cc-handler, cc module, IPC surface, schema, UI).
+
+**Options considered:**
+- A) Straight-to-main + accept breakage windows. Main stays broken for days or weeks during refactor. CI is red throughout.
+- B) Feature branch. Main stays shippable at v1 throughout; per-phase commits + tags on the branch; final `git merge --no-ff` to main at v2.0.0.
+- C) Feature flag. Keep PTY code behind a flag; new clipboard path behind another. Double the code surface for the duration.
+
+**Choice:** B. Branch named `v2/headless`, forked from the `v1.0.0-final` tag.
+
+**Reasoning:** Preserves v1 stability for any user who pulls main during the multi-week refactor. Clean release artifact at v2.0.0. Feature flags would require maintaining two full code paths simultaneously — more burden than a branch. The branch strategy is consistent with the existing per-phase tag discipline.
+
+**Discovered:** v2 planning; the multi-phase refactor scope made straight-to-main impractical.
+
+
+## ADR-045 (2026-05-16) — Clipboard as the v2 transport (vs. native APIs)
+
+**Context:** v2 needs to receive prompts FROM the user's external terminal and send geared prompts BACK to it. With the PTY removed, there is no in-process communication channel.
+
+**Options considered:**
+- A) Windows UI Automation: enumerate terminal windows, read their content directly. Complex, fragile, requires elevated trust, breaks across terminal emulators.
+- B) Global hotkey + auto-read clipboard on keypress. Works, but requires a global hotkey hook (native module or WinAPI interop) and auto-triggers feel surprising.
+- C) Explicit user-clicked Capture + Copy buttons with clipboard as the data channel. No new native deps; universal; transparent to the user.
+- D) Accessibility APIs (UIA / IAccessible2). Similar complexity to A; terminal accessibility support is inconsistent.
+
+**Choice:** C. Both directions via the OS clipboard with explicit user-clicked buttons. `clipboard:read-prompt` reads whatever is on the clipboard into the Composer; `clipboard:write-geared` writes the geared result back.
+
+**Reasoning:** Universal — works with Claude Code CLI, Claude Code Desktop, terminal multiplexers, Cursor, any other tool. Zero new native deps. The explicitness (user clicks Capture, user clicks Copy Geared) makes the data flow auditable: the user always knows what's being pasted where. v2.1+ can layer automation (auto-paste via SendInput, global hotkey for capture) without changing the core flow.
+
+**Discovered:** v2 transport options brainstorm; native-API options were rejected for dep and fragility reasons.
+
+
+## ADR-046 (2026-05-16) — Conversations remain as lightweight named workspaces
+
+**Context:** With the PTY gone, TokenLess can no longer observe assistant responses. The v1 "conversation = persistent Claude session that we track, capture turns for, and can resume" model no longer holds. Conversations were the unit of: turn storage, rolling Haiku summary, branching, and per-session telemetry.
+
+**Options considered:**
+- A) Drop conversations entirely. The app becomes stateless: no sidebar, no persistent drafts, no project organization. Maximally simple but loses all organizational value.
+- B) Keep conversations as named workspaces holding drafts + user-side turn telemetry only. No assistant transcripts; no PTY resume. The sidebar, project switcher, and draft persistence all remain functional.
+- C) Keep conversations with summary-tracking + manual sync (user pastes assistant responses back in). Too much friction for a "sit beside the terminal" tool.
+
+**Choice:** B. Each conversation is a named workspace inside a project; holds drafts and user-side prompt history only. No assistant transcript, no session resume.
+
+**Reasoning:** Preserves the per-project work organization users expect from v1. Drafts (auto-saved as the user types) are a key quality-of-life feature that survive the PTY removal. The sidebar and project switcher remain as the organizational skeleton. Dropping them (option A) would make the app feel like a glorified text field — the workspace metaphor is still justified even without turn capture.
+
+**Discovered:** v2 scope planning; the question arose during the cc-module deletion phase.
+
+
+## ADR-047 (2026-05-16) — Schema migration drops PTY-shaped columns
+
+**Context:** Multiple v1 columns exist solely to serve PTY-related features. In `conversations`: `cc_session_id`, `summary`, `summary_updated_at`, `parent_conversation_id`, `branched_at_turn_id`. In the `turns` table broadly: turn capture was PTY-specific and v2 no longer writes it. In `projects`: `default_commit_prompt` and `default_push_prompt` served the dropped Commit + Push buttons.
+
+**Options considered:**
+- A) Leave dead columns in place. Schema carries dead weight; future queries have to filter; confusion for any future contributor.
+- B) Drop via migration. Clean schema; `ALTER TABLE DROP COLUMN` is supported natively in SQLite 3.35+ (project targets 3.45 via better-sqlite3 11).
+
+**Choice:** B. Migration `003_v2_headless.sql` drops the PTY-shaped conversations columns and the `turns` table entries that are no longer written; migration `004_remove_commit_push_prompts.sql` drops the project columns.
+
+**Reasoning:** Clean schema with no dead columns. The `runMigrations()` runner writes a whole-DB SQLite backup before applying any pending migration — that backup is the v1 recovery artifact if needed. After the migration applies, the schema precisely matches the v2 feature surface.
+
+**Discovered:** Phase 1 migration authoring; the column list was audited against all v1 DAO callsites.
+
+
+## ADR-048 (2026-05-16) — SQLite backup supersedes JSONL export proposal
+
+**Context:** The v2 spec originally proposed a one-time JSONL export of `turns` rows (specifically assistant response text) before migration 003 deletes them — so users have a human-readable record of prior Claude responses.
+
+**Options considered:**
+- A) JSONL export of `turns` rows to a file in `userData/exports/` before migration applies.
+- B) Rely on the existing `runMigrations()` whole-DB SQLite backup that already runs before every pending migration.
+
+**Choice:** B. No JSONL export; the SQLite backup is sufficient.
+
+**Reasoning:** Strictly more recoverable than JSONL — any SQLite tool (DB Browser for SQLite, sqlite3 CLI, DBeaver) can open the `.db` backup and query all tables including the full pre-migration `turns` rows. JSONL covers only the turns table and requires parsing; the backup covers everything. Less code to write and test. Consistent with the existing backup infrastructure introduced in ADR-042 / Phase 8B.
+
+**Discovered:** Phase 1 migration planning; the comparison was made explicit during the migration review.
+
+
+## ADR-049 (2026-05-16) — `idx_turns_feedback` requires explicit DROP before column drop
+
+**Context:** Migration 003 drops the `feedback` column from the `turns` table. During authoring, the assumption was that SQLite would automatically handle indexes referencing dropped columns.
+
+**Discovery:** SQLite 3.45 errors with `error in index idx_turns_feedback after drop column: no such column: feedback` when attempting `ALTER TABLE turns DROP COLUMN feedback` while the index exists. SQLite validates index integrity after each column drop and rejects the operation if an index references the dropped column.
+
+**Choice:** Migration 003 explicitly runs `DROP INDEX IF EXISTS idx_turns_feedback` BEFORE `ALTER TABLE turns DROP COLUMN feedback`. The drop order matters; the index must go first.
+
+**Reasoning:** Required for the migration to apply without error. Documented explicitly in the migration SQL header comment so future migration authors know to audit existing indexes before dropping any indexed column.
+
+**Discovered:** Phase 1 migration testing; the error was hit on the first test run of migration 003.
+
+
+## ADR-050 (2026-05-16) — Composer + GearReviewPane unified into a drawer layout
+
+**Context:** Phase 1–4 of v2 built up to a working Capture → Gear → Copy flow, but the ActionsRow's "Copy Geared" button was visually unreachable after gearing. The cause: Composer and GearReviewPane swapped conditionally via `gearState ? <GearReviewPane/> : <Composer/>` — opening the gear pane replaced the Composer AND its ActionsRow, so "Copy Geared" had no home.
+
+**Options considered:**
+- A) Keep the conditional swap; add a redundant Copy Geared button INSIDE GearReviewPane only. Duplicates the action; button lives in two places with separate wiring.
+- B) Unify into one always-rendered shell: Composer content always visible at the top; `gear-review-drawer` conditionally renders BELOW when `gearState !== null`. ActionsRow is always rendered as part of the shell.
+
+**Choice:** B. Phase 5 Task 4. `<div className="composer-shell">` always renders the Composer content; `<div className="gear-review-drawer">` appends below when geared output is available.
+
+**Reasoning:** The single canonical action (Copy Geared) is always visible in the ActionsRow regardless of gear state. Composer and drawer coexist within one viewport at normal screen widths; the drawer pushes the Composer up rather than replacing it. No button duplication. The ActionsRow button count stabilizes at 5 (Capture, Gear, Copy Geared, Discard, Templates) with no conditional rendering of individual buttons.
+
+**Discovered:** Phase 5 Task 4 implementation; the unreachable Copy Geared button was caught during manual flow verification.
+
+
+## ADR-051 (2026-05-16) — Clipboard IPC results use a custom union shape (vs. canonical `IpcError`)
+
+**Context:** The project's canonical `IpcResult<T> = IpcOk<T> | IpcError` shape carries `{ message, code, logId }` on failures. The `logId` field points to a logger record for the exception; it is meaningful for handler-level errors (DB failures, unexpected throws) but not for expected business outcomes.
+
+**Options considered:**
+- A) Use the canonical `IpcError` wrapper for clipboard failures — including synthetic `logId` values for `EMPTY_CLIPBOARD`, `TOO_LARGE`, `WRITE_FAILED`. The logId would be meaningless (no logger.error call was made for expected-empty-clipboard).
+- B) Custom union shape: `{ ok: true; text: string } | { ok: false; code: 'EMPTY_CLIPBOARD' | 'TOO_LARGE' | 'WRITE_FAILED' }` for both `clipboard:read-prompt` and `clipboard:write-geared`.
+
+**Choice:** B. Both clipboard channels return the custom union shape.
+
+**Reasoning:** Clipboard failures are expected business outcomes, not exceptions. An empty clipboard is a normal pre-condition when the user hasn't copied anything yet; oversized text is a policy guard, not an error. Forcing these into the `IpcError` envelope (with a synthetic `logId`) would misrepresent their nature and mislead any future developer reading the log. The custom union is intentional for the clipboard namespace and documented here to distinguish it from an oversight.
+
+**Discovered:** Phase 3 clipboard IPC design; the mismatch with the canonical shape was noted during IPC handler authoring.
+
+
+## ADR-052 (2026-05-16) — ActionsRow final 5-button shape
+
+**Context:** v2's user flow is Capture → Gear → review → Copy Geared. The v1 ActionsRow had: Send, Commit, Push, Branch, Templates in the secondary group, plus Gear. Six buttons total. v1's Send was made a no-op placeholder in v2 Phase 1 pending the new Copy Geared direction. Commit + Push belonged to the PTY terminal workflow (user would commit from within the embedded terminal). Branch spawned a new PTY session from the latest turn.
+
+**Options considered:**
+- A) Keep all v1 buttons; disable Commit/Push/Branch with tooltips explaining they've been removed. Clutters the ActionsRow with permanently disabled affordances.
+- B) Remove orphaned buttons (Commit, Push, Branch, Send); add Capture + Copy Geared to complete the new flow. Clean action set matching the v2 flow exactly.
+
+**Choice:** B. Final ActionsRow = Capture, Gear, Copy Geared, Discard, Templates (5 buttons).
+
+**Reasoning:** One canonical action per phase of the v2 flow (Capture the prompt from clipboard, Gear it via Haiku, Copy the geared result back), plus Discard (escape hatch to clear gear state) and Templates (canned prompts remain useful). Commit + Push are removed because users run git in their own terminal; Branch is removed because there is no PTY session to branch; Send is superseded by Copy Geared. The E2E count assertion in `composer.e2e.test.ts` is updated to 5 to catch accidental additions or removals.
+
+**Discovered:** Phase 5 ActionsRow cleanup; the final button count was settled after all v2 flow buttons were implemented.
+

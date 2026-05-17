@@ -42,14 +42,3 @@ export type ConversationsListResult = IpcResult<ConversationsListResponse>
 export type ConversationsCreateResult = IpcResult<ConversationsCreateResponse>
 export type ConversationsUpdateResult = IpcResult<ConversationsUpdateResponse>
 export type ConversationsDeleteResult = IpcResult<ConversationsDeleteResponse>
-
-export const IPC_CONVERSATIONS_BRANCH = 'conversations:branch'
-
-export interface ConversationsBranchRequest {
-  readonly parentConversationId: number
-}
-export interface ConversationsBranchResponse {
-  readonly conversation: Conversation
-}
-
-export type ConversationsBranchResult = IpcResult<ConversationsBranchResponse>

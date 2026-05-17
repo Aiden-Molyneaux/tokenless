@@ -1,7 +1,6 @@
 import { useCallback, useMemo, useRef, useState, useEffect } from 'react'
 import type { ReactNode } from 'react'
 import type { CostPreview, GearResult } from '@shared/types/gearing'
-import type { GearMeta } from '@shared/types/turns'
 import { useOutsideClick } from '../../hooks/use-outside-click'
 import { rendererLogger } from '../../observability/logger-bridge'
 import { useToast } from '../../hooks/use-toast'
@@ -13,19 +12,15 @@ import type { DropdownItem } from '../common/Dropdown'
 import { GearReviewPane } from '../gear-review/GearReviewPane'
 import { useLiveCostEstimate } from '../../hooks/use-live-cost-estimate'
 import { AuthMissingModal } from '../notifications/AuthMissingModal'
-import { ConfirmModal } from '../common/ConfirmModal'
-import { useTurns } from '../../hooks/use-turns'
 import { ActionsRow } from './ActionsRow'
 import { TemplatePickerPopover } from './TemplatePickerPopover'
 import { ConfigsRow } from './ConfigsRow'
 import { PromptTextarea } from './PromptTextarea'
 import { TelemetryStrip } from './TelemetryStrip'
-import { TurnFeedbackBar } from './TurnFeedbackBar'
 import {
   SETTING_GEARING_DEFAULT_MODEL,
   SETTING_GEARING_DEFAULT_BREADTH,
-  SETTING_GEARING_DEFAULT_FORMAT,
-  SETTING_GEARING_SEND_CONFIRM
+  SETTING_GEARING_DEFAULT_FORMAT
 } from '@shared/types/settings-keys'
 import { readSetting } from '../../hooks/use-settings'
 import './styles.css'
@@ -34,7 +29,6 @@ interface ComposerProps {
   conversationId: number | null
   accountId: number | null
   accountLabel: string | null
-  onBranch: () => void
 }
 
 // Error code → user-facing toast message map.
@@ -54,7 +48,7 @@ const GEAR_ERROR_MESSAGES: Record<string, string> = {
 // view to GearReviewPane. Phase 5 replaces the mock gear data with real
 // Haiku-driven output via IPC.
 
-export function Composer({ conversationId, accountId, accountLabel, onBranch }: ComposerProps): JSX.Element {
+export function Composer({ conversationId, accountId, accountLabel }: ComposerProps): JSX.Element {
   const pricing = usePricing()
   const modelItems = pricing.map((p) => ({
     value: p.key,
@@ -68,44 +62,37 @@ export function Composer({ conversationId, accountId, accountLabel, onBranch }: 
   const [format, setFormat] = useState<string>(MOCK_FORMATS[0].value) // prose default
   const [skill, setSkill] = useState<string>('') // none default (empty string = "None" entry)
   const [gearState, setGearState] = useState<GearResult | null>(null)
-  const [sending, setSending] = useState(false)
   const [gearing, setGearing] = useState(false)
   const [authMissingOpen, setAuthMissingOpen] = useState(false)
   const [templatesOpen, setTemplatesOpen] = useState(false)
   const [lastCostPreview, setLastCostPreview] = useState<CostPreview | null>(null)
-  const [sendConfirm, setSendConfirm] = useState(false)
-  const [confirmSendOpen, setConfirmSendOpen] = useState(false)
-  const pendingSendRef = useRef<{ prompt: string; gearMeta: GearMeta | null } | null>(null)
-  const promptRef = useRef(prompt)
+  const [captureHint, setCaptureHint] = useState<string | null>(null)
+  const [captureDisabled, setCaptureDisabled] = useState<boolean>(false)
+  const captureHintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const { push: pushToast } = useToast()
   const liveEstimate = useLiveCostEstimate({ prompt, model, breadth })
   const { clear: clearDraft } = useDraftAutosave(conversationId, prompt, setPrompt)
   const templatesHostRef = useOutsideClick<HTMLDivElement>(templatesOpen, () => setTemplatesOpen(false))
-  useEffect(() => {
-    promptRef.current = prompt
-  }, [prompt])
 
-  // Load gearing defaults and sendConfirm setting from the settings table on mount.
+  // Cleanup the capture hint timer on unmount.
+  useEffect(() => () => {
+    if (captureHintTimerRef.current) clearTimeout(captureHintTimerRef.current)
+  }, [])
+
+  // Load gearing defaults from the settings table on mount.
   // GearingDefaultsSection writes to the same keys, so changes take effect on next Composer mount.
   useEffect(() => {
     void Promise.all([
       readSetting(SETTING_GEARING_DEFAULT_MODEL),
       readSetting(SETTING_GEARING_DEFAULT_BREADTH),
-      readSetting(SETTING_GEARING_DEFAULT_FORMAT),
-      readSetting(SETTING_GEARING_SEND_CONFIRM)
-    ]).then(([m, b, f, sc]) => {
+      readSetting(SETTING_GEARING_DEFAULT_FORMAT)
+    ]).then(([m, b, f]) => {
       if (m !== null) setModel(m)
       if (b !== null) setBreadth(b)
       if (f !== null) setFormat(f)
-      setSendConfirm(sc === '1')
     })
   }, [])
   const { skills, toggleFavorite, toggleHidden } = useSkills()
-  const { turns, updateFeedback } = useTurns(conversationId)
-  const lastTurn = turns.length > 0 ? turns[turns.length - 1] : null
-  const showFeedbackBar = lastTurn !== null
-    && lastTurn.role === 'assistant'
-    && lastTurn.feedback === null
 
   const skillItems: readonly DropdownItem[] = useMemo(() => [
     { value: '', label: 'None', description: 'no skill requested' },
@@ -185,14 +172,7 @@ export function Composer({ conversationId, accountId, accountLabel, onBranch }: 
           setAuthMissingOpen(true)
         } else {
           const message = GEAR_ERROR_MESSAGES[code] ?? GEAR_ERROR_MESSAGES.API_UNKNOWN
-          pushToast({
-            message,
-            severity: 'error',
-            action: {
-              label: 'Send original',
-              onActivate: () => void handleSend(promptRef.current)
-            }
-          })
+          pushToast({ message, severity: 'error' })
         }
       }
     } finally {
@@ -205,71 +185,68 @@ export function Composer({ conversationId, accountId, accountLabel, onBranch }: 
     void runGear(prompt)
   }
 
-  const actuallySend = async (finalPrompt: string, gearMeta: GearMeta | null): Promise<void> => {
-    if (conversationId === null) {
-      rendererLogger.warn('ui', 'send-no-conversation', 'Send clicked with no active conversation')
-      return
-    }
-    setSending(true)
-    try {
-      const result = await window.tokenless.cc.send({
-        conversationId,
-        prompt: finalPrompt,
-        model,
-        breadth,
-        format,
-        gearMeta
+  const handleCopyGeared = async (text: string): Promise<void> => {
+    if (text.trim().length === 0) return
+    const result = await window.tokenless.clipboard.writeGeared(text)
+    if (result.ok) {
+      pushToast({
+        severity: 'info',
+        message: 'Geared prompt copied — paste into your terminal.'
       })
-      if (result.ok) {
-        setPrompt('')
-        void clearDraft()  // clears the persisted draft for this conversation
-        rendererLogger.info('ui', 'send-success', 'Prompt sent', {
-          conversationId,
-          turnId: result.data.turnId,
-          promptLength: finalPrompt.length
-        })
-      } else {
-        rendererLogger.error('ui', 'send-failed', result.error.message, {
-          conversationId,
-          code: result.error.code,
-          logId: result.error.logId
-        })
-        if (result.error.code === 'PTY_WRITE_FAILED') {
-          pushToast({
-            message: "Couldn't send prompt — PTY connection lost. Restart the conversation.",
-            severity: 'error'
-          })
-        }
-      }
-    } finally {
-      setSending(false)
-    }
-  }
-
-  const handleSend = async (finalPrompt: string, gearMeta: GearMeta | null = null): Promise<void> => {
-    if (sendConfirm) {
-      pendingSendRef.current = { prompt: finalPrompt, gearMeta }
-      setConfirmSendOpen(true)
+      setPrompt('')
+      setGearState(null)
+      void clearDraft()
       return
     }
-    await actuallySend(finalPrompt, gearMeta)
+    // result.code can be 'WRITE_FAILED' or 'EMPTY_INPUT'. EMPTY_INPUT shouldn't
+    // reach here because we guarded above; surface a generic error toast either way.
+    pushToast({
+      severity: 'error',
+      message: "Couldn't write to clipboard. Geared text remains in TokenLess — try Copy Geared again."
+    })
   }
 
-  const handleConfirmSend = async (): Promise<void> => {
-    const pending = pendingSendRef.current
-    pendingSendRef.current = null
-    setConfirmSendOpen(false)
-    if (pending) await actuallySend(pending.prompt, pending.gearMeta)
+  const handleCapture = async (): Promise<void> => {
+    if (captureDisabled) return
+    const result = await window.tokenless.clipboard.readPrompt()
+    if (result.ok) {
+      setPrompt(result.data.text)
+      setCaptureHint(null)
+      return
+    }
+    if (result.code === 'EMPTY') {
+      setCaptureHint('Clipboard is empty. Copy text in your terminal first, then click Capture.')
+      setCaptureDisabled(true)
+      if (captureHintTimerRef.current) clearTimeout(captureHintTimerRef.current)
+      captureHintTimerRef.current = setTimeout(() => {
+        setCaptureDisabled(false)
+        setCaptureHint(null)
+        captureHintTimerRef.current = null
+      }, 3000)
+      return
+    }
+    if (result.code === 'TOO_LARGE') {
+      pushToast({
+        message: 'Clipboard contains more than 32 KB. Trim your selection.',
+        severity: 'warn'
+      })
+      return
+    }
+    if (result.code === 'READ_FAILED') {
+      pushToast({
+        message: "Couldn't read clipboard. Check Settings → Privacy → Clipboard permissions.",
+        severity: 'error'
+      })
+      return
+    }
   }
 
-  const handleCommit = (): void => {
-    rendererLogger.info('ui', 'commit-clicked', 'Commit (stub) — pre-filling composer')
-    setPrompt('Stage and commit all current changes. Write a concise commit message focused on the *why*, not the *what*. Do not push.')
-  }
-
-  const handlePush = (): void => {
-    rendererLogger.info('ui', 'push-clicked', 'Push (stub) — pre-filling composer')
-    setPrompt('Push the current branch to its remote.')
+  const handleDiscard = (): void => {
+    rendererLogger.info('ui', 'discard', 'User discarded composer + gear state')
+    setPrompt('')
+    setGearState(null)
+    void clearDraft()
+    setCaptureHint(null)
   }
 
   const handleInsertTemplate = (body: string): void => {
@@ -278,29 +255,26 @@ export function Composer({ conversationId, accountId, accountLabel, onBranch }: 
     rendererLogger.info('ui', 'template-inserted', 'Template inserted into composer', { bodyLength: body.length })
   }
 
-  const handleGearSendOriginal = (): void => {
-    if (gearState) setLastCostPreview(gearState.costPreview)
-    void handleSend(gearState?.originalPrompt ?? prompt, null)
-    setGearState(null)
+  const handleGearCopyOriginal = (): void => {
+    if (gearState) {
+      setLastCostPreview(gearState.costPreview)
+      rendererLogger.info('ui', 'gear-copy-original', 'User copied original (un-geared) prompt')
+      void handleCopyGeared(gearState.originalPrompt)
+      // Note: handleCopyGeared writes the text to clipboard. "Copy original" reuses
+      // the same handler with the un-geared text. Function name is historical;
+      // semantics is "copy a string to clipboard."
+    }
   }
 
-  const handleGearSendGeared = (editedGeared: string): void => {
-    if (!gearState) {
-      void handleSend(editedGeared, null)
-      setGearState(null)
-      return
+  const handleGearCopyGeared = (editedGeared: string): void => {
+    if (gearState) {
+      setLastCostPreview(gearState.costPreview)
+      rendererLogger.info('ui', 'gear-copy-geared', 'User copied geared prompt', {
+        editedLength: editedGeared.length,
+        originalGearedLength: gearState.gearedPrompt.length
+      })
+      void handleCopyGeared(editedGeared)
     }
-    setLastCostPreview(gearState.costPreview)
-    const meta: GearMeta = {
-      originalPrompt: gearState.originalPrompt,
-      gearedPrompt: editedGeared,
-      originalTokens: gearState.tokenBreakdown.originalInputEstimate,
-      gearedTokens: gearState.tokenBreakdown.gearedInputEstimate,
-      haikuMetaTokens: gearState.tokenBreakdown.haikuInputTokens + gearState.tokenBreakdown.haikuOutputTokens,
-      critiqueFlags: gearState.critiqueFlags.map((f) => `${f.severity}: ${f.message}`)
-    }
-    void handleSend(editedGeared, meta)
-    setGearState(null)
   }
 
   const handleGearReGear = (): void => {
@@ -315,24 +289,21 @@ export function Composer({ conversationId, accountId, accountLabel, onBranch }: 
     setGearState(null)
   }
 
+  // Defined outside the ternary so TypeScript doesn't narrow gearState to null.
+  const handleCopyGearedFromState = (): void => {
+    if (gearState) void handleCopyGeared(gearState.gearedPrompt)
+  }
+
   return (
     <>
-      {gearState ? (
-        <GearReviewPane
-          key={gearState.gearedPrompt}
-          original={gearState.originalPrompt}
-          geared={gearState.gearedPrompt}
-          critiqueFlags={gearState.critiqueFlags}
-          costPreview={gearState.costPreview}
-          sendDisabled={conversationId === null}
-          onSendOriginal={handleGearSendOriginal}
-          onSendGeared={handleGearSendGeared}
-          onReGear={handleGearReGear}
-          onCancel={handleGearCancel}
-        />
-      ) : (
-        <div className="composer">
+      <div className="composer-shell">
+        <div className="composer-shell__main">
           <PromptTextarea value={prompt} onChange={setPrompt} />
+          {prompt.length === 0 && gearState === null && (
+            <p className="composer__empty-hint">
+              Capture a prompt from your terminal (Ctrl+C in terminal → click Capture).
+            </p>
+          )}
           <ConfigsRow
             model={model}
             onModelChange={setModel}
@@ -349,14 +320,14 @@ export function Composer({ conversationId, accountId, accountLabel, onBranch }: 
           <div className="actions-row-host" ref={templatesHostRef}>
             <ActionsRow
               promptEmpty={prompt.length === 0}
-              disableGear={sending || gearing}
-              disableSend={sending || conversationId === null}
+              disableGear={gearing}
+              copyDisabled={gearState === null}
+              onCapture={() => void handleCapture()}
+              captureDisabled={captureDisabled}
               onGear={handleGear}
-              onSend={() => void handleSend(prompt)}
+              onCopyGeared={handleCopyGearedFromState}
+              onDiscard={handleDiscard}
               onTemplates={() => setTemplatesOpen((v) => !v)}
-              onBranch={onBranch}
-              onCommit={handleCommit}
-              onPush={handlePush}
             />
             {templatesOpen && (
               <TemplatePickerPopover
@@ -366,23 +337,27 @@ export function Composer({ conversationId, accountId, accountLabel, onBranch }: 
             )}
           </div>
           <TelemetryStrip liveEstimate={liveEstimate} lastCostPreview={lastCostPreview} prompt={prompt} />
-          {showFeedbackBar && lastTurn && (
-            <TurnFeedbackBar
-              turnId={lastTurn.id}
-              onSubmit={(id, feedback) => { void updateFeedback(id, feedback) }}
-            />
+          {captureHint && (
+            <p className="capture-hint" role="status">{captureHint}</p>
           )}
         </div>
-      )}
+        {gearState && (
+          <div className="gear-review-drawer">
+            <GearReviewPane
+              key={gearState.gearedPrompt}
+              original={gearState.originalPrompt}
+              geared={gearState.gearedPrompt}
+              critiqueFlags={gearState.critiqueFlags}
+              costPreview={gearState.costPreview}
+              onCopyOriginal={handleGearCopyOriginal}
+              onCopyGeared={handleGearCopyGeared}
+              onReGear={handleGearReGear}
+              onClose={handleGearCancel}
+            />
+          </div>
+        )}
+      </div>
       <AuthMissingModal open={authMissingOpen} onDismiss={() => setAuthMissingOpen(false)} accountLabel={accountLabel} />
-      <ConfirmModal
-        open={confirmSendOpen}
-        title="Send prompt?"
-        message="Send this prompt to Claude?"
-        confirmLabel="Send"
-        onConfirm={() => void handleConfirmSend()}
-        onCancel={() => { pendingSendRef.current = null; setConfirmSendOpen(false) }}
-      />
     </>
   )
 }
