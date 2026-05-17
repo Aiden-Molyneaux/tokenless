@@ -39,7 +39,8 @@ import type {
   PricingListResult,
   AiAnalyzeErrorRequest,
   AiAnalyzeErrorResult,
-  ClipboardReadPromptResult
+  ClipboardReadPromptResult,
+  ClipboardWriteGearedResult
 } from '@shared/ipc'
 import type {
   CrashShowPayload,
@@ -127,6 +128,7 @@ export interface TokenlessApi {
   }
   readonly clipboard: {
     readPrompt(): Promise<ClipboardReadPromptResult>
+    writeGeared(text: string): Promise<ClipboardWriteGearedResult>
   }
   readonly api: {
     onRetryAttempt(fn: (payload: ApiRetryAttemptPayload) => void): () => void

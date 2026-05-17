@@ -118,7 +118,10 @@ import {
   type CrashGetReportResult,
   type CrashRestartResult,
   IPC_CLIPBOARD_READ_PROMPT,
-  type ClipboardReadPromptResult
+  IPC_CLIPBOARD_WRITE_GEARED,
+  type ClipboardReadPromptResult,
+  type ClipboardWriteGearedRequest,
+  type ClipboardWriteGearedResult
 } from '@shared/ipc'
 
 const api = {
@@ -266,6 +269,10 @@ const api = {
   clipboard: {
     readPrompt(): Promise<ClipboardReadPromptResult> {
       return ipcRenderer.invoke(IPC_CLIPBOARD_READ_PROMPT) as Promise<ClipboardReadPromptResult>
+    },
+    writeGeared(text: string): Promise<ClipboardWriteGearedResult> {
+      const req: ClipboardWriteGearedRequest = { text }
+      return ipcRenderer.invoke(IPC_CLIPBOARD_WRITE_GEARED, req) as Promise<ClipboardWriteGearedResult>
     }
   },
   api: {
