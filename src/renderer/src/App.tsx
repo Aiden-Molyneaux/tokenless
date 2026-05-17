@@ -96,7 +96,7 @@ function AppContent(): JSX.Element {
   return (
     <>
       {view === 'shell'
-        ? <AppShell onOpenSettings={() => setView('settings')} />
+        ? <AppShell onOpenSettings={() => setView('settings')} onOpenDevMode={toggleDevMode} />
         : <SettingsView onBack={() => setView('shell')} devMode={devMode} onDevModeChange={handleDevModeChange} onRerunOnboarding={() => void handleRerunOnboarding()} />
       }
       <button

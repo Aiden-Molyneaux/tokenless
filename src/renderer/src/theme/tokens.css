@@ -101,7 +101,7 @@
   /* ===== Layout dimensions ===== */
   --tl-top-bar-height: 48px;
   --tl-sidebar-width: 240px;
-  --tl-sidebar-width-collapsed: 36px;
+  --tl-sidebar-width-collapsed: 48px;
 
   /* ===== z-index =====
      Ordering (low to high): sidebar < top-bar < dev-mode < gear-review <

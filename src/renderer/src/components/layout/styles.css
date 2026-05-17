@@ -131,6 +131,59 @@
   background: var(--tl-orange-50);
 }
 
+/* ===== Conversation sidebar icon strip (collapsed mode) ===== */
+
+.conversation-sidebar__icons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tl-space-2);
+  padding: var(--tl-space-2) var(--tl-space-1);
+  align-items: center;
+}
+
+.conversation-sidebar__icon-button {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--tl-radius-md);
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: var(--tl-fg);
+  transition: background var(--tl-transition-fast);
+}
+
+.conversation-sidebar__icon-button:hover {
+  background: var(--tl-hover);
+  border-color: var(--tl-rule);
+}
+
+.conversation-sidebar__icon-letter {
+  font-weight: var(--tl-weight-semibold);
+  font-size: 16px;
+  color: var(--tl-orange);
+}
+
+.conversation-sidebar__icon-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  font-size: 10px;
+  background: var(--tl-orange);
+  color: #fff;
+  border-radius: var(--tl-radius-full);
+  padding: 0 4px;
+  line-height: 14px;
+  min-width: 14px;
+  text-align: center;
+  font-family: var(--tl-font-sans);
+  font-weight: var(--tl-weight-medium);
+}
+
 /* ===== Conversation list ===== */
 
 .conversation-list {

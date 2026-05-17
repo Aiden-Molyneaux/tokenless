@@ -24,7 +24,13 @@ import { ToastHost } from '../notifications/ToastHost'
 import './styles.css'
 
 
-export function AppShell({ onOpenSettings }: { onOpenSettings: () => void }): JSX.Element {
+export function AppShell({
+  onOpenSettings,
+  onOpenDevMode
+}: {
+  onOpenSettings: () => void
+  onOpenDevMode: () => void
+}): JSX.Element {
   const { projects, loading: projectsLoading, create: createProject, update: updateProject, remove: removeProject } = useProjects()
   const { accounts, create: createAccount, update: updateAccount, remove: removeAccount } = useAccounts()
   const [activeProjectId, setActiveProjectId] = useState<number | null>(null)
@@ -276,6 +282,9 @@ export function AppShell({ onOpenSettings }: { onOpenSettings: () => void }): JS
           collapsed={sidebarCollapsed}
           onToggleCollapsed={handleToggleSidebar}
           onNewConversation={() => void handleNewConversation()}
+          activeProjectName={activeProject?.name ?? null}
+          onOpenSettings={onOpenSettings}
+          onOpenDevMode={onOpenDevMode}
         />
         {showEmptyState ? (
           <EmptyProjectsState onCreate={handleOpenCreateProject} />

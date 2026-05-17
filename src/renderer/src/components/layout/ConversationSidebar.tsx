@@ -8,6 +8,9 @@ interface ConversationSidebarProps {
   collapsed: boolean
   onToggleCollapsed: () => void
   onNewConversation: () => void
+  activeProjectName: string | null
+  onOpenSettings: () => void
+  onOpenDevMode: () => void
 }
 
 export function ConversationSidebar({
@@ -16,7 +19,10 @@ export function ConversationSidebar({
   onSelect,
   collapsed,
   onToggleCollapsed,
-  onNewConversation
+  onNewConversation,
+  activeProjectName,
+  onOpenSettings,
+  onOpenDevMode
 }: ConversationSidebarProps): JSX.Element {
   return (
     <aside className={`conversation-sidebar ${collapsed ? 'is-collapsed' : ''}`}>
@@ -47,6 +53,55 @@ export function ConversationSidebar({
             onSelect={onSelect}
           />
         </>
+      )}
+      {/* Icon strip shown when collapsed (48px wide).
+          v2.0 simplification: clicking the project and conversation icons just
+          expands the full sidebar via onToggleCollapsed rather than showing a
+          popover. Proper popovers are deferred to Phase 6+. */}
+      {collapsed && (
+        <div className="conversation-sidebar__icons">
+          <button
+            type="button"
+            className="conversation-sidebar__icon-button"
+            onClick={onToggleCollapsed}
+            aria-label="Expand sidebar to see projects"
+            title={activeProjectName ?? 'No project'}
+          >
+            <span className="conversation-sidebar__icon-letter">
+              {activeProjectName ? activeProjectName[0].toUpperCase() : '·'}
+            </span>
+          </button>
+          <button
+            type="button"
+            className="conversation-sidebar__icon-button"
+            onClick={onToggleCollapsed}
+            aria-label="Expand sidebar to see conversations"
+            title={`${conversations.length} conversation${conversations.length === 1 ? '' : 's'}`}
+          >
+            💬
+            {conversations.length > 0 && (
+              <span className="conversation-sidebar__icon-badge">{conversations.length}</span>
+            )}
+          </button>
+          <button
+            type="button"
+            className="conversation-sidebar__icon-button"
+            onClick={onOpenSettings}
+            aria-label="Open settings"
+            title="Settings"
+          >
+            ⚙
+          </button>
+          <button
+            type="button"
+            className="conversation-sidebar__icon-button"
+            onClick={onOpenDevMode}
+            aria-label="Open Dev Mode"
+            title="Dev Mode"
+          >
+            🐛
+          </button>
+        </div>
       )}
     </aside>
   )
