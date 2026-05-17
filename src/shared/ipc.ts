@@ -219,9 +219,13 @@ export {
 
 export {
   IPC_CLIPBOARD_READ_PROMPT,
+  IPC_CLIPBOARD_WRITE_GEARED,
   type ClipboardReadFailureCode,
   type ClipboardReadPromptResponse,
-  type ClipboardReadPromptResult
+  type ClipboardReadPromptResult,
+  type ClipboardWriteFailureCode,
+  type ClipboardWriteGearedRequest,
+  type ClipboardWriteGearedResult
 } from './ipc/clipboard'
 
 export type IpcChannelName =
@@ -235,6 +239,7 @@ export type IpcChannelName =
   | 'accounts:changed'
   | 'api:retry-attempt'
   | 'clipboard:read-prompt'
+  | 'clipboard:write-geared'
   | 'conversations:list-by-project'
   | 'conversations:create'
   | 'conversations:update'
