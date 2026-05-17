@@ -30,6 +30,7 @@ import { PricingHandler } from './pricing-handler'
 import type { PricingEntry } from '@shared/ipc/pricing'
 import { ErrorAnalysisHandler } from './error-analysis-handler'
 import { CrashHandler } from './crash-handler'
+import { ClipboardHandler } from './clipboard-handler'
 
 export interface IpcRegistration {
   logBridge: LogBridge
@@ -47,6 +48,7 @@ export interface IpcRegistration {
   pricingHandler: PricingHandler
   errorAnalysisHandler: ErrorAnalysisHandler
   crashHandler: CrashHandler
+  clipboardHandler: ClipboardHandler
   skillsWatcher: SkillsWatcher
   uninstallAll: () => void
 }
@@ -114,6 +116,9 @@ export function registerIpcHandlers(
   const crashHandler = new CrashHandler(logger, broadcast)
   crashHandler.install(ipcMain)
   crashHandler.installUncaughtHandlers()
+
+  const clipboardHandler = new ClipboardHandler(logger)
+  clipboardHandler.install(ipcMain)
 
   // Skills subsystem — user + plugin roots only this phase; project-local
   // scanning lands when Phase 7 wires active-project tracking through here.
@@ -191,6 +196,7 @@ export function registerIpcHandlers(
     pricingHandler,
     errorAnalysisHandler,
     crashHandler,
+    clipboardHandler,
     skillsHandler,
     skillsWatcher,
     uninstallAll: () => {
@@ -208,6 +214,7 @@ export function registerIpcHandlers(
       pricingHandler.uninstall(ipcMain)
       errorAnalysisHandler.uninstall(ipcMain)
       crashHandler.uninstall(ipcMain)
+      clipboardHandler.uninstall(ipcMain)
       void skillsWatcher.stop().then(() => {
         logger.info('skill', 'skills-watcher-stopped', 'Skills filesystem watcher stopped')
       })
