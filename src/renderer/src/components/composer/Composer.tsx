@@ -1,7 +1,6 @@
 import { useCallback, useMemo, useRef, useState, useEffect } from 'react'
 import type { ReactNode } from 'react'
 import type { CostPreview, GearResult } from '@shared/types/gearing'
-import type { GearMeta } from '@shared/types/turns'
 import { useOutsideClick } from '../../hooks/use-outside-click'
 import { rendererLogger } from '../../observability/logger-bridge'
 import { useToast } from '../../hooks/use-toast'
@@ -258,36 +257,26 @@ export function Composer({ conversationId, accountId, accountLabel }: ComposerPr
     rendererLogger.info('ui', 'template-inserted', 'Template inserted into composer', { bodyLength: body.length })
   }
 
-  // TODO(phase-4 Task 5): handleGearSendOriginal + handleGearSendGeared will be renamed
-  // to Copy semantics in Task 5. handleSend is a stub until that refactor lands.
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleSend = async (_finalPrompt: string, _gearMeta: GearMeta | null = null): Promise<void> => {
-    // Phase 4 stub — Task 5 replaces callers with clipboard copy semantics.
+  const handleGearCopyOriginal = (): void => {
+    if (gearState) {
+      setLastCostPreview(gearState.costPreview)
+      rendererLogger.info('ui', 'gear-copy-original', 'User copied original (un-geared) prompt')
+      void handleCopyGeared(gearState.originalPrompt)
+      // Note: handleCopyGeared writes the text to clipboard. "Copy original" reuses
+      // the same handler with the un-geared text. Function name is historical;
+      // semantics is "copy a string to clipboard."
+    }
   }
 
-  const handleGearSendOriginal = (): void => {
-    if (gearState) setLastCostPreview(gearState.costPreview)
-    void handleSend(gearState?.originalPrompt ?? prompt, null)
-    setGearState(null)
-  }
-
-  const handleGearSendGeared = (editedGeared: string): void => {
-    if (!gearState) {
-      void handleSend(editedGeared, null)
-      setGearState(null)
-      return
+  const handleGearCopyGeared = (editedGeared: string): void => {
+    if (gearState) {
+      setLastCostPreview(gearState.costPreview)
+      rendererLogger.info('ui', 'gear-copy-geared', 'User copied geared prompt', {
+        editedLength: editedGeared.length,
+        originalGearedLength: gearState.gearedPrompt.length
+      })
+      void handleCopyGeared(editedGeared)
     }
-    setLastCostPreview(gearState.costPreview)
-    const meta: GearMeta = {
-      originalPrompt: gearState.originalPrompt,
-      gearedPrompt: editedGeared,
-      originalTokens: gearState.tokenBreakdown.originalInputEstimate,
-      gearedTokens: gearState.tokenBreakdown.gearedInputEstimate,
-      haikuMetaTokens: gearState.tokenBreakdown.haikuInputTokens + gearState.tokenBreakdown.haikuOutputTokens,
-      critiqueFlags: gearState.critiqueFlags.map((f) => `${f.severity}: ${f.message}`)
-    }
-    void handleSend(editedGeared, meta)
-    setGearState(null)
   }
 
   const handleGearReGear = (): void => {
@@ -316,9 +305,8 @@ export function Composer({ conversationId, accountId, accountLabel }: ComposerPr
           geared={gearState.gearedPrompt}
           critiqueFlags={gearState.critiqueFlags}
           costPreview={gearState.costPreview}
-          sendDisabled={conversationId === null}
-          onSendOriginal={handleGearSendOriginal}
-          onSendGeared={handleGearSendGeared}
+          onCopyOriginal={handleGearCopyOriginal}
+          onCopyGeared={handleGearCopyGeared}
           onReGear={handleGearReGear}
           onCancel={handleGearCancel}
         />
