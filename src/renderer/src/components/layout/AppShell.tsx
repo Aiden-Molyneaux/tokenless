@@ -23,7 +23,6 @@ import { TopBar } from './TopBar'
 import { ToastHost } from '../notifications/ToastHost'
 import './styles.css'
 
-
 export function AppShell({
   onOpenSettings,
   onOpenDevMode
