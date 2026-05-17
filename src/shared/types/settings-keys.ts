@@ -9,3 +9,5 @@ export const SETTING_GEARING_SEND_CONFIRM = 'gearing.sendConfirm'
 export const SETTING_ONBOARDING_COMPLETE = 'onboarding.complete'
 
 export const SETTING_PRIVACY_ACKNOWLEDGED = 'privacy.acknowledged'
+
+export const SETTING_LAYOUT_SIDEBAR_COLLAPSED = 'layout.sidebarCollapsed'

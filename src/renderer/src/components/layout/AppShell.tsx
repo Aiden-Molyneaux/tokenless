@@ -11,6 +11,7 @@ import {
   SETTING_LAST_ACTIVE_ACCOUNT_ID,
   SETTING_LAST_ACTIVE_PROJECT_ID
 } from '../../hooks/use-settings'
+import { SETTING_LAYOUT_SIDEBAR_COLLAPSED } from '@shared/types/settings-keys'
 import { ConversationSidebar } from './ConversationSidebar'
 import { CreateAccountModal } from './CreateAccountModal'
 import { EditAccountModal } from './EditAccountModal'
@@ -34,6 +35,22 @@ export function AppShell({ onOpenSettings }: { onOpenSettings: () => void }): JS
   const [editProjectOpen, setEditProjectOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
+  // Hydrate sidebar-collapsed state from persisted setting; fall back to width-aware default.
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      const value = await readSetting(SETTING_LAYOUT_SIDEBAR_COLLAPSED)
+      if (cancelled) return
+      if (value !== null) {
+        setSidebarCollapsed(value === 'true')
+      } else {
+        setSidebarCollapsed(window.innerWidth < 900)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   // On-mount restore: read last-active ids from settings and pre-select them if
   // they still exist in the current lists. Uses functional setter form so we
@@ -146,7 +163,15 @@ export function AppShell({ onOpenSettings }: { onOpenSettings: () => void }): JS
   }
 
   const handleToggleSidebar = (): void => {
-    setSidebarCollapsed((c) => !c)
+    setSidebarCollapsed((prev) => {
+      const next = !prev
+      void writeSetting(SETTING_LAYOUT_SIDEBAR_COLLAPSED, next ? 'true' : 'false').catch((err) => {
+        rendererLogger.warn('ui', 'settings-write-failed', 'Failed to persist sidebarCollapsed', {
+          errorString: err instanceof Error ? err.message : String(err)
+        })
+      })
+      return next
+    })
   }
 
   const handleOpenCreateProject = (): void => {
