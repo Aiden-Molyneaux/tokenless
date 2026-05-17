@@ -70,6 +70,9 @@ export function Composer({ conversationId, accountId, accountLabel }: ComposerPr
   const [authMissingOpen, setAuthMissingOpen] = useState(false)
   const [templatesOpen, setTemplatesOpen] = useState(false)
   const [lastCostPreview, setLastCostPreview] = useState<CostPreview | null>(null)
+  const [captureHint, setCaptureHint] = useState<string | null>(null)
+  const [captureDisabled, setCaptureDisabled] = useState<boolean>(false)
+  const captureHintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const promptRef = useRef(prompt)
   const { push: pushToast } = useToast()
   const liveEstimate = useLiveCostEstimate({ prompt, model, breadth })
@@ -78,6 +81,11 @@ export function Composer({ conversationId, accountId, accountLabel }: ComposerPr
   useEffect(() => {
     promptRef.current = prompt
   }, [prompt])
+
+  // Cleanup the capture hint timer on unmount.
+  useEffect(() => () => {
+    if (captureHintTimerRef.current) clearTimeout(captureHintTimerRef.current)
+  }, [])
 
   // Load gearing defaults from the settings table on mount.
   // GearingDefaultsSection writes to the same keys, so changes take effect on next Composer mount.
@@ -221,13 +229,38 @@ export function Composer({ conversationId, accountId, accountLabel }: ComposerPr
   }
 
   const handleCapture = async (): Promise<void> => {
+    if (captureDisabled) return
     const result = await window.tokenless.clipboard.readPrompt()
     if (result.ok) {
       setPrompt(result.data.text)
+      setCaptureHint(null)
       return
     }
-    // Error handling (debounce, hint, toasts) — Task 6.
-    // For now, silently do nothing on failure paths so the happy path is testable.
+    if (result.code === 'EMPTY') {
+      setCaptureHint('Clipboard is empty. Copy text in your terminal first, then click Capture.')
+      setCaptureDisabled(true)
+      if (captureHintTimerRef.current) clearTimeout(captureHintTimerRef.current)
+      captureHintTimerRef.current = setTimeout(() => {
+        setCaptureDisabled(false)
+        setCaptureHint(null)
+        captureHintTimerRef.current = null
+      }, 3000)
+      return
+    }
+    if (result.code === 'TOO_LARGE') {
+      pushToast({
+        message: 'Clipboard contains more than 32 KB. Trim your selection.',
+        severity: 'warn'
+      })
+      return
+    }
+    if (result.code === 'READ_FAILED') {
+      pushToast({
+        message: "Couldn't read clipboard. Check Settings → Privacy → Clipboard permissions.",
+        severity: 'error'
+      })
+      return
+    }
   }
 
   const handleCommit = (): void => {
@@ -320,6 +353,7 @@ export function Composer({ conversationId, accountId, accountLabel }: ComposerPr
               disableGear={sending || gearing}
               disableSend={sending || conversationId === null}
               onCapture={() => void handleCapture()}
+              captureDisabled={captureDisabled}
               onGear={handleGear}
               onSend={() => void handleSend(prompt)}
               onTemplates={() => setTemplatesOpen((v) => !v)}
@@ -334,6 +368,9 @@ export function Composer({ conversationId, accountId, accountLabel }: ComposerPr
             )}
           </div>
           <TelemetryStrip liveEstimate={liveEstimate} lastCostPreview={lastCostPreview} prompt={prompt} />
+          {captureHint && (
+            <p className="capture-hint" role="status">{captureHint}</p>
+          )}
         </div>
       )}
       <AuthMissingModal open={authMissingOpen} onDismiss={() => setAuthMissingOpen(false)} accountLabel={accountLabel} />

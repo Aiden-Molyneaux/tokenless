@@ -161,6 +161,14 @@
   color: var(--tl-mute);
 }
 
+/* ===== Capture hint ===== */
+
+.capture-hint {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--text-muted, #666);
+}
+
 /* ===== TemplatePickerPopover ===== */
 
 .actions-row-host { position: relative; }
