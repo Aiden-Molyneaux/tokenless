@@ -8,6 +8,8 @@ interface ActionsRowProps {
    *  is an Anthropic-API operation that does NOT need a live PTY (Phase 5
    *  may want conversationId for rolling-summary context but can handle null). */
   disableSend?: boolean
+  onCapture: () => void
+  captureDisabled?: boolean
   onGear: () => void
   onSend: () => void
   onTemplates: () => void
@@ -20,10 +22,19 @@ interface ActionsRowProps {
 // Commit + Push pre-fill the composer with canned git prompts (Phase 7
 // wires that; Phase 2B stubs the callbacks).
 
-export function ActionsRow({ promptEmpty, disableGear = false, disableSend = false, onGear, onSend, onTemplates, onCommit, onPush }: ActionsRowProps): JSX.Element {
+export function ActionsRow({ promptEmpty, disableGear = false, disableSend = false, onCapture, captureDisabled = false, onGear, onSend, onTemplates, onCommit, onPush }: ActionsRowProps): JSX.Element {
   return (
     <div className="actions-row">
       <div className="actions-row__primary">
+        <button
+          type="button"
+          className="actions-row__button actions-row__button--capture"
+          onClick={onCapture}
+          disabled={captureDisabled}
+          aria-label="Capture prompt from clipboard"
+        >
+          Capture
+        </button>
         <InfoTooltip helperText="Rewrite your prompt for token efficiency. Haiku optimizes for the selected configs.">
           <button
             type="button"

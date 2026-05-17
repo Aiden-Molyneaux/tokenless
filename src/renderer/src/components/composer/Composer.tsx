@@ -220,6 +220,16 @@ export function Composer({ conversationId, accountId, accountLabel }: ComposerPr
     await actuallySend(finalPrompt, gearMeta)
   }
 
+  const handleCapture = async (): Promise<void> => {
+    const result = await window.tokenless.clipboard.readPrompt()
+    if (result.ok) {
+      setPrompt(result.data.text)
+      return
+    }
+    // Error handling (debounce, hint, toasts) — Task 6.
+    // For now, silently do nothing on failure paths so the happy path is testable.
+  }
+
   const handleCommit = (): void => {
     rendererLogger.info('ui', 'commit-clicked', 'Commit (stub) — pre-filling composer')
     setPrompt('Stage and commit all current changes. Write a concise commit message focused on the *why*, not the *what*. Do not push.')
@@ -309,6 +319,7 @@ export function Composer({ conversationId, accountId, accountLabel }: ComposerPr
               promptEmpty={prompt.length === 0}
               disableGear={sending || gearing}
               disableSend={sending || conversationId === null}
+              onCapture={() => void handleCapture()}
               onGear={handleGear}
               onSend={() => void handleSend(prompt)}
               onTemplates={() => setTemplatesOpen((v) => !v)}

@@ -82,6 +82,12 @@
   cursor: not-allowed;
 }
 
+.actions-row__button--capture {
+  /* No special accent in phase 3 — the button gets visual prominence in
+     phase 5 layout work. Phase 3 just renders it identical to other
+     secondary buttons. */
+}
+
 .actions-row__button--gear {
   background: var(--tl-orange);
   border-color: var(--tl-orange);
