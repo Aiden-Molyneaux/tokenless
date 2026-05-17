@@ -21,8 +21,6 @@ interface ProjectRow {
   default_model: string | null
   default_breadth: string | null
   default_format: string | null
-  default_commit_prompt: string | null
-  default_push_prompt: string | null
   notes: string | null
   always_include_files_json: string | null
   relevant_skill_ids_json: string | null
@@ -49,8 +47,6 @@ function rowToProject(r: ProjectRow): Project {
     defaultModel: r.default_model as ModelHint | null,
     defaultBreadth: r.default_breadth as BreadthHint | null,
     defaultFormat: r.default_format as FormatHint | null,
-    defaultCommitPrompt: r.default_commit_prompt,
-    defaultPushPrompt: r.default_push_prompt,
     notes: r.notes,
     alwaysIncludeFiles: parseJsonArray<string>(r.always_include_files_json),
     relevantSkillIds: parseJsonArray<number>(r.relevant_skill_ids_json),
@@ -108,8 +104,6 @@ export function updateProject(db: Database, input: UpdateProjectInput): Project 
     ...(input.defaultModel !== undefined && { defaultModel: input.defaultModel }),
     ...(input.defaultBreadth !== undefined && { defaultBreadth: input.defaultBreadth }),
     ...(input.defaultFormat !== undefined && { defaultFormat: input.defaultFormat }),
-    ...(input.defaultCommitPrompt !== undefined && { defaultCommitPrompt: input.defaultCommitPrompt }),
-    ...(input.defaultPushPrompt !== undefined && { defaultPushPrompt: input.defaultPushPrompt }),
     ...(input.notes !== undefined && { notes: input.notes }),
     ...(input.alwaysIncludeFiles !== undefined && { alwaysIncludeFiles: input.alwaysIncludeFiles }),
     ...(input.relevantSkillIds !== undefined && { relevantSkillIds: input.relevantSkillIds }),
@@ -124,8 +118,6 @@ export function updateProject(db: Database, input: UpdateProjectInput): Project 
       default_model = ?,
       default_breadth = ?,
       default_format = ?,
-      default_commit_prompt = ?,
-      default_push_prompt = ?,
       notes = ?,
       always_include_files_json = ?,
       relevant_skill_ids_json = ?,
@@ -138,8 +130,6 @@ export function updateProject(db: Database, input: UpdateProjectInput): Project 
     next.defaultModel,
     next.defaultBreadth,
     next.defaultFormat,
-    next.defaultCommitPrompt,
-    next.defaultPushPrompt,
     next.notes,
     JSON.stringify(next.alwaysIncludeFiles),
     JSON.stringify(next.relevantSkillIds),

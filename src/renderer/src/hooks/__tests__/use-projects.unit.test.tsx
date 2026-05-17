@@ -18,8 +18,6 @@ function makeProject(id: number, name: string): Project {
     defaultModel: null,
     defaultBreadth: null,
     defaultFormat: null,
-    defaultCommitPrompt: null,
-    defaultPushPrompt: null,
     notes: null,
     alwaysIncludeFiles: [],
     relevantSkillIds: [],

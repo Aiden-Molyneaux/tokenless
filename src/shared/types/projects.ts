@@ -12,8 +12,6 @@ export interface Project {
   readonly defaultModel: ModelHint | null
   readonly defaultBreadth: BreadthHint | null
   readonly defaultFormat: FormatHint | null
-  readonly defaultCommitPrompt: string | null
-  readonly defaultPushPrompt: string | null
   readonly notes: string | null
   readonly alwaysIncludeFiles: readonly string[]
   readonly relevantSkillIds: readonly number[]
@@ -39,8 +37,6 @@ export interface UpdateProjectInput {
   readonly defaultModel?: ModelHint | null
   readonly defaultBreadth?: BreadthHint | null
   readonly defaultFormat?: FormatHint | null
-  readonly defaultCommitPrompt?: string | null
-  readonly defaultPushPrompt?: string | null
   readonly notes?: string | null
   readonly alwaysIncludeFiles?: readonly string[]
   readonly relevantSkillIds?: readonly number[]
