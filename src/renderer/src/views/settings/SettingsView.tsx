@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { AccountsSection } from './AccountsSection'
 import { GearingDefaultsSection } from './GearingDefaultsSection'
-import { SendConfirmToggle } from './SendConfirmToggle'
 import { DevModeToggle } from './DevModeToggle'
 import { TelemetrySection } from './TelemetrySection'
 import { PathsSection } from './PathsSection'
@@ -15,8 +14,8 @@ interface SettingsViewProps {
   onRerunOnboarding: () => void
 }
 
-// SettingsView — top-level settings route. Contains six sections:
-// Accounts, GearingDefaults, SendConfirm, DevMode, Telemetry, Paths.
+// SettingsView — top-level settings route. Contains five sections:
+// Accounts, GearingDefaults, DevMode, Telemetry, Paths.
 // Rendered by App.tsx when view === 'settings'.
 
 export function SettingsView({ onBack, devMode, onDevModeChange, onRerunOnboarding }: SettingsViewProps): JSX.Element {
@@ -32,7 +31,6 @@ export function SettingsView({ onBack, devMode, onDevModeChange, onRerunOnboardi
       <div className="settings-view__body">
         <AccountsSection />
         <GearingDefaultsSection />
-        <SendConfirmToggle />
         <DevModeToggle devMode={devMode} onDevModeChange={onDevModeChange} />
         <TelemetrySection />
         <PathsSection />
