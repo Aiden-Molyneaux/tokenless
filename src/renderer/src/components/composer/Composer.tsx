@@ -298,20 +298,8 @@ export function Composer({ conversationId, accountId, accountLabel }: ComposerPr
 
   return (
     <>
-      {gearState ? (
-        <GearReviewPane
-          key={gearState.gearedPrompt}
-          original={gearState.originalPrompt}
-          geared={gearState.gearedPrompt}
-          critiqueFlags={gearState.critiqueFlags}
-          costPreview={gearState.costPreview}
-          onCopyOriginal={handleGearCopyOriginal}
-          onCopyGeared={handleGearCopyGeared}
-          onReGear={handleGearReGear}
-          onCancel={handleGearCancel}
-        />
-      ) : (
-        <div className="composer">
+      <div className="composer-shell">
+        <div className="composer-shell__main">
           <PromptTextarea value={prompt} onChange={setPrompt} />
           <ConfigsRow
             model={model}
@@ -351,7 +339,22 @@ export function Composer({ conversationId, accountId, accountLabel }: ComposerPr
             <p className="capture-hint" role="status">{captureHint}</p>
           )}
         </div>
-      )}
+        {gearState && (
+          <div className="gear-review-drawer">
+            <GearReviewPane
+              key={gearState.gearedPrompt}
+              original={gearState.originalPrompt}
+              geared={gearState.gearedPrompt}
+              critiqueFlags={gearState.critiqueFlags}
+              costPreview={gearState.costPreview}
+              onCopyOriginal={handleGearCopyOriginal}
+              onCopyGeared={handleGearCopyGeared}
+              onReGear={handleGearReGear}
+              onClose={handleGearCancel}
+            />
+          </div>
+        )}
+      </div>
       <AuthMissingModal open={authMissingOpen} onDismiss={() => setAuthMissingOpen(false)} accountLabel={accountLabel} />
     </>
   )

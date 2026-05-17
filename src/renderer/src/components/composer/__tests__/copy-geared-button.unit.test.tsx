@@ -87,7 +87,9 @@ function renderComposer(): ReturnType<typeof render> {
 
 // ---------- Shared helper: gear up the Composer ----------
 // Fills the prompt textarea, mocks gear to return the fixed result, clicks Gear,
-// and waits for the GearReviewPane to appear (signalled by the "Copy geared" button).
+// and waits for the GearReviewPane drawer to appear (signalled by its heading).
+// With the drawer layout, both ActionsRow and GearReviewPane render "Copy geared"
+// buttons simultaneously, so we wait for the pane heading instead.
 
 async function runGearFlow(): Promise<void> {
   gearMock.mockResolvedValue({ ok: true, data: { result: FIXED_GEAR_RESULT } })
@@ -105,13 +107,30 @@ async function runGearFlow(): Promise<void> {
     await Promise.resolve()
   })
 
-  await screen.findByRole('button', { name: /copy geared/i })
+  // Wait for the GearReviewPane drawer heading to appear.
+  await screen.findByRole('heading', { name: /review geared prompt/i })
 }
 
 // ---------- Helper: click a button with async settle ----------
 
 async function clickButton(name: RegExp | string): Promise<void> {
   const btn = screen.getByRole('button', { name })
+  await act(async () => {
+    fireEvent.click(btn)
+    await Promise.resolve()
+    await Promise.resolve()
+  })
+}
+
+// ---------- Helper: click the GearReviewPane's "Copy geared" button ----------
+// Distinguishes the pane button from the ActionsRow "Copy geared prompt to
+// clipboard" button that is also rendered in the drawer layout.
+
+async function clickGearPaneCopyGeared(): Promise<void> {
+  // The GearReviewPane "Copy geared" button has no extra aria-label, so its
+  // accessible name is exactly "Copy geared" (vs ActionsRow: "Copy geared
+  // prompt to clipboard"). Use exact match to pick the right one.
+  const btn = screen.getByRole('button', { name: 'Copy geared' })
   await act(async () => {
     fireEvent.click(btn)
     await Promise.resolve()
@@ -146,8 +165,9 @@ describe('Composer / Copy Geared', () => {
 
     await runGearFlow()
 
-    // Click the GearReviewPane "Copy geared" button.
-    await clickButton(/copy geared/i)
+    // Click the GearReviewPane "Copy geared" button (distinct from ActionsRow's
+    // "Copy geared prompt to clipboard" button which is also rendered in the drawer layout).
+    await clickGearPaneCopyGeared()
 
     await waitFor(() => {
       expect(writeGearedMock).toHaveBeenCalledWith(FIXED_GEAR_RESULT.gearedPrompt)
@@ -159,7 +179,7 @@ describe('Composer / Copy Geared', () => {
     writeGearedMock.mockResolvedValue({ ok: true })
 
     await runGearFlow()
-    await clickButton(/copy geared/i)
+    await clickGearPaneCopyGeared()
 
     // Success toast appears.
     await waitFor(() => {
@@ -182,7 +202,7 @@ describe('Composer / Copy Geared', () => {
     writeGearedMock.mockResolvedValue({ ok: false, code: 'WRITE_FAILED' })
 
     await runGearFlow()
-    await clickButton(/copy geared/i)
+    await clickGearPaneCopyGeared()
 
     // Error toast appears.
     await waitFor(() => {
@@ -190,8 +210,8 @@ describe('Composer / Copy Geared', () => {
     })
     expect(screen.getByRole('alert').textContent).toMatch(/couldn't write to clipboard/i)
 
-    // GearReviewPane is still visible — the "Copy geared" button must still be
-    // present, meaning state was not cleared.
-    expect(screen.getByRole('button', { name: /copy geared/i })).toBeInTheDocument()
+    // GearReviewPane is still visible — the drawer heading must still be present,
+    // confirming gearState was not cleared.
+    expect(screen.getByRole('heading', { name: /review geared prompt/i })).toBeInTheDocument()
   })
 })

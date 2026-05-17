@@ -13,7 +13,7 @@ interface GearReviewPaneProps {
   onCopyOriginal: () => void
   onCopyGeared: (editedGeared: string) => void
   onReGear: () => void
-  onCancel: () => void
+  onClose: () => void
 }
 
 // Replaces Composer's main view after the user clicks Gear. Shows the
@@ -34,7 +34,7 @@ export function GearReviewPane({
   onCopyOriginal,
   onCopyGeared,
   onReGear,
-  onCancel
+  onClose
 }: GearReviewPaneProps): JSX.Element {
   const [editedGeared, setEditedGeared] = useState(geared)
 
@@ -50,8 +50,8 @@ export function GearReviewPane({
         <button
           type="button"
           className="gear-review-pane__cancel"
-          onClick={onCancel}
-          aria-label="Cancel and return to composer"
+          onClick={onClose}
+          aria-label="Close gear review"
         >
           ✕
         </button>
