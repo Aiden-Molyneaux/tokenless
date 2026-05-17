@@ -32,7 +32,7 @@ const IS_WIN = process.platform === 'win32'
 // these once we have measurements.
 const BASELINE_ESTIMATES = {
   rebuildElectron: 25,  // electron-rebuild or prebuild-install fallback
-  rebuildNode: 15,      // npm rebuild better-sqlite3 node-pty
+  rebuildNode: 15,      // npm rebuild better-sqlite3
   devStart: 12,         // npm run dev → Electron window appears
   devStop: 3,           // taskkill / pkill the dev tree
   testRun: 18,          // npm run test:run (vitest run)
