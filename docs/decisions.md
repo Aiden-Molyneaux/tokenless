@@ -900,3 +900,19 @@ B) Plaintext in the existing `api_key_ref` column of the SQLite DB. Simple, no n
 
 **Discovered:** Phase 5 ActionsRow cleanup; the final button count was settled after all v2 flow buttons were implemented.
 
+
+
+## ADR-053 (2026-05-17) — Key Composer by conversationId to isolate per-conversation state
+
+**Context:** Composer.tsx owns local `useState` for `prompt`, `gearState`, `captureHint`, `captureDisabled`, `lastCostPreview`, and timer refs. AppShell switches `activeConversationId` by passing a new prop down through MainPane; React reuses the same Composer component instance across the switch, so all `useState` values persist. The `useDraftAutosave` hook has a one-sided contract: on conversation switch, it calls `setPrompt(draft.body)` only IF a stored draft exists for the new conversation. When the new conversation has no draft (the common case for "new conversation" — the row was just created), nothing clears `prompt`, so the previous conversation's text remains in the textarea. Worse: after 750ms, the autosave debounce fires for the new conversation with the carried-over body, persisting the leak as the new conversation's draft. The same shape applies to `gearState` — the GearReview drawer continues to show the previous conversation's geared text after a switch, and "Copy Geared" would copy data from the wrong conversation.
+
+**Options considered:**
+- A) Patch each leak individually: have `useDraftAutosave` unconditionally call `setPrompt('')` when the new conversation has no draft; add a separate `useEffect` for `gearState` reset; add another for `captureHint`; etc. Every new piece of Composer state added in future phases needs its own conversation-switch reset.
+- B) Key the Composer by `conversationId` in MainPane: `<Composer key={conversationId ?? 'none'} ... />`. React unmounts the old Composer + mounts a fresh instance on every switch, naturally resetting every `useState`, every `useRef`, and running every effect cleanup.
+
+**Choice:** B. MainPane renders `<Composer key={conversationId ?? 'none'} conversationId={...} ... />`.
+
+**Reasoning:** The bug is not a single off-by-one in the autosave hook — it is that the Composer's component lifetime did not match the conversation's lifetime. Keying by conversationId aligns those two concepts: the Composer is the conversation, structurally. Any state added to Composer in future phases is automatically conversation-scoped without per-field reset effects. The cost is one extra React mount on each conversation switch (negligible at human-click speeds) plus settings-driven defaults reload from the settings table on each switch — which matches user intent (per-conversation model/breadth/format overrides on the `conversations` row can later supersede the settings defaults inside Composer, and that would naturally work under remount semantics).
+
+**Discovered:** v2.0 post-release review of the conversation-switch flow uncovered that switching conversations or creating a new one carried the previous prompt + gearState into the new conversation's view.
+
