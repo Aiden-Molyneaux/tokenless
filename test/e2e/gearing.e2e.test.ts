@@ -41,7 +41,7 @@ test.describe('Phase 5A gearing flow', () => {
     await win.getByPlaceholder('My Project').fill('Gear Test')
     await win.getByPlaceholder('C:/path/to/project').fill(process.cwd())
     await win.getByRole('button', { name: /^create$/i }).click()
-    await win.waitForSelector('.composer', { timeout: 5000 })
+    await win.waitForSelector('.composer-shell', { timeout: 5000 })
 
     // Stub the gearing IPC handler at the main-process level.
     //
@@ -98,8 +98,8 @@ test.describe('Phase 5A gearing flow', () => {
     // The cost preview should show the dollar amount
     await expect(win.getByText(/0\.0123/)).toBeVisible()
 
-    // Click "Copy geared" — verifies the action button exists and closes the pane.
-    await win.getByRole('button', { name: /copy geared/i }).click()
+    // Click "Copy geared" — use class to avoid strict-mode violation (ActionsRow + pane both have the button now).
+    await win.locator('.actions-row__button--copy-geared').click()
     await expect(win.locator('.gear-review-pane')).toHaveCount(0, { timeout: 5000 })
   })
 })

@@ -42,7 +42,7 @@ test.describe('Phase 3 + 4 clipboard flow', () => {
     await page.getByPlaceholder('My Project').fill(name)
     await page.getByPlaceholder('C:/path/to/project').fill(path)
     await page.getByRole('button', { name: /^create$/i }).click()
-    await page.waitForSelector('.composer', { timeout: 5000 })
+    await page.waitForSelector('.composer-shell', { timeout: 5000 })
   }
 
   test('Capture button loads sanitized clipboard text into the prompt textarea', async () => {
@@ -126,8 +126,8 @@ test.describe('Phase 3 + 4 clipboard flow', () => {
     await win.getByRole('button', { name: /^gear$/i }).click()
     await expect(win.locator('.gear-review-pane')).toBeVisible({ timeout: 5000 })
 
-    // Step 3: Click "Copy geared"
-    await win.getByRole('button', { name: /copy geared/i }).click()
+    // Step 3: Click "Copy geared" — use class to avoid strict-mode violation (ActionsRow + pane both have the button now)
+    await win.locator('.actions-row__button--copy-geared').click()
 
     // Verify the clipboard now contains the geared text.
     const clipboardAfter = await app.evaluate(({ clipboard }) => clipboard.readText())

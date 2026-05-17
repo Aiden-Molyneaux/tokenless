@@ -841,3 +841,31 @@ Hard to trigger manually (Haiku usually obeys). The parser handles this via Zod.
 **Variant — Copy original:** Repeat steps 1-2. Instead of clicking "Copy geared", click "Copy original". Expect: the clipboard receives the ORIGINAL un-geared prompt (the text you typed before Gear ran). Paste in Notepad confirms.
 
 **Failure case (hard to reproduce manually):** If the OS clipboard is locked by another process during the write, the toast "Couldn't write to clipboard. Geared text remains in TokenLess — try Copy Geared again." appears, and the composer state is preserved so the user can retry. Verified in the integration test by injecting a fake clipboard that throws on writeText.
+
+
+## S-v2.3: Half-screen layout (Phase 5)
+
+**Setup:** Resize the TokenLess window to 720px wide × 900px tall (roughly half of a 1440p monitor). For comparison, also test at 600×900 (very narrow) and 1280×900 (wide).
+
+**At 720×900:**
+- Sidebar should be collapsed to the icon strip by default (first launch with this width).
+- TopBar should fit on a single 36px row without overflow: account initial, telemetry pill, window controls.
+- Composer textarea + ConfigsRow + 5-button ActionsRow visible.
+- Empty-state hint: "Capture a prompt from your terminal (Ctrl+C in terminal → click Capture)." visible when no prompt typed.
+- Click Capture (after copying something elsewhere) → text loads.
+- Click Gear → GearReviewPane drawer slides in from below, side-by-side original + geared.
+- Click Copy Geared in ActionsRow → text on clipboard, composer + drawer clear.
+
+**At 600×900:**
+- Same flow, but the GearReviewPane drawer's original/geared panes stack vertically.
+- ConfigsRow may overflow horizontally (known Phase 6 cleanup target — not a regression).
+
+**At 1280×900:**
+- Sidebar expanded by default.
+- Same flow, all widgets fit comfortably.
+
+**Manual sidebar toggle:** Click the chevron at the top of the sidebar. At any width, the sidebar collapses/expands. Setting persists across app restarts.
+
+**Drawer chevron:** Click the ▾ in the GearReviewPane header. The drawer closes, geared text is discarded (same effect as the Discard button).
+
+**Discard button:** From any state (with or without geared text), clicking Discard clears the composer + draft + closes the drawer.

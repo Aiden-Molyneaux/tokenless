@@ -55,7 +55,7 @@ test('app shell renders TopBar brand + ConversationSidebar + MainPane with compo
   const mainPane = page.locator('.main-pane')
   await expect(mainPane).toBeVisible()
 
-  await expect(page.locator('.composer')).toBeVisible()
+  await expect(page.locator('.composer-shell')).toBeVisible()
   // v2: embedded terminal removed; the user runs Claude Code in their own
   // terminal and TokenLess captures prompts via the clipboard (phase 3).
 })
