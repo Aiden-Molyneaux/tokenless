@@ -5,6 +5,8 @@ interface ConversationSidebarProps {
   conversations: readonly Conversation[]
   activeId: number | null
   onSelect: (id: number) => void
+  onRenameConversation: (id: number, newTitle: string) => void
+  onRequestDeleteConversation: (id: number) => void
   collapsed: boolean
   onToggleCollapsed: () => void
   onNewConversation: () => void
@@ -17,6 +19,8 @@ export function ConversationSidebar({
   conversations,
   activeId,
   onSelect,
+  onRenameConversation,
+  onRequestDeleteConversation,
   collapsed,
   onToggleCollapsed,
   onNewConversation,
@@ -51,6 +55,8 @@ export function ConversationSidebar({
             conversations={conversations}
             activeId={activeId}
             onSelect={onSelect}
+            onRename={onRenameConversation}
+            onRequestDelete={onRequestDeleteConversation}
           />
         </>
       )}

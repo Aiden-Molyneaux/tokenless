@@ -12,6 +12,7 @@ import {
   SETTING_LAST_ACTIVE_PROJECT_ID
 } from '../../hooks/use-settings'
 import { SETTING_LAYOUT_SIDEBAR_COLLAPSED } from '@shared/types/settings-keys'
+import { ConfirmModal } from '../common/ConfirmModal'
 import { ConversationSidebar } from './ConversationSidebar'
 import { CreateAccountModal } from './CreateAccountModal'
 import { EditAccountModal } from './EditAccountModal'
@@ -117,8 +118,9 @@ export function AppShell({
     }
   }, [activeProjectId])
 
-  const { conversations } = useConversations(activeProjectId)
+  const { conversations, update: updateConversation, remove: removeConversation } = useConversations(activeProjectId)
   const [activeConversationId, setActiveConversationId] = useState<number | null>(null)
+  const [pendingDeleteConversationId, setPendingDeleteConversationId] = useState<number | null>(null)
 
   // Reset active conversation when project changes.
   useEffect(() => {
@@ -165,6 +167,49 @@ export function AppShell({
     rendererLogger.info('ui', 'new-conversation', 'New conversation created', {
       conversationId: created.data.conversation.id
     })
+  }
+
+  const handleRenameConversation = async (id: number, newTitle: string): Promise<void> => {
+    const updated = await updateConversation({ id, title: newTitle })
+    if (updated) {
+      rendererLogger.info('ui', 'conversation-rename', 'Conversation renamed', {
+        conversationId: id,
+        newTitle
+      })
+    } else {
+      rendererLogger.warn('ui', 'conversation-rename-failed', 'Rename returned null', {
+        conversationId: id
+      })
+    }
+  }
+
+  const handleRequestDeleteConversation = (id: number): void => {
+    setPendingDeleteConversationId(id)
+  }
+
+  const handleConfirmDeleteConversation = async (): Promise<void> => {
+    const id = pendingDeleteConversationId
+    if (id === null) return
+    setPendingDeleteConversationId(null)
+    const removed = await removeConversation(id)
+    if (!removed) {
+      rendererLogger.warn('ui', 'conversation-delete-failed', 'Delete returned false', {
+        conversationId: id
+      })
+      return
+    }
+    rendererLogger.info('ui', 'conversation-delete', 'Conversation deleted', {
+      conversationId: id
+    })
+    // If the deleted conversation was active, fall back to the next available
+    // conversation in the list (or null if this was the last one). The
+    // conversations:onChanged broadcast refetches the list shortly after;
+    // setting activeConversationId before the refetch is safe because the
+    // Composer is keyed by conversationId and will remount on the new value.
+    if (activeConversationId === id) {
+      const fallback = conversations.find((c) => c.id !== id)?.id ?? null
+      setActiveConversationId(fallback)
+    }
   }
 
   const handleToggleSidebar = (): void => {
@@ -278,6 +323,8 @@ export function AppShell({
           conversations={conversations}
           activeId={activeConversationId}
           onSelect={handleSelectConversation}
+          onRenameConversation={(id, newTitle) => void handleRenameConversation(id, newTitle)}
+          onRequestDeleteConversation={handleRequestDeleteConversation}
           collapsed={sidebarCollapsed}
           onToggleCollapsed={handleToggleSidebar}
           onNewConversation={() => void handleNewConversation()}
@@ -314,6 +361,20 @@ export function AppShell({
         onClose={() => setEditProjectOpen(false)}
         onUpdate={handleUpdateProject}
         onDelete={handleDeleteProject}
+      />
+      <ConfirmModal
+        open={pendingDeleteConversationId !== null}
+        title="Delete conversation?"
+        message={(() => {
+          const c = conversations.find((c) => c.id === pendingDeleteConversationId)
+          const name = c?.title ?? 'Untitled'
+          return `Delete "${name}"? This also clears its draft and per-prompt telemetry. This action cannot be undone.`
+        })()}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+        onConfirm={() => void handleConfirmDeleteConversation()}
+        onCancel={() => setPendingDeleteConversationId(null)}
       />
       <ToastHost />
     </div>

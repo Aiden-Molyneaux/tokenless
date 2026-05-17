@@ -5,9 +5,17 @@ interface ConversationListProps {
   conversations: readonly Conversation[]
   activeId: number | null
   onSelect: (id: number) => void
+  onRename: (id: number, newTitle: string) => void
+  onRequestDelete: (id: number) => void
 }
 
-export function ConversationList({ conversations, activeId, onSelect }: ConversationListProps): JSX.Element {
+export function ConversationList({
+  conversations,
+  activeId,
+  onSelect,
+  onRename,
+  onRequestDelete
+}: ConversationListProps): JSX.Element {
   if (conversations.length === 0) {
     return <p className="conversation-list__empty">No conversations yet.</p>
   }
@@ -19,6 +27,8 @@ export function ConversationList({ conversations, activeId, onSelect }: Conversa
           conversation={c}
           isActive={c.id === activeId}
           onSelect={onSelect}
+          onRename={onRename}
+          onRequestDelete={onRequestDelete}
         />
       ))}
     </ul>

@@ -869,3 +869,37 @@ Hard to trigger manually (Haiku usually obeys). The parser handles this via Zod.
 **Drawer chevron:** Click the ▾ in the GearReviewPane header. The drawer closes, geared text is discarded (same effect as the Discard button).
 
 **Discard button:** From any state (with or without geared text), clicking Discard clears the composer + draft + closes the drawer.
+
+
+## S-v2.4: Conversation CRUD via right-click (post-v2.0)
+
+**Setup:** Launch the app with at least one project + one conversation. Sidebar must be expanded (not collapsed to icon strip) — context menu is unreachable in collapsed mode.
+
+**Create:** Click "+ New Conversation" at the top of the sidebar. A new row appears with title "Untitled". The new row is auto-selected; Composer is empty.
+
+**Rename (happy path):**
+1. Right-click an existing conversation row → context menu appears at the cursor position with **Rename** and **Delete** items.
+2. Click **Rename** → the title is replaced inline by a text input pre-filled with the current title, autofocused and select-all'd.
+3. Type a new title (e.g., "Refactor auth middleware") and press **Enter** → the input commits the trimmed value via `conversations.update`; the row re-renders with the new title.
+
+**Rename (cancel):**
+1. Right-click → Rename.
+2. Type something different.
+3. Press **Esc** OR click outside the input. Expect: the row reverts to the original title; no IPC fires.
+
+**Rename (guards):**
+1. Right-click → Rename. Clear the input (empty/whitespace only). Press Enter. Expect: no IPC fires; rename cancels back to the original title.
+2. Right-click → Rename. Don't change anything. Press Enter. Expect: no IPC fires (no-op).
+
+**Delete (happy path):**
+1. Right-click → click **Delete** → ConfirmModal appears with title `Delete conversation?` and message containing the conversation's title plus a warning that drafts + telemetry will be cleared.
+2. Click **Delete** (danger variant button) → IPC fires; the row disappears from the sidebar; if the deleted row was active, the next conversation in the list becomes active (or Composer goes to empty-state if it was the last conversation).
+3. Click **Cancel** instead → modal dismisses; row remains.
+
+**Context menu dismissal:**
+- Press **Esc** while menu is open → menu closes.
+- Click anywhere outside the menu → menu closes.
+- Right-click a different row → previous menu closes; new menu opens on the new row.
+
+**Collapsed sidebar:** Right-click is not reachable when sidebar is collapsed to the icon strip. Users must expand first (chevron toggle at the top of the sidebar).
+

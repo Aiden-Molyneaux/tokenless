@@ -916,3 +916,27 @@ B) Plaintext in the existing `api_key_ref` column of the SQLite DB. Simple, no n
 
 **Discovered:** v2.0 post-release review of the conversation-switch flow uncovered that switching conversations or creating a new one carried the previous prompt + gearState into the new conversation's view.
 
+
+
+## ADR-054 (2026-05-17) — Conversation Update + Delete via right-click context menu only
+
+**Context:** The conversations DAO + IPC + `useConversations` hook all expose `create`, `update`, and `remove` operations as of v2.0. The "+ New Conversation" button in the sidebar exercises `create`. There was no UI affordance for `update` (rename) or `remove` (delete) — the destructive + mutating operations were unreachable to the user despite being fully implemented at the data layer.
+
+**Options considered:**
+- A) Always-visible row actions: small ✎ and ✕ icons on each `ConversationListItem`. Discoverable but visually noisy — the sidebar is a list view, not a control panel, and at half-screen widths the row meta (model badge + relative time) already eats most of the horizontal budget.
+- B) Hover-revealed row actions: same icons but only on `:hover`. Hides the clutter at rest, but `:hover` is invisible on touchscreens and on keyboard-only navigation. Still adds DOM weight to every row.
+- C) Right-click context menu: standard OS-level idiom for "secondary actions on a list row." Zero visual weight at rest. Click-outside / Esc / context-menu-on-another-row dismisses naturally. Inline rename (input replaces the title in place) provides immediate edit affordance; delete bubbles up to a `ConfirmModal` for the destructive confirmation.
+
+**Choice:** C. Right-click on a `ConversationListItem` opens a small floating context menu with **Rename** and **Delete**. Rename swaps the title for an inline `<input>` (Enter commits a trimmed value, Esc/blur with empty or unchanged value cancels). Delete fires `onRequestDelete(id)` which `AppShell` handles by opening a `ConfirmModal` with the conversation title in the message + a `danger` variant Delete button.
+
+**Reasoning:** Conversations are not a high-frequency CRUD target — most users rename a conversation once after creating it and delete only when archiving. The context menu pattern matches user expectation from file explorers and email clients (where the same "right-click for secondary actions" idiom applies). It keeps the at-rest sidebar visually quiet, which matters at the half-screen widths v2 targets. The inline rename (instead of a modal) keeps the operation lightweight: title-only edit doesn't deserve a full modal.
+
+**Active-conversation cascade on delete:** when the deleted conversation is the active one, `AppShell` sets `activeConversationId` to the next available conversation in the list (or `null` if it was the last). The Composer is keyed by conversationId (ADR-053), so it remounts on the new active id, naturally clearing prompt + gearState + draft state for the now-deleted conversation. The `conversations:onChanged` broadcast refetches the list a moment later to drop the deleted row from the sidebar.
+
+**Trade-offs:**
+- No touch-friendly entry point — touchscreen users can't right-click. v2 ships Windows-desktop-only (ADR-002), so this is acceptable. A long-press handler could be added in v2.1+ if needed.
+- No keyboard shortcut for rename / delete (F2 / Delete-key). Discoverability via menu only. Acceptable for v2; could be added if friction surfaces.
+- Context menu is positioned with `position: fixed` at `clientX/clientY`. Could overflow the viewport near the edge — not handled in v2.
+
+**Discovered:** v2.0 post-release usability review; the missing CRUD affordances surfaced when the reviewer attempted to rename their first conversation.
+
