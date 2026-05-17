@@ -88,6 +88,11 @@
      secondary buttons. */
 }
 
+.actions-row__button--copy-geared {
+  /* Phase 5 may add a primary/success accent once the Composer +
+     GearReviewPane are unified into one view (currently they swap). */
+}
+
 .actions-row__button--gear {
   background: var(--tl-orange);
   border-color: var(--tl-orange);

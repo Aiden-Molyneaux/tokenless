@@ -63,9 +63,6 @@ export function Composer({ conversationId, accountId, accountLabel }: ComposerPr
   const [format, setFormat] = useState<string>(MOCK_FORMATS[0].value) // prose default
   const [skill, setSkill] = useState<string>('') // none default (empty string = "None" entry)
   const [gearState, setGearState] = useState<GearResult | null>(null)
-  // Phase 1: sending is always false now that cc.send is a no-op; kept so
-  // ActionsRow's disableSend / disableGear props compile unchanged.
-  const sending = false
   const [gearing, setGearing] = useState(false)
   const [authMissingOpen, setAuthMissingOpen] = useState(false)
   const [templatesOpen, setTemplatesOpen] = useState(false)
@@ -73,14 +70,10 @@ export function Composer({ conversationId, accountId, accountLabel }: ComposerPr
   const [captureHint, setCaptureHint] = useState<string | null>(null)
   const [captureDisabled, setCaptureDisabled] = useState<boolean>(false)
   const captureHintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const promptRef = useRef(prompt)
   const { push: pushToast } = useToast()
   const liveEstimate = useLiveCostEstimate({ prompt, model, breadth })
   const { clear: clearDraft } = useDraftAutosave(conversationId, prompt, setPrompt)
   const templatesHostRef = useOutsideClick<HTMLDivElement>(templatesOpen, () => setTemplatesOpen(false))
-  useEffect(() => {
-    promptRef.current = prompt
-  }, [prompt])
 
   // Cleanup the capture hint timer on unmount.
   useEffect(() => () => {
@@ -180,14 +173,7 @@ export function Composer({ conversationId, accountId, accountLabel }: ComposerPr
           setAuthMissingOpen(true)
         } else {
           const message = GEAR_ERROR_MESSAGES[code] ?? GEAR_ERROR_MESSAGES.API_UNKNOWN
-          pushToast({
-            message,
-            severity: 'error',
-            action: {
-              label: 'Send original',
-              onActivate: () => void handleSend(promptRef.current)
-            }
-          })
+          pushToast({ message, severity: 'error' })
         }
       }
     } finally {
@@ -200,32 +186,25 @@ export function Composer({ conversationId, accountId, accountLabel }: ComposerPr
     void runGear(prompt)
   }
 
-  const actuallySend = async (_finalPrompt: string, _gearMeta: GearMeta | null): Promise<void> => {
-    if (conversationId === null) {
-      rendererLogger.warn('ui', 'send-no-conversation', 'Send clicked with no active conversation')
+  const handleCopyGeared = async (text: string): Promise<void> => {
+    if (text.trim().length === 0) return
+    const result = await window.tokenless.clipboard.writeGeared(text)
+    if (result.ok) {
+      pushToast({
+        severity: 'info',
+        message: 'Geared prompt copied — paste into your terminal.'
+      })
+      setPrompt('')
+      setGearState(null)
+      void clearDraft()
       return
     }
-    // Phase 1: PTY is gone. Phase 4 will route the geared prompt to the clipboard.
-    // For now the Send button does nothing visible; in dev-mode we surface a hint.
-    if (import.meta.env.DEV) {
-      window.tokenless.log.send({
-        id: `composer-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
-        ts: Date.now(),
-        severity: 'info',
-        category: 'ui',
-        event: 'send-button-noop',
-        message: 'Send button is a no-op in v2-phase-1; clipboard send arrives in phase 4.',
-        fingerprint: 'composer-send-noop',
-        source: 'renderer',
-        context: {}
-      })
-    }
-    setPrompt('')
-    void clearDraft()  // clears the persisted draft for this conversation
-  }
-
-  const handleSend = async (finalPrompt: string, gearMeta: GearMeta | null = null): Promise<void> => {
-    await actuallySend(finalPrompt, gearMeta)
+    // result.code can be 'WRITE_FAILED' or 'EMPTY_INPUT'. EMPTY_INPUT shouldn't
+    // reach here because we guarded above; surface a generic error toast either way.
+    pushToast({
+      severity: 'error',
+      message: "Couldn't write to clipboard. Geared text remains in TokenLess — try Copy Geared again."
+    })
   }
 
   const handleCapture = async (): Promise<void> => {
@@ -279,6 +258,13 @@ export function Composer({ conversationId, accountId, accountLabel }: ComposerPr
     rendererLogger.info('ui', 'template-inserted', 'Template inserted into composer', { bodyLength: body.length })
   }
 
+  // TODO(phase-4 Task 5): handleGearSendOriginal + handleGearSendGeared will be renamed
+  // to Copy semantics in Task 5. handleSend is a stub until that refactor lands.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const handleSend = async (_finalPrompt: string, _gearMeta: GearMeta | null = null): Promise<void> => {
+    // Phase 4 stub — Task 5 replaces callers with clipboard copy semantics.
+  }
+
   const handleGearSendOriginal = (): void => {
     if (gearState) setLastCostPreview(gearState.costPreview)
     void handleSend(gearState?.originalPrompt ?? prompt, null)
@@ -316,6 +302,11 @@ export function Composer({ conversationId, accountId, accountLabel }: ComposerPr
     setGearState(null)
   }
 
+  // Defined outside the ternary so TypeScript doesn't narrow gearState to null.
+  const handleCopyGearedFromState = (): void => {
+    if (gearState) void handleCopyGeared(gearState.gearedPrompt)
+  }
+
   return (
     <>
       {gearState ? (
@@ -350,12 +341,12 @@ export function Composer({ conversationId, accountId, accountLabel }: ComposerPr
           <div className="actions-row-host" ref={templatesHostRef}>
             <ActionsRow
               promptEmpty={prompt.length === 0}
-              disableGear={sending || gearing}
-              disableSend={sending || conversationId === null}
+              disableGear={gearing}
+              copyDisabled={gearState === null}
               onCapture={() => void handleCapture()}
               captureDisabled={captureDisabled}
               onGear={handleGear}
-              onSend={() => void handleSend(prompt)}
+              onCopyGeared={handleCopyGearedFromState}
               onTemplates={() => setTemplatesOpen((v) => !v)}
               onCommit={handleCommit}
               onPush={handlePush}

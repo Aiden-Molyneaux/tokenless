@@ -2,27 +2,24 @@ import { InfoTooltip } from '../common/InfoTooltip'
 
 interface ActionsRowProps {
   promptEmpty: boolean
-  /** True when an IPC send is in flight — disables Gear AND Send to prevent re-entrancy. */
+  /** True when a gearing IPC call is in flight — disables Gear to prevent re-entrancy. */
   disableGear?: boolean
-  /** Additionally disables Send when there's no active conversation. Gearing
-   *  is an Anthropic-API operation that does NOT need a live PTY (Phase 5
-   *  may want conversationId for rolling-summary context but can handle null). */
-  disableSend?: boolean
+  /** Disables Copy Geared when no gear result is available (gearState === null). */
+  copyDisabled?: boolean
   onCapture: () => void
   captureDisabled?: boolean
   onGear: () => void
-  onSend: () => void
+  onCopyGeared: () => void
   onTemplates: () => void
   onCommit: () => void
   onPush: () => void
 }
 
-// The button row beneath ConfigsRow. Gear is primary (orange). Send is
-// neutral but enabled when a prompt is present + a conversation is active.
-// Commit + Push pre-fill the composer with canned git prompts (Phase 7
-// wires that; Phase 2B stubs the callbacks).
+// The button row beneath ConfigsRow. Gear is primary (orange). Copy Geared is
+// enabled once a gear result is present. Commit + Push pre-fill the composer
+// with canned git prompts (Phase 7 wires that; Phase 2B stubs the callbacks).
 
-export function ActionsRow({ promptEmpty, disableGear = false, disableSend = false, onCapture, captureDisabled = false, onGear, onSend, onTemplates, onCommit, onPush }: ActionsRowProps): JSX.Element {
+export function ActionsRow({ promptEmpty, disableGear = false, copyDisabled = false, onCapture, captureDisabled = false, onGear, onCopyGeared, onTemplates, onCommit, onPush }: ActionsRowProps): JSX.Element {
   return (
     <div className="actions-row">
       <div className="actions-row__primary">
@@ -45,14 +42,15 @@ export function ActionsRow({ promptEmpty, disableGear = false, disableSend = fal
             Gear
           </button>
         </InfoTooltip>
-        <InfoTooltip helperText="Send the prompt without gearing first. Original tokens preserved.">
+        <InfoTooltip helperText="Copy the geared prompt to the clipboard. Disabled until you've run Gear.">
           <button
             type="button"
-            className="actions-row__button"
-            disabled={promptEmpty || disableSend}
-            onClick={onSend}
+            className="actions-row__button actions-row__button--copy-geared"
+            disabled={copyDisabled}
+            onClick={onCopyGeared}
+            aria-label="Copy geared prompt to clipboard"
           >
-            Send
+            Copy Geared
           </button>
         </InfoTooltip>
       </div>
