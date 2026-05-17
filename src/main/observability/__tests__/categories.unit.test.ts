@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { CATEGORIES, isCategory } from '../categories'
 
 describe('categories', () => {
-  it('exposes the canonical 11-category list', () => {
+  it('exposes the canonical 12-category list', () => {
     expect(CATEGORIES).toEqual([
       'cc',
       'pty',
@@ -13,6 +13,7 @@ describe('categories', () => {
       'skill',
       'auth',
       'gearing',
+      'clipboard',
       'fs',
       'observability'
     ])
