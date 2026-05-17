@@ -810,3 +810,17 @@ Hard to trigger manually (Haiku usually obeys). The parser handles this via Zod.
 1. Commit + tag + push `v0.99.0-test-release` (or similar non-conflicting tag).
 2. Watch `.github/workflows/release.yml` run in Actions. Verify all steps pass (typecheck → tests → e2e → build → build:unpack → zip → release upload).
 3. **Expect:** A new Release at `github.com/.../releases` with `TokenLess-v0.99.0-test-release-win-x64.zip` attached. Release notes auto-generated from commits since the previous tag.
+
+---
+
+## S-v2.1: Clipboard capture (Phase 3)
+
+**Setup:** Launch the unpacked app. Have any other application open (Notepad, browser, terminal) ready to be the clipboard source.
+
+**Empty case:** With nothing on the clipboard (or all-whitespace), click Capture. Expect: inline hint "Clipboard is empty. Copy text in your terminal first, then click Capture." appears below the action row. The Capture button is disabled for 3 seconds. After 3 seconds, the button re-enables and the hint clears.
+
+**Typical case:** Copy a multi-line prompt from any application (e.g., "Refactor src/auth.ts to flatten conditionals."). Click Capture. Expect: the prompt textarea fills with the exact text (modulo ANSI escapes stripped + Unicode normalized to NFC + a trailing prompt prefix like `$ ` stripped if present).
+
+**Too-large case:** Generate ~40 KB of text (`x` repeated, or paste a large log file). Click Capture. Expect: a warn toast "Clipboard contains more than 32 KB. Trim your selection." appears; the prompt textarea is unchanged.
+
+**Read-failed case:** Hard to reproduce manually on Windows — `clipboard.readText()` rarely throws. Verified in the integration test by injecting a fake clipboard that throws.
