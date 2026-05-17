@@ -279,7 +279,7 @@ Detailed per-phase plans go in `docs/superpowers/plans/2026-05-16-phase-N-...` (
 | 4 | `v2.0.0-phase-4-send` | `clipboard:write-geared` IPC, Copy Geared button replacing old Send, success toast + tests. | shipped 2026-05-16 (9 commits, 293/293 unit/integration, E2E 15/0/1-skipped incl. full Capture→Gear→Copy round-trip). gearing.e2e.test.ts un-skipped — was previously gated on the now-deleted `.terminal-pane`. |
 | 5 | `v2.0.0-phase-5-layout` | Sidebar collapse, MainPane vertical reflow, TopBar compaction, half-screen scenarios + E2E. | shipped 2026-05-16 (8 tasks, 297/297 unit/integration, E2E 19/0/1-skipped). Composer + GearReviewPane unified into drawer (ActionsRow Copy Geared now reachable). ActionsRow final 5-button shape (Capture/Gear/Copy/Discard/Templates) with Commit + Push removed. |
 | 6 | `v2.0.0-phase-6-cleanup` | dev-runner simplification, CLAUDE.md rewrite, ADR-043+ for v2 decisions, GitHub Actions workflow updates (drop node-pty rebuild), e2e suite refresh, scenarios doc rewrite, removed categories struck through. | shipped 2026-05-16 (9 tasks, ~299 tests green, migration 004 verified, CLAUDE.md rewritten, ADRs 043-052 added) |
-| 7 | `v2.0.0` | Version bump 2.0.0, About dialog update, README rewrite for headless flow, merge `v2/headless` → `main` with `--no-ff`, signed tag `v2.0.0`. |
+| 7 | `v2.0.0` | Version bump 2.0.0, About dialog update, README rewrite for headless flow, merge `v2/headless` → `main` with `--no-ff`, signed tag `v2.0.0`. | shipped 2026-05-16 (7 tasks; v2/headless merged into main; v2.0.0 tagged on the merge commit) |
 
 Each phase exits with the standard v1-style verification gate: typecheck → test:run → build → test:e2e (e2e deferred to CI on dev boxes without VS Build Tools).
 
