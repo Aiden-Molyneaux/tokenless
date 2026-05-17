@@ -116,7 +116,9 @@ import {
   type CrashShowPayload,
   type CrashGetReportRequest,
   type CrashGetReportResult,
-  type CrashRestartResult
+  type CrashRestartResult,
+  IPC_CLIPBOARD_READ_PROMPT,
+  type ClipboardReadPromptResult
 } from '@shared/ipc'
 
 const api = {
@@ -259,6 +261,11 @@ const api = {
   gearing: {
     gear(req: GearingGearRequest): Promise<GearingGearResult> {
       return ipcRenderer.invoke(IPC_GEARING_GEAR, req) as Promise<GearingGearResult>
+    }
+  },
+  clipboard: {
+    readPrompt(): Promise<ClipboardReadPromptResult> {
+      return ipcRenderer.invoke(IPC_CLIPBOARD_READ_PROMPT) as Promise<ClipboardReadPromptResult>
     }
   },
   api: {

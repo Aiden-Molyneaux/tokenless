@@ -38,7 +38,8 @@ import type {
   TurnsListResult,
   PricingListResult,
   AiAnalyzeErrorRequest,
-  AiAnalyzeErrorResult
+  AiAnalyzeErrorResult,
+  ClipboardReadPromptResult
 } from '@shared/ipc'
 import type {
   CrashShowPayload,
@@ -123,6 +124,9 @@ export interface TokenlessApi {
   }
   readonly gearing: {
     gear(req: GearingGearRequest): Promise<GearingGearResult>
+  }
+  readonly clipboard: {
+    readPrompt(): Promise<ClipboardReadPromptResult>
   }
   readonly api: {
     onRetryAttempt(fn: (payload: ApiRetryAttemptPayload) => void): () => void
