@@ -113,14 +113,14 @@ async function runGearFlow(): Promise<void> {
 
 // ---------- Helper: click a button with async settle ----------
 
-async function clickButton(name: RegExp | string): Promise<void> {
-  const btn = screen.getByRole('button', { name })
-  await act(async () => {
-    fireEvent.click(btn)
-    await Promise.resolve()
-    await Promise.resolve()
-  })
-}
+// async function clickButton(name: RegExp | string): Promise<void> {
+//   const btn = screen.getByRole('button', { name })
+//   await act(async () => {
+//     fireEvent.click(btn)
+//     await Promise.resolve()
+//     await Promise.resolve()
+//   })
+// }
 
 // ---------- Helper: click the GearReviewPane's "Copy geared" button ----------
 // Distinguishes the pane button from the ActionsRow "Copy geared prompt to

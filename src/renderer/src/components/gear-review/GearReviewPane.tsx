@@ -51,9 +51,10 @@ export function GearReviewPane({
           type="button"
           className="gear-review-pane__cancel"
           onClick={onClose}
-          aria-label="Close gear review"
+          aria-label="Close gear review and discard"
+          title="Close and discard the geared prompt"
         >
-          ✕
+          ▾
         </button>
       </div>
       <CritiqueFlags flags={critiqueFlags} />
