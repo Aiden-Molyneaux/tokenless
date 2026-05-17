@@ -102,31 +102,31 @@ Format:
 7. Edit the geared text in the right pane.
 8. Click "Re-gear". Verify the geared content refreshes (Phase 2B re-uses the same mock — phase 5 re-calls Haiku).
 9. Click "Cancel" (×). Verify the composer reappears with the original prompt text preserved.
-10. Click "Gear" again, then "Send geared". Verify composer reappears with prompt cleared.
+~~10. Click "Gear" again, then "Send geared". Verify composer reappears with prompt cleared.~~ *(removed v2 — Send-into-PTY gone; use "Copy Geared" instead — see S-v2.2)*
 
 **Expected:**
 - All dropdowns open/close with outside-click + Escape behavior intact.
 - Tooltips render on hover and disappear on mouse leave.
 - GearReviewPane shows the canned MOCK_GEARED_PROMPT in the editable side.
 - Token-savings indicator appears in the geared pane header ("saves ~N tok").
-- Re-gear logs `ui/re-gear-clicked` to Dev Mode; Send geared logs `ui/send-geared`; Cancel logs `ui/gear-cancel`.
+- ~~Re-gear logs `ui/re-gear-clicked` to Dev Mode; Send geared logs `ui/send-geared`; Cancel logs `ui/gear-cancel`.~~ *(v2: Re-gear logs `ui/re-gear-clicked`; Copy Geared logs `ui/copy-geared`; Cancel/Discard logs `ui/gear-cancel`)*
 
-## Scenario: Phase 2B — Terminal section displays canned ANSI
+~~## Scenario: Phase 2B — Terminal section displays canned ANSI~~ *(removed v2 — embedded PTY gone)*
 
-**Preconditions:** App built and running.
+~~**Preconditions:** App built and running.~~
 
-**Steps:**
-1. Observe the terminal pane at the bottom of MainPane.
-2. Wait for the mock stream to play through (~10-15 seconds total).
-3. Click the "◼ Stop" button.
-4. Hover the context budget meter.
+~~**Steps:**~~
+~~1. Observe the terminal pane at the bottom of MainPane.~~
+~~2. Wait for the mock stream to play through (~10-15 seconds total).~~
+~~3. Click the "◼ Stop" button.~~
+~~4. Hover the context budget meter.~~
 
-**Expected:**
-- Terminal pane displays dark background with the Claude Code banner, Read/Glob tool calls, refactor narrative, and savings summary.
-- ANSI color codes render (cyan for user prompt, yellow for tool calls, green for Claude's response, dim gray for tool output).
-- Stop button is enabled during streaming, disabled after click.
-- Context budget meter shows "42%" with a blue bar fill.
-- Hover on meter shows tooltip with current/total token counts.
+~~**Expected:**~~
+~~- Terminal pane displays dark background with the Claude Code banner, Read/Glob tool calls, refactor narrative, and savings summary.~~
+~~- ANSI color codes render (cyan for user prompt, yellow for tool calls, green for Claude's response, dim gray for tool output).~~
+~~- Stop button is enabled during streaming, disabled after click.~~
+~~- Context budget meter shows "42%" with a blue bar fill.~~
+~~- Hover on meter shows tooltip with current/total token counts.~~
 
 ## Scenario: Phase 2B — Dev Mode toggle below TopBar
 
@@ -216,94 +216,94 @@ Format:
 - App quits gracefully (does not white-screen or hang).
 - After making the file writable, restart succeeds.
 
-## Phase 4A — Real claude subprocess + Send
+~~## Phase 4A — Real claude subprocess + Send~~ *(removed v2 — embedded PTY gone)*
 
-### S-4A.1 New conversation spawns real claude
-**Preconditions:** real claude installed + authenticated for the active account; project root is a directory you don't mind claude reading.
+~~### S-4A.1 New conversation spawns real claude~~
+~~**Preconditions:** real claude installed + authenticated for the active account; project root is a directory you don't mind claude reading.~~
 
-1. Launch the app. Active project + Personal account selected.
-2. Click "New Conversation" in the sidebar.
-3. **Expect:** A new conversation row appears in the sidebar with status active. The terminal pane shows real claude's banner / prompt. `db-online` and `cc-start` log entries visible in Dev Mode (with the sessionId UUID).
-4. **Verify (Dev Mode):** Find the `cc-start` row; expand its context. `pid` is a real OS process id. `sessionId` matches a `--session-id <uuid>` arg you can see in Task Manager → claude.exe → command line.
+~~1. Launch the app. Active project + Personal account selected.~~
+~~2. Click "New Conversation" in the sidebar.~~
+~~3. **Expect:** A new conversation row appears in the sidebar with status active. The terminal pane shows real claude's banner / prompt. `db-online` and `cc-start` log entries visible in Dev Mode (with the sessionId UUID).~~
+~~4. **Verify (Dev Mode):** Find the `cc-start` row; expand its context. `pid` is a real OS process id. `sessionId` matches a `--session-id <uuid>` arg you can see in Task Manager → claude.exe → command line.~~
 
-### S-4A.2 Send echoes through the real claude
-1. Continuing from S-4A.1, type "Reply with exactly PING-OK" into the composer.
-2. Click Send.
-3. **Expect:** The terminal pane scrolls with claude's response, ending with "PING-OK" somewhere in the stream. The composer textarea clears. A `send-success` log entry shows up in Dev Mode with the `turnId`.
-4. **Verify (DB):** Open `%APPDATA%/tokenless/tokenless.db` in SQLite Browser. The `turns` table has a row with role=`user`, `original_prompt` = "Reply with exactly PING-OK", `conversation_id` matching the active conversation.
+~~### S-4A.2 Send echoes through the real claude~~
+~~1. Continuing from S-4A.1, type "Reply with exactly PING-OK" into the composer.~~
+~~2. Click Send.~~
+~~3. **Expect:** The terminal pane scrolls with claude's response, ending with "PING-OK" somewhere in the stream. The composer textarea clears. A `send-success` log entry shows up in Dev Mode with the `turnId`.~~
+~~4. **Verify (DB):** Open `%APPDATA%/tokenless/tokenless.db` in SQLite Browser. The `turns` table has a row with role=`user`, `original_prompt` = "Reply with exactly PING-OK", `conversation_id` matching the active conversation.~~
 
-### S-4A.3 Two conversations, two PTYs
-1. Open a second conversation via "New Conversation" while the first is still active.
-2. **Expect:** Both conversations appear in the sidebar. Switching between them swaps the terminal pane's `conversationId` prop — but the previous terminal's PTY is still running in main. The new conversation's terminal pane shows its own claude session.
-3. **Verify (Dev Mode):** Two distinct `cc-start` entries with distinct sessionIds.
+~~### S-4A.3 Two conversations, two PTYs~~
+~~1. Open a second conversation via "New Conversation" while the first is still active.~~
+~~2. **Expect:** Both conversations appear in the sidebar. Switching between them swaps the terminal pane's `conversationId` prop — but the previous terminal's PTY is still running in main. The new conversation's terminal pane shows its own claude session.~~
+~~3. **Verify (Dev Mode):** Two distinct `cc-start` entries with distinct sessionIds.~~
 
-### S-4A.4 Quit closes all PTYs
-1. With at least one conversation active, quit the app (Cmd/Ctrl+Q).
-2. **Expect:** Task Manager shows no leftover `claude.exe` processes after 2 seconds. A `shutdown` log entry plus `before-quit, releasing resources` precedes the quit.
+~~### S-4A.4 Quit closes all PTYs~~
+~~1. With at least one conversation active, quit the app (Cmd/Ctrl+Q).~~
+~~2. **Expect:** Task Manager shows no leftover `claude.exe` processes after 2 seconds. A `shutdown` log entry plus `before-quit, releasing resources` precedes the quit.~~
 
-### S-4A.5 Send with no active conversation
-1. Launch the app with NO conversations (delete the DB or fresh first-run).
-2. Click into the composer textarea, type a prompt, click Send.
-3. **Expect:** Send is disabled (greyed out). If somehow clicked, a `send-no-conversation` warn log entry appears. No turn row created.
+~~### S-4A.5 Send with no active conversation~~
+~~1. Launch the app with NO conversations (delete the DB or fresh first-run).~~
+~~2. Click into the composer textarea, type a prompt, click Send.~~
+~~3. **Expect:** Send is disabled (greyed out). If somehow clicked, a `send-no-conversation` warn log entry appears. No turn row created.~~
 
-## Phase 4B — Parser + Stop + Resume
+~~## Phase 4B — Parser + Stop + Resume~~ *(removed v2 — embedded PTY gone)*
 
-### S-4B.1 Stop kills a running response
-1. Launch the app, create project, click New Conversation, send a long prompt.
-2. While claude is streaming a response, click Stop.
-3. **Expect:** The terminal stops appending output. Dev Mode shows `cc-stop` and `terminal-stop-ok` log entries. The `turns` table's most-recent row has `status = 'stopped'`.
+~~### S-4B.1 Stop kills a running response~~
+~~1. Launch the app, create project, click New Conversation, send a long prompt.~~
+~~2. While claude is streaming a response, click Stop.~~
+~~3. **Expect:** The terminal stops appending output. Dev Mode shows `cc-stop` and `terminal-stop-ok` log entries. The `turns` table's most-recent row has `status = 'stopped'`.~~
 
-### S-4B.2 Resume across restart
-1. Launch the app, create project, New Conversation, send a prompt, wait for completion.
-2. Quit the app entirely (Cmd/Ctrl+Q).
-3. Relaunch. The conversation appears in the sidebar.
-4. Click the conversation.
-5. **Expect:** Dev Mode shows `cc-resume` log entry with the stored `sessionId`. The Send button is enabled — typing + Send works as expected.
+~~### S-4B.2 Resume across restart~~
+~~1. Launch the app, create project, New Conversation, send a prompt, wait for completion.~~
+~~2. Quit the app entirely (Cmd/Ctrl+Q).~~
+~~3. Relaunch. The conversation appears in the sidebar.~~
+~~4. Click the conversation.~~
+~~5. **Expect:** Dev Mode shows `cc-resume` log entry with the stored `sessionId`. The Send button is enabled — typing + Send works as expected.~~
 
-### S-4B.3 Resume with no stored sessionId fails cleanly
-1. Open DB browser, NULL out a conversation's `cc_session_id` column.
-2. Restart the app, click that conversation.
-3. **Expect:** `cc-resume` warn log fires with `NOT_FOUND` code. UI proceeds — Stop is enabled (since we still consider the conversation active) but Send will also fail with NOT_FOUND until a fresh `cc:start` happens.
+~~### S-4B.3 Resume with no stored sessionId fails cleanly~~
+~~1. Open DB browser, NULL out a conversation's `cc_session_id` column.~~
+~~2. Restart the app, click that conversation.~~
+~~3. **Expect:** `cc-resume` warn log fires with `NOT_FOUND` code. UI proceeds — Stop is enabled (since we still consider the conversation active) but Send will also fail with NOT_FOUND until a fresh `cc:start` happens.~~
 
-### S-4B.4 Claude not found
-1. Quit the app. Set `TOKENLESS_CLAUDE_BIN=C:/no/such/path/claude.cmd`. Relaunch.
-2. Create project, click New Conversation.
-3. **Expect:** Modal appears: "Claude Code not found." Dev Mode shows `cc-start` warn with `CLAUDE_NOT_FOUND` code. Dismiss closes the modal; no conversation is created (the DB row that was created BEFORE the spawn is left orphaned for now — Phase 4C cleanup task).
+~~### S-4B.4 Claude not found~~
+~~1. Quit the app. Set `TOKENLESS_CLAUDE_BIN=C:/no/such/path/claude.cmd`. Relaunch.~~
+~~2. Create project, click New Conversation.~~
+~~3. **Expect:** Modal appears: "Claude Code not found." Dev Mode shows `cc-start` warn with `CLAUDE_NOT_FOUND` code. Dismiss closes the modal; no conversation is created (the DB row that was created BEFORE the spawn is left orphaned for now — Phase 4C cleanup task).~~
 
-### S-4B.5 Two conversations, stop one while the other streams
-1. Open conversation A, send a long prompt. Open conversation B (sidebar click on a different conversation row), send another prompt.
-2. **Expect:** Both stream independently — switching tabs shows the right output (because TerminalPane is keyed by conversationId, the xterm instance is per-conversation).
-3. Click Stop on B.
-4. **Expect:** B stops, A continues. The turns table for B has the latest row with `status='stopped'`. A's turns are unaffected.
+~~### S-4B.5 Two conversations, stop one while the other streams~~
+~~1. Open conversation A, send a long prompt. Open conversation B (sidebar click on a different conversation row), send another prompt.~~
+~~2. **Expect:** Both stream independently — switching tabs shows the right output (because TerminalPane is keyed by conversationId, the xterm instance is per-conversation).~~
+~~3. Click Stop on B.~~
+~~4. **Expect:** B stops, A continues. The turns table for B has the latest row with `status='stopped'`. A's turns are unaffected.~~
 
-## Phase 4C — Failure modes + telemetry
+~~## Phase 4C — Failure modes + telemetry~~ *(removed v2 — embedded PTY gone)*
 
-### S-4C.1 Crash toast on non-zero exit
-1. Launch with TOKENLESS_MOCK_CRASH_AFTER_MS=500 + TOKENLESS_CLAUDE_BIN=mock-claude.cmd.
-2. Create project, click New Conversation.
-3. **Expect:** Within ~1s an error toast appears: "Claude Code crashed (exit 1). Conversation saved — try resuming." Dev Mode shows `cc-crashed` log entry. The conversation row IS persisted (still in sidebar after restart).
+~~### S-4C.1 Crash toast on non-zero exit~~
+~~1. Launch with TOKENLESS_MOCK_CRASH_AFTER_MS=500 + TOKENLESS_CLAUDE_BIN=mock-claude.cmd.~~
+~~2. Create project, click New Conversation.~~
+~~3. **Expect:** Within ~1s an error toast appears: "Claude Code crashed (exit 1). Conversation saved — try resuming." Dev Mode shows `cc-crashed` log entry. The conversation row IS persisted (still in sidebar after restart).~~
 
-### S-4C.2 Hung banner on idle conversation
-1. Launch with the mock. Create project, New Conversation.
-2. Manually pause the mock's stdin (or just don't type anything) for >60s.
-3. **Expect:** Hung banner appears above the terminal: "Claude has been idle for a minute — still working?" Click Stop to dismiss + kill the PTY.
+~~### S-4C.2 Hung banner on idle conversation~~
+~~1. Launch with the mock. Create project, New Conversation.~~
+~~2. Manually pause the mock's stdin (or just don't type anything) for >60s.~~
+~~3. **Expect:** Hung banner appears above the terminal: "Claude has been idle for a minute — still working?" Click Stop to dismiss + kill the PTY.~~
 
-### S-4C.3 PTY write fail toast
-Hard to trigger manually — the test double simulates this. Scenario for documentation:
-1. After a Stop or crash, the PTY is dead but the renderer hasn't fully caught up.
-2. Type a prompt + Send.
-3. **Expect:** Error toast: "Couldn't send prompt — PTY connection lost. Restart the conversation." Dev Mode shows `send-failed` with code `PTY_WRITE_FAILED`.
+~~### S-4C.3 PTY write fail toast~~
+~~Hard to trigger manually — the test double simulates this. Scenario for documentation:~~
+~~1. After a Stop or crash, the PTY is dead but the renderer hasn't fully caught up.~~
+~~2. Type a prompt + Send.~~
+~~3. **Expect:** Error toast: "Couldn't send prompt — PTY connection lost. Restart the conversation." Dev Mode shows `send-failed` with code `PTY_WRITE_FAILED`.~~
 
-### S-4C.4 Orphan cleanup on CLAUDE_NOT_FOUND
-1. Launch with TOKENLESS_CLAUDE_BIN=C:/nonexistent.cmd.
-2. Create project, click New Conversation.
-3. CLAUDE_NOT_FOUND modal appears.
-4. **Expect:** After dismissing the modal, the sidebar has NO orphan conversation row (it was deleted because cc:start failed).
+~~### S-4C.4 Orphan cleanup on CLAUDE_NOT_FOUND~~
+~~1. Launch with TOKENLESS_CLAUDE_BIN=C:/nonexistent.cmd.~~
+~~2. Create project, click New Conversation.~~
+~~3. CLAUDE_NOT_FOUND modal appears.~~
+~~4. **Expect:** After dismissing the modal, the sidebar has NO orphan conversation row (it was deleted because cc:start failed).~~
 
-### S-4C.5 Telemetry meter shows real usage
-1. Launch with the mock (which emits `tokens: N/200000` lines).
-2. Create project, New Conversation, send a few prompts.
-3. **Expect:** The Context: meter in the terminal toolbar shows a non-zero value within 3-4 seconds of each send. The value increases monotonically as the mock's tokens counter accumulates.
+~~### S-4C.5 Telemetry meter shows real usage~~
+~~1. Launch with the mock (which emits `tokens: N/200000` lines).~~
+~~2. Create project, New Conversation, send a few prompts.~~
+~~3. **Expect:** The Context: meter in the terminal toolbar shows a non-zero value within 3-4 seconds of each send. The value increases monotonically as the mock's tokens counter accumulates.~~
 
 ## Phase 5A — Gearing engine
 
@@ -313,9 +313,9 @@ Hard to trigger manually — the test double simulates this. Scenario for docume
 3. Click Gear.
 4. **Expect:** Within ~2s the GearReviewPane appears with a noticeably shorter geared prompt. Critique flags (info/warn) visible if applicable. Cost preview shows expected $ for the user-selected model + Haiku meta cost.
 
-### S-5A.2 Send the geared prompt
-1. From the gear review pane, click "Send geared".
-2. **Expect:** The prompt sent to claude is the GEARED text. Verify in Dev Mode logs: `send-success` entry's `promptLength` matches the geared length, not the original.
+~~### S-5A.2 Send the geared prompt~~ *(removed v2 — Send-into-PTY gone; replaced by Copy Geared in S-v2.2)*
+~~1. From the gear review pane, click "Send geared".~~
+~~2. **Expect:** The prompt sent to claude is the GEARED text. Verify in Dev Mode logs: `send-success` entry's `promptLength` matches the geared length, not the original.~~
 
 ### S-5A.3 Bad API key
 1. Set `ANTHROPIC_API_KEY=invalid_key`. Launch. Try to gear.
@@ -343,9 +343,9 @@ Hard to trigger manually (Haiku usually obeys). The parser handles this via Zod.
 2. Create project + new conversation, type a prompt, click Gear.
 3. **Expect:** Modal "Anthropic API key required" appears with PowerShell instructions. NOT a toast.
 
-### S-5B.2 Send original auto-suggest
-1. Trigger any non-auth gearing failure (easiest: temporarily set `ANTHROPIC_API_KEY=invalid_after_validation` so the call fails post-auth somehow — or simulate via 5xx by network manipulation).
-2. **Expect:** Toast appears with a "Send original" button. Clicking it sends the original prompt to claude (verify in Dev Mode `send-success` entry, prompt clears).
+~~### S-5B.2 Send original auto-suggest~~ *(removed v2 — Send-into-PTY gone)*
+~~1. Trigger any non-auth gearing failure (easiest: temporarily set `ANTHROPIC_API_KEY=invalid_after_validation` so the call fails post-auth somehow — or simulate via 5xx by network manipulation).~~
+~~2. **Expect:** Toast appears with a "Send original" button. Clicking it sends the original prompt to claude (verify in Dev Mode `send-success` entry, prompt clears).~~
 
 ### S-5B.3 Live cost estimate
 1. With a project + conversation active, type into the composer.
@@ -353,10 +353,10 @@ Hard to trigger manually (Haiku usually obeys). The parser handles this via Zod.
 3. Clear the prompt.
 4. **Expect:** Strip returns to idle hint.
 
-### S-5B.4 Summary refresh after assistant turn
-1. Launch with real Claude Code installed + `ANTHROPIC_API_KEY` set.
-2. Start a conversation, send a prompt, wait for claude's response to complete (prompt-ready event fires).
-3. **Expect:** Within ~1s, Dev Mode shows `summary-refresh-ok` log entry with a summary length. DB inspection: `conversations.summary` column for this conversation has a populated string; `summary_updated_at` is recent.
+~~### S-5B.4 Summary refresh after assistant turn~~ *(removed v2 — no assistant turn capture without PTY)*
+~~1. Launch with real Claude Code installed + `ANTHROPIC_API_KEY` set.~~
+~~2. Start a conversation, send a prompt, wait for claude's response to complete (prompt-ready event fires).~~
+~~3. **Expect:** Within ~1s, Dev Mode shows `summary-refresh-ok` log entry with a summary length. DB inspection: `conversations.summary` column for this conversation has a populated string; `summary_updated_at` is recent.~~
 
 ### S-5B.5 Retry attempts visible in Dev Mode
 1. Hard to reliably trigger — only fires on 429/5xx.
@@ -377,11 +377,11 @@ Hard to trigger manually (Haiku usually obeys). The parser handles this via Zod.
 6. Click back to the original conversation.
 7. **Expect:** "this is my draft prompt" is restored in the composer.
 
-### S-7A.2 Send clears the draft
-1. Continuing from S-7A.1, click Send.
-2. **Expect:** Composer text clears. `drafts-clear` log entry visible in Dev Mode.
-3. Switch away + back.
-4. **Expect:** Composer is empty (no leftover draft).
+~~### S-7A.2 Send clears the draft~~ *(removed v2 — Send-into-PTY gone; draft is cleared by Discard or Copy Geared instead)*
+~~1. Continuing from S-7A.1, click Send.~~
+~~2. **Expect:** Composer text clears. `drafts-clear` log entry visible in Dev Mode.~~
+~~3. Switch away + back.~~
+~~4. **Expect:** Composer is empty (no leftover draft).~~
 
 ### S-7A.3 Restart preserves drafts
 1. Type a long prompt into a conversation. Wait for `drafts-save` to fire.
@@ -502,43 +502,43 @@ Hard to trigger manually (Haiku usually obeys). The parser handles this via Zod.
 2. **Expect:** a styled in-app ConfirmModal appears (NOT the OS `window.confirm`). The "Delete" button is red (danger variant) and has focus. Escape closes it. Cancel button works. Clicking Delete actually deletes the account.
 3. Same scenario for EditProjectModal (with the project name in the message).
 
-## Phase 7B — Turn capture + Feedback buttons
+~~## Phase 7B — Turn capture + Feedback buttons~~ *(removed v2 — assistant turn capture + feedback bar gone; no PTY response stream)*
 
-### S-7B.1 Plain Send writes a user turn (no gearMeta)
-1. With an active conversation, type "hello" and click Send.
-2. **Expect:** A `turns` row exists with `role='user'`, `original_prompt='hello'`, `geared_prompt IS NULL`, `original_tokens IS NULL`, `critique_flags_json IS NULL`. Dev Mode shows no extra event (the underlying log is `turn-list-by-conversation` only fired when the renderer queries).
+~~### S-7B.1 Plain Send writes a user turn (no gearMeta)~~
+~~1. With an active conversation, type "hello" and click Send.~~
+~~2. **Expect:** A `turns` row exists with `role='user'`, `original_prompt='hello'`, `geared_prompt IS NULL`, `original_tokens IS NULL`, `critique_flags_json IS NULL`. Dev Mode shows no extra event (the underlying log is `turn-list-by-conversation` only fired when the renderer queries).~~
 
-### S-7B.2 Send geared writes a full user turn with original + geared + tokens
-1. Type "hello", click Gear, then click Send Geared in the review pane.
-2. **Expect:** The user turn row has both `original_prompt` (the literal "hello") AND `geared_prompt` (the geared text), with numeric `original_tokens` / `geared_tokens` / `haiku_meta_tokens` values, and `critique_flags_json` populated as a JSON array of `"<severity>: <message>"` strings (or null if there were no flags).
+~~### S-7B.2 Send geared writes a full user turn with original + geared + tokens~~
+~~1. Type "hello", click Gear, then click Send Geared in the review pane.~~
+~~2. **Expect:** The user turn row has both `original_prompt` (the literal "hello") AND `geared_prompt` (the geared text), with numeric `original_tokens` / `geared_tokens` / `haiku_meta_tokens` values, and `critique_flags_json` populated as a JSON array of `"<severity>: <message>"` strings (or null if there were no flags).~~
 
-### S-7B.3 Assistant turn captured after response-complete
-1. After Send, wait for Claude's response to finish (mock-claude echoes + emits "received:").
-2. **Expect:** A second `turns` row exists with `role='assistant'`, `response_text` containing Claude's output lines joined by `\n`, and `response_tokens` set (if a `tokens:` line was emitted; null otherwise).
+~~### S-7B.3 Assistant turn captured after response-complete~~
+~~1. After Send, wait for Claude's response to finish (mock-claude echoes + emits "received:").~~
+~~2. **Expect:** A second `turns` row exists with `role='assistant'`, `response_text` containing Claude's output lines joined by `\n`, and `response_tokens` set (if a `tokens:` line was emitted; null otherwise).~~
 
-### S-7B.4 TurnFeedbackBar appears below Composer after assistant turn
-1. After a complete user → assistant exchange.
-2. **Expect:** A small 👍 👎 🤷 bar appears at the bottom of the Composer (NOT during gear review).
-3. Click 👍. The bar disappears immediately (the `turns:changed` broadcast causes useTurns to refetch; the last turn now has `feedback='up'`).
+~~### S-7B.4 TurnFeedbackBar appears below Composer after assistant turn~~
+~~1. After a complete user → assistant exchange.~~
+~~2. **Expect:** A small 👍 👎 🤷 bar appears at the bottom of the Composer (NOT during gear review).~~
+~~3. Click 👍. The bar disappears immediately (the `turns:changed` broadcast causes useTurns to refetch; the last turn now has `feedback='up'`).~~
 
-### S-7B.5 Feedback persists across restart
-1. After clicking 👍 in S-7B.4, close + relaunch the app.
-2. Open Dev Mode.
-3. **Expect:** Footer shows `👍 1 · 👎 0 · 🤷 0 · ❓ N unrated` (where N is the count of other unrated assistant turns).
+~~### S-7B.5 Feedback persists across restart~~
+~~1. After clicking 👍 in S-7B.4, close + relaunch the app.~~
+~~2. Open Dev Mode.~~
+~~3. **Expect:** Footer shows `👍 1 · 👎 0 · 🤷 0 · ❓ N unrated` (where N is the count of other unrated assistant turns).~~
 
-### S-7B.6 Multi-turn conversation: alternating rows in correct order
-1. Send three prompts in a row, waiting for response each time.
-2. Query `SELECT id, role, original_prompt, response_text FROM turns WHERE conversation_id = ? ORDER BY sent_at ASC, id ASC`.
-3. **Expect:** Six rows alternating user / assistant / user / assistant / user / assistant.
+~~### S-7B.6 Multi-turn conversation: alternating rows in correct order~~
+~~1. Send three prompts in a row, waiting for response each time.~~
+~~2. Query `SELECT id, role, original_prompt, response_text FROM turns WHERE conversation_id = ? ORDER BY sent_at ASC, id ASC`.~~
+~~3. **Expect:** Six rows alternating user / assistant / user / assistant / user / assistant.~~
 
-### S-7B.7 Dev Mode footer updates live
-1. With Dev Mode open, click a feedback button on the latest turn.
-2. **Expect:** The footer counts update within ~100ms (no manual refresh). The bar disappears.
+~~### S-7B.7 Dev Mode footer updates live~~
+~~1. With Dev Mode open, click a feedback button on the latest turn.~~
+~~2. **Expect:** The footer counts update within ~100ms (no manual refresh). The bar disappears.~~
 
-### S-7B.8 Resumed conversation captures NEW turns but not the in-flight one
-1. While Claude is mid-response, close the app.
-2. Relaunch + resume the conversation.
-3. **Expect:** No assistant row for the truncated response. The NEXT user prompt + response captures normally. (Phase 8 may add a "scrape backlog" feature.)
+~~### S-7B.8 Resumed conversation captures NEW turns but not the in-flight one~~
+~~1. While Claude is mid-response, close the app.~~
+~~2. Relaunch + resume the conversation.~~
+~~3. **Expect:** No assistant row for the truncated response. The NEXT user prompt + response captures normally. (Phase 8 may add a "scrape backlog" feature.)~~
 
 ## Phase 6D — Telemetry summary view
 
@@ -579,7 +579,7 @@ Hard to trigger manually (Haiku usually obeys). The parser handles this via Zod.
 
 ### S-7D.1 Templates button visible in ActionsRow
 1. Open the app; create a project + conversation.
-2. **Expect:** A "Templates ▾" button appears in the actions row's secondary group (before Commit + Push).
+2. **Expect:** A "Templates ▾" button appears in the actions row (5-button layout: Capture · Gear · Copy Geared · Discard · Templates).
 
 ### S-7D.2 Built-ins seeded on first launch
 1. Fresh install. Click "Templates ▾".
@@ -612,38 +612,38 @@ Hard to trigger manually (Haiku usually obeys). The parser handles this via Zod.
 ### S-7D.7 Templates seed survives across schema migrations
 (Future-proofing — covered by the idempotency contract in ADR-039.)
 
-## Phase 7C — Branching MVP
+~~## Phase 7C — Branching MVP~~ *(removed v2 — branching depended on PTY spawning a new session)*
 
-### S-7C.1 Branch button visible in ActionsRow
-1. Open the app with an active conversation.
-2. **Expect:** A "Branch" button appears in the actions row's secondary group, between Templates and Commit.
+~~### S-7C.1 Branch button visible in ActionsRow~~
+~~1. Open the app with an active conversation.~~
+~~2. **Expect:** A "Branch" button appears in the actions row's secondary group, between Templates and Commit.~~
 
-### S-7C.2 Branch from a conversation with turns
-1. With an active conversation and at least one user turn already sent (S-7B.1).
-2. Click Branch.
-3. **Expect:** A new conversation appears in the sidebar prefixed with "↳ " and indented. The new conversation auto-selects (its xterm pane is empty — fresh PTY). Dev Mode shows `branch-created` info log.
+~~### S-7C.2 Branch from a conversation with turns~~
+~~1. With an active conversation and at least one user turn already sent (S-7B.1).~~
+~~2. Click Branch.~~
+~~3. **Expect:** A new conversation appears in the sidebar prefixed with "↳ " and indented. The new conversation auto-selects (its xterm pane is empty — fresh PTY). Dev Mode shows `branch-created` info log.~~
 
-### S-7C.3 Branched conversation indented in sidebar
-1. Visually inspect the sidebar after S-7C.2.
-2. **Expect:** The branch row's title starts with "↳" and the row is visibly indented compared to non-branched siblings. The title text is muted (var(--tl-text-muted)).
+~~### S-7C.3 Branched conversation indented in sidebar~~
+~~1. Visually inspect the sidebar after S-7C.2.~~
+~~2. **Expect:** The branch row's title starts with "↳" and the row is visibly indented compared to non-branched siblings. The title text is muted (var(--tl-text-muted)).~~
 
-### S-7C.4 Branch with no prior turns → toast
-1. Create a brand-new conversation but do NOT send anything. Click Branch.
-2. **Expect:** A warn-severity toast: "Could not branch — the conversation has no turns yet." No new conversation row appears in the sidebar. Dev Mode shows `branch-failed`.
+~~### S-7C.4 Branch with no prior turns → toast~~
+~~1. Create a brand-new conversation but do NOT send anything. Click Branch.~~
+~~2. **Expect:** A warn-severity toast: "Could not branch — the conversation has no turns yet." No new conversation row appears in the sidebar. Dev Mode shows `branch-failed`.~~
 
-### S-7C.5 Branch inherits parent's summary
-1. After enough turns that the parent's summary has been refreshed (Phase 5B — verify via SQLite: `select summary from conversations where id = <parent>`).
-2. Click Branch.
-3. Inspect new row: `select summary from conversations where id = <branch>`.
-4. **Expect:** Same non-null summary string as the parent.
+~~### S-7C.5 Branch inherits parent's summary~~
+~~1. After enough turns that the parent's summary has been refreshed (Phase 5B — verify via SQLite: `select summary from conversations where id = <parent>`).~~
+~~2. Click Branch.~~
+~~3. Inspect new row: `select summary from conversations where id = <branch>`.~~
+~~4. **Expect:** Same non-null summary string as the parent.~~
 
-### S-7C.6 Branched conversation has its own PTY
-1. After branching, click between parent and branch in the sidebar.
-2. **Expect:** Each has its own xterm pane state (different output / scrollback). Stop button on the branch only kills the branch's PTY.
+~~### S-7C.6 Branched conversation has its own PTY~~
+~~1. After branching, click between parent and branch in the sidebar.~~
+~~2. **Expect:** Each has its own xterm pane state (different output / scrollback). Stop button on the branch only kills the branch's PTY.~~
 
-### S-7C.7 Parent deletion sets branch.parent_conversation_id to NULL
-1. Branch a conversation. Then delete the parent (via the existing conversations:delete IPC; UI for this is currently only direct DB or future Phase 8).
-2. **Expect:** The branch's `parent_conversation_id` becomes NULL (ON DELETE SET NULL). The branch keeps existing. Its title still starts with "↳" but the sidebar indent disappears on next render (since `parentConversationId === null` now).
+~~### S-7C.7 Parent deletion sets branch.parent_conversation_id to NULL~~
+~~1. Branch a conversation. Then delete the parent (via the existing conversations:delete IPC; UI for this is currently only direct DB or future Phase 8).~~
+~~2. **Expect:** The branch's `parent_conversation_id` becomes NULL (ON DELETE SET NULL). The branch keeps existing. Its title still starts with "↳" but the sidebar indent disappears on next render (since `parentConversationId === null` now).~~
 
 ## Phase 8A — Polish
 
@@ -654,25 +654,25 @@ Hard to trigger manually (Haiku usually obeys). The parser handles this via Zod.
 
 ### S-8A.2 Main window resizable + has minimum size
 1. Drag the right edge of the main window inward.
-2. **Expect:** window stops at 900px wide. Same for height at 600px.
+2. **Expect:** window stops at 600px wide (v2 minimum — reduced from 900px to support half-screen use). Same for height at 600px.
 3. Drag outward — no maximum; the layout reflows correctly.
 
-### S-8A.3 Terminal copy with Ctrl+Shift+C
-1. Send a prompt; wait for response output.
-2. Drag-select some response text in the terminal pane.
-3. Press Ctrl+Shift+C. Paste into another app — the selected text arrives.
-4. Press Ctrl+C (no Shift) — sends SIGINT to claude, NOT copy. The selection stays visible but no clipboard write.
+~~### S-8A.3 Terminal copy with Ctrl+Shift+C~~ *(removed v2 — embedded terminal gone)*
+~~1. Send a prompt; wait for response output.~~
+~~2. Drag-select some response text in the terminal pane.~~
+~~3. Press Ctrl+Shift+C. Paste into another app — the selected text arrives.~~
+~~4. Press Ctrl+C (no Shift) — sends SIGINT to claude, NOT copy. The selection stays visible but no clipboard write.~~
 
-### S-8A.4 Terminal copy with right-click
-1. Drag-select some text. Right-click anywhere in the terminal pane.
-2. **Expect:** text copied to clipboard. No OS context menu appears (we prevented default).
-3. Right-click without a selection: OS default menu appears (we didn't preventDefault).
+~~### S-8A.4 Terminal copy with right-click~~ *(removed v2 — embedded terminal gone)*
+~~1. Drag-select some text. Right-click anywhere in the terminal pane.~~
+~~2. **Expect:** text copied to clipboard. No OS context menu appears (we prevented default).~~
+~~3. Right-click without a selection: OS default menu appears (we didn't preventDefault).~~
 
-### S-8A.5 Terminal keystroke pass-through (Y/N prompts)
-1. Trigger a flow where claude asks a Y/N question (e.g. "Use tool X? [y/n]").
-2. Click the terminal pane to give it focus.
-3. Press `y` followed by Enter.
-4. **Expect:** the keystroke goes to claude directly. No new turn row in the `turns` table.
+~~### S-8A.5 Terminal keystroke pass-through (Y/N prompts)~~ *(removed v2 — embedded terminal gone)*
+~~1. Trigger a flow where claude asks a Y/N question (e.g. "Use tool X? [y/n]").~~
+~~2. Click the terminal pane to give it focus.~~
+~~3. Press `y` followed by Enter.~~
+~~4. **Expect:** the keystroke goes to claude directly. No new turn row in the `turns` table.~~
 
 ### S-8A.6 Dev Mode shows historical logs on open
 1. Click around for ~30 seconds (generates ui logs).
@@ -693,21 +693,21 @@ Hard to trigger manually (Haiku usually obeys). The parser handles this via Zod.
 ### S-8A.9 Modal focus management
 1. Trigger AuthMissingModal (e.g., switch to an account with no API key, click Gear).
 2. **Expect:** the "Got it" button is focused (visible focus ring). Press Escape — modal closes.
-3. Same for ClaudeNotFoundModal.
+~~3. Same for ClaudeNotFoundModal.~~ *(ClaudeNotFoundModal removed v2)*
 
-### S-8A.10 Persistent CostPreview after Send
+### S-8A.10 Persistent CostPreview after Copy Geared
 1. Type a prompt + click Gear + wait for the geared pane.
-2. Click "Send Geared".
-3. After the send, the composer textarea is empty.
+2. Click "Copy Geared".
+3. After the copy, the composer textarea is empty.
 4. **Expect:** TelemetryStrip shows "Last gear cost: $X.XX" (the cost from the gearing call just completed).
 5. Start typing a new prompt — TelemetryStrip switches to showing the live estimate.
 
-### S-8A.11 "Send original" toast reads latest prompt
-1. Type "first prompt", click Gear, wait for failure (e.g. with no API key).
-2. The error toast appears with "Send original" action.
-3. While the toast is visible, type more — now the composer says "first prompt and more".
-4. Click "Send original" in the toast.
-5. **Expect:** the FULL CURRENT prompt ("first prompt and more") is sent, not the original captured at toast-creation time.
+~~### S-8A.11 "Send original" toast reads latest prompt~~ *(removed v2 — Send-into-PTY gone)*
+~~1. Type "first prompt", click Gear, wait for failure (e.g. with no API key).~~
+~~2. The error toast appears with "Send original" action.~~
+~~3. While the toast is visible, type more — now the composer says "first prompt and more".~~
+~~4. Click "Send original" in the toast.~~
+~~5. **Expect:** the FULL CURRENT prompt ("first prompt and more") is sent, not the original captured at toast-creation time.~~
 
 ### S-8A.12 AI error analysis on Dev Mode error row
 1. Trigger an error log (e.g. attempt Gear with no account/key).
@@ -717,7 +717,7 @@ Hard to trigger manually (Haiku usually obeys). The parser handles this via Zod.
 
 ### S-8A.13 Settings page opens via TopBar gear icon
 1. Click the Settings button in the TopBar.
-2. **Expect:** the view switches from AppShell to SettingsView with 6 sections (Accounts, Gearing Defaults, Send Confirm, Dev Mode, Telemetry, Paths).
+2. **Expect:** the view switches from AppShell to SettingsView with 5 sections (Accounts, Gearing Defaults, Dev Mode, Telemetry, Paths). *(v2: Send Confirm section removed — Send-into-PTY gone)*
 3. Click "← Back" — returns to AppShell.
 
 ### S-8A.14 Gearing defaults persist + take effect
@@ -726,11 +726,11 @@ Hard to trigger manually (Haiku usually obeys). The parser handles this via Zod.
 3. **Expect:** the Composer's Model dropdown defaults to Haiku, not Opus.
 4. Restart the app. Verify the default still sticks.
 
-### S-8A.15 Send-confirm toggle gates Send
-1. In Settings → Send Confirm, toggle on.
-2. Back to shell. Type a prompt + click Send.
-3. **Expect:** ConfirmModal "Send prompt?" appears. Click Cancel — nothing sent. Click Confirm — prompt sent normally.
-4. Toggle off in Settings — Send works without the modal.
+~~### S-8A.15 Send-confirm toggle gates Send~~ *(removed v2 — Send-into-PTY gone; Settings Send Confirm section removed)*
+~~1. In Settings → Send Confirm, toggle on.~~
+~~2. Back to shell. Type a prompt + click Send.~~
+~~3. **Expect:** ConfirmModal "Send prompt?" appears. Click Cancel — nothing sent. Click Confirm — prompt sent normally.~~
+~~4. Toggle off in Settings — Send works without the modal.~~
 
 ### S-8A.16 Paths section "Open folder" buttons
 1. Settings → Paths. Click "Open folder" next to Logs.

@@ -59,7 +59,7 @@ TokenLess v2 keeps the Electron main/renderer split but loses the largest chunk 
 
 ### Main process (post-refactor)
 
-- Owns the **SQLite** database (better-sqlite3). Only main writes. Migration `0010_headless.sql` drops PTY-specific columns and assistant turn rows.
+- Owns the **SQLite** database (better-sqlite3). Only main writes. Migrations `003_v2_headless.sql` + `004_remove_commit_push_prompts.sql` drop PTY-specific columns, assistant turn rows, and Commit/Push project columns.
 - Owns the singleton **Anthropic SDK client** used for Haiku gearing + AI error analysis. The rolling-summary refresher and response-side critique go away (no responses to summarize).
 - Owns the **Logger** service unchanged. New observability events for clipboard capture + send (`capture.read`, `capture.empty`, `capture.too-large`, `send.copied`).
 - Exposes a narrowed IPC surface (Section 3).
@@ -137,7 +137,9 @@ GitHub workflow split: the existing `ci.yml` and `release.yml` continue to run a
 
 ## 4. Database schema changes
 
-Migration `0010_headless.sql`:
+Two migrations apply on first launch of v2:
+
+**`003_v2_headless.sql`** (Phase 2):
 
 - `ALTER TABLE conversations DROP COLUMN cc_session_id;`
 - `ALTER TABLE conversations DROP COLUMN parent_conversation_id;`
@@ -150,9 +152,14 @@ Migration `0010_headless.sql`:
 - `ALTER TABLE turns DROP COLUMN feedback;` (no UI surface remains)
 - `ALTER TABLE turns DROP COLUMN role;` (always 'user' now)
 
+**`004_remove_commit_push_prompts.sql`** (Phase 6):
+
+- `ALTER TABLE projects DROP COLUMN commit_prompt;`
+- `ALTER TABLE projects DROP COLUMN push_prompt;`
+
 SQLite doesn't support `DROP COLUMN` natively before 3.35; better-sqlite3 11 bundles a recent enough SQLite. If issues arise, fall back to table-recreate pattern.
 
-User-impact: existing v1 users opening the v2 build get a one-time migration. Drafts are preserved. Projects + accounts are preserved. Old assistant transcripts are discarded (a one-time pre-migration JSONL export to `~/.tokenless/v1-backup-<timestamp>.jsonl` for recovery, written by the migration runner before the deletes execute).
+User-impact: existing v1 users opening the v2 build get a one-time migration (003 + 004). Drafts are preserved. Projects + accounts are preserved. Old assistant transcripts are discarded. **Backup**: the migration runner (`src/main/db/migrations/runner.ts`) writes a whole-DB SQLite copy to `<userData>/backups/` before any pending migration applies. The SQLite copy IS the v1 recovery artifact — superseding the spec's earlier JSONL proposal (see ADR-048). Users who want to inspect old data can open the backup file in any SQLite tool.
 
 ---
 
@@ -255,7 +262,7 @@ Following the v1 cornerstone: every new feature must have unit + integration + s
 - **S-v2.1** Capture from clipboard: empty / typical / 33KB.
 - **S-v2.2** Gear + edit geared + Copy → paste in Notepad → verify exact bytes.
 - **S-v2.3** Half-screen layout at 720×1000: all controls reachable, no horizontal scroll.
-- **S-v2.4** v1 → v2 migration: open with existing v1 SQLite DB, verify backup JSONL exists, verify drafts preserved.
+- **S-v2.4** v1 → v2 migration: open with existing v1 SQLite DB, verify SQLite backup exists in `<userData>/backups/`, verify drafts preserved.
 
 ---
 
@@ -267,11 +274,11 @@ Detailed per-phase plans go in `docs/superpowers/plans/2026-05-16-phase-N-...` (
 |---|---|---|---|
 | 0 | `v2.0.0-phase-0-spec` | Branch + safety tag (`v1.0.0-final`, `release/v1`). Spec + initial plans committed to `v2/headless`. | shipped |
 | 1 | `v2.0.0-phase-1-strip-pty` | Delete `src/main/cc/`, `cc-handler.ts`, terminal renderer components + hooks, preload `cc` namespace, node-pty + @xterm/* deps, electron-builder unpacks. App still builds + runs with a placeholder MainPane. | shipped 2026-05-16 (12 commits, 292/292 unit/integration, build:unpack OK, E2E known failures as documented) |
-| 2 | `v2.0.0-phase-2-strip-dependents` | Remove branching UI, summary refresher, response accumulator, feedback UI, hung/crash modals, ClaudeNotFoundModal. DB migration `0010_headless.sql`. v1 backup export. | shipped 2026-05-16 (10 commits, 272/272 unit/integration, migration 003 verified, build:unpack OK, E2E 11/0/2-skipped). Plan adjusted migration filename to `003_v2_headless.sql`; v1 backup via existing whole-DB SQLite copy instead of JSONL — spec amendment in phase 6. |
+| 2 | `v2.0.0-phase-2-strip-dependents` | Remove branching UI, summary refresher, response accumulator, feedback UI, hung/crash modals, ClaudeNotFoundModal. DB migration (spec originally called `0010_headless.sql`). v1 backup export. | shipped 2026-05-16 (10 commits, 272/272 unit/integration, migration 003 verified, build:unpack OK, E2E 11/0/2-skipped). Plan adjusted migration filename to `003_v2_headless.sql`; v1 backup via existing whole-DB SQLite copy instead of pre-migration export — spec amendment in phase 6. |
 | 3 | `v2.0.0-phase-3-capture` | `clipboard:read-prompt` IPC, Capture button in Composer, validation + observability + tests. | shipped 2026-05-16 (9 commits, 285/285 unit/integration, E2E 13/0/2-skipped, capture-flow E2E added). Implementer chose a custom failure-shape union (`{ok:false, code:'EMPTY'\|'TOO_LARGE'\|'READ_FAILED'}`) instead of the project's `IpcError`-wrapped pattern — phase 6 consistency decision. |
 | 4 | `v2.0.0-phase-4-send` | `clipboard:write-geared` IPC, Copy Geared button replacing old Send, success toast + tests. | shipped 2026-05-16 (9 commits, 293/293 unit/integration, E2E 15/0/1-skipped incl. full Capture→Gear→Copy round-trip). gearing.e2e.test.ts un-skipped — was previously gated on the now-deleted `.terminal-pane`. |
 | 5 | `v2.0.0-phase-5-layout` | Sidebar collapse, MainPane vertical reflow, TopBar compaction, half-screen scenarios + E2E. | shipped 2026-05-16 (8 tasks, 297/297 unit/integration, E2E 19/0/1-skipped). Composer + GearReviewPane unified into drawer (ActionsRow Copy Geared now reachable). ActionsRow final 5-button shape (Capture/Gear/Copy/Discard/Templates) with Commit + Push removed. |
-| 6 | `v2.0.0-phase-6-cleanup` | dev-runner simplification, CLAUDE.md rewrite, ADR-043+ for v2 decisions, GitHub Actions workflow updates (drop node-pty rebuild), e2e suite refresh, scenarios doc rewrite, removed categories struck through. |
+| 6 | `v2.0.0-phase-6-cleanup` | dev-runner simplification, CLAUDE.md rewrite, ADR-043+ for v2 decisions, GitHub Actions workflow updates (drop node-pty rebuild), e2e suite refresh, scenarios doc rewrite, removed categories struck through. | shipped 2026-05-16 (9 tasks, ~299 tests green, migration 004 verified, CLAUDE.md rewritten, ADRs 043-052 added) |
 | 7 | `v2.0.0` | Version bump 2.0.0, About dialog update, README rewrite for headless flow, merge `v2/headless` → `main` with `--no-ff`, signed tag `v2.0.0`. |
 
 Each phase exits with the standard v1-style verification gate: typecheck → test:run → build → test:e2e (e2e deferred to CI on dev boxes without VS Build Tools).
