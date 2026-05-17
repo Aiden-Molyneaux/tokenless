@@ -25,7 +25,7 @@ describe('ipc/crash-handler', () => {
   })
 
   it('getReport returns ok with a fully-populated CrashReport', async () => {
-    logger.info('cc', 'test-event', 'msg', {})
+    logger.info('observability', 'test-event', 'msg', {})
     const r = await handler.getReport({ source: 'renderer', message: 'oops', stack: 'at foo:1:1' })
     expect(r.ok).toBe(true)
     if (r.ok) {
@@ -45,7 +45,7 @@ describe('ipc/crash-handler', () => {
 
   it('buildReport caps recentLogs at 100 entries even when ring buffer has more', () => {
     for (let i = 0; i < 200; i++) {
-      logger.info('cc', 'spam', `msg-${i}`, {})
+      logger.info('observability', 'spam', `msg-${i}`, {})
     }
     const report = handler.buildReport({ source: 'main', message: 'crash', stack: null })
     expect(report.recentLogs.length).toBeLessThanOrEqual(100)

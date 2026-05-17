@@ -4,8 +4,6 @@
 // data and need to be referenceable everywhere.
 
 export const CATEGORIES = [
-  'cc',
-  'pty',
   'api',
   'db',
   'ipc',
