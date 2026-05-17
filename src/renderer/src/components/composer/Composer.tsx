@@ -241,14 +241,12 @@ export function Composer({ conversationId, accountId, accountLabel }: ComposerPr
     }
   }
 
-  const handleCommit = (): void => {
-    rendererLogger.info('ui', 'commit-clicked', 'Commit (stub) — pre-filling composer')
-    setPrompt('Stage and commit all current changes. Write a concise commit message focused on the *why*, not the *what*. Do not push.')
-  }
-
-  const handlePush = (): void => {
-    rendererLogger.info('ui', 'push-clicked', 'Push (stub) — pre-filling composer')
-    setPrompt('Push the current branch to its remote.')
+  const handleDiscard = (): void => {
+    rendererLogger.info('ui', 'discard', 'User discarded composer + gear state')
+    setPrompt('')
+    setGearState(null)
+    void clearDraft()
+    setCaptureHint(null)
   }
 
   const handleInsertTemplate = (body: string): void => {
@@ -301,6 +299,11 @@ export function Composer({ conversationId, accountId, accountLabel }: ComposerPr
       <div className="composer-shell">
         <div className="composer-shell__main">
           <PromptTextarea value={prompt} onChange={setPrompt} />
+          {prompt.length === 0 && gearState === null && (
+            <p className="composer__empty-hint">
+              Capture a prompt from your terminal (Ctrl+C in terminal → click Capture).
+            </p>
+          )}
           <ConfigsRow
             model={model}
             onModelChange={setModel}
@@ -323,9 +326,8 @@ export function Composer({ conversationId, accountId, accountLabel }: ComposerPr
               captureDisabled={captureDisabled}
               onGear={handleGear}
               onCopyGeared={handleCopyGearedFromState}
+              onDiscard={handleDiscard}
               onTemplates={() => setTemplatesOpen((v) => !v)}
-              onCommit={handleCommit}
-              onPush={handlePush}
             />
             {templatesOpen && (
               <TemplatePickerPopover

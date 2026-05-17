@@ -73,9 +73,9 @@ test('composer renders with textarea, 4 config dropdowns, and action buttons', a
   await expect(page.locator('.prompt-textarea')).toBeVisible()
   await expect(page.locator('.configs-row .dropdown')).toHaveCount(4)
   await expect(page.locator('.actions-row__button--gear')).toBeVisible()
-  // Phase 4 (v2 headless): Capture + Gear + Copy Geared + Templates + Commit + Push = 6 buttons.
-  // Phase 5 may drop Commit/Push to reach the final 4-button row.
-  await expect(page.locator('.actions-row__button')).toHaveCount(6)
+  // Phase 5 (v2 headless): Capture + Gear + Copy Geared + Discard + Templates = 5 buttons.
+  // Commit + Push removed; Discard added (v2 users run git in their own terminal).
+  await expect(page.locator('.actions-row__button')).toHaveCount(5)
 })
 
 test('typing in the prompt textarea enables the Gear button', async () => {

@@ -10,16 +10,15 @@ interface ActionsRowProps {
   captureDisabled?: boolean
   onGear: () => void
   onCopyGeared: () => void
+  onDiscard: () => void
   onTemplates: () => void
-  onCommit: () => void
-  onPush: () => void
 }
 
 // The button row beneath ConfigsRow. Gear is primary (orange). Copy Geared is
-// enabled once a gear result is present. Commit + Push pre-fill the composer
-// with canned git prompts (Phase 7 wires that; Phase 2B stubs the callbacks).
+// enabled once a gear result is present. Discard clears the prompt + gear state.
+// Final shape (v2): Capture, Gear, Copy Geared, Discard (primary) + Templates (secondary).
 
-export function ActionsRow({ promptEmpty, disableGear = false, copyDisabled = false, onCapture, captureDisabled = false, onGear, onCopyGeared, onTemplates, onCommit, onPush }: ActionsRowProps): JSX.Element {
+export function ActionsRow({ promptEmpty, disableGear = false, copyDisabled = false, onCapture, captureDisabled = false, onGear, onCopyGeared, onDiscard, onTemplates }: ActionsRowProps): JSX.Element {
   return (
     <div className="actions-row">
       <div className="actions-row__primary">
@@ -53,6 +52,16 @@ export function ActionsRow({ promptEmpty, disableGear = false, copyDisabled = fa
             Copy Geared
           </button>
         </InfoTooltip>
+        <InfoTooltip helperText="Clear the composer + close the gear review.">
+          <button
+            type="button"
+            className="actions-row__button actions-row__button--discard"
+            onClick={onDiscard}
+            aria-label="Discard composer + gear review"
+          >
+            Discard
+          </button>
+        </InfoTooltip>
       </div>
       <div className="actions-row__secondary">
         <InfoTooltip helperText="Insert a saved template into the composer.">
@@ -62,24 +71,6 @@ export function ActionsRow({ promptEmpty, disableGear = false, copyDisabled = fa
             onClick={onTemplates}
           >
             Templates ▾
-          </button>
-        </InfoTooltip>
-        <InfoTooltip helperText="Pre-fills the composer with this project's commit prompt (editable in Settings).">
-          <button
-            type="button"
-            className="actions-row__button actions-row__button--secondary"
-            onClick={onCommit}
-          >
-            Commit
-          </button>
-        </InfoTooltip>
-        <InfoTooltip helperText="Pre-fills the composer with this project's push prompt.">
-          <button
-            type="button"
-            className="actions-row__button actions-row__button--secondary"
-            onClick={onPush}
-          >
-            Push
           </button>
         </InfoTooltip>
       </div>

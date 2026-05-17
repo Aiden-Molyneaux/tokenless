@@ -139,6 +139,24 @@
   color: var(--tl-mute);
 }
 
+.actions-row__button--discard {
+  color: var(--tl-fg-muted, #666);
+  border: 1px solid var(--tl-rule, #ccc);
+  background: transparent;
+}
+
+.actions-row__button--discard:hover {
+  color: var(--tl-fg, #000);
+  background: var(--tl-hover, rgba(0, 0, 0, 0.05));
+}
+
+.composer__empty-hint {
+  margin: 8px 0;
+  font-size: 13px;
+  color: var(--tl-fg-muted, #666);
+  font-style: italic;
+}
+
 /* ===== Telemetry strip ===== */
 
 .telemetry-strip {
