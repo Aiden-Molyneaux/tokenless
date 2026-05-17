@@ -824,3 +824,20 @@ Hard to trigger manually (Haiku usually obeys). The parser handles this via Zod.
 **Too-large case:** Generate ~40 KB of text (`x` repeated, or paste a large log file). Click Capture. Expect: a warn toast "Clipboard contains more than 32 KB. Trim your selection." appears; the prompt textarea is unchanged.
 
 **Read-failed case:** Hard to reproduce manually on Windows — `clipboard.readText()` rarely throws. Verified in the integration test by injecting a fake clipboard that throws.
+
+
+## S-v2.2: Gear + Copy round-trip (Phase 4)
+
+**Setup:** Launch the unpacked app with at least one project. Open Notepad (or any other app) ready to receive a paste.
+
+1. Type a prompt in the composer (e.g., "Refactor src/auth.ts please").
+2. Click Gear. Wait for the GearReviewPane to render (with the geared variant + critique flags + cost preview).
+3. Optionally edit the geared text in the right pane.
+4. Click "Copy geared".
+5. Expect: A toast appears: "Geared prompt copied — paste into your terminal." The Composer returns to the empty-prompt state (textarea cleared, GearReviewPane closed).
+6. Switch to Notepad. Press Ctrl+V.
+7. Expect: The geared text (post-edits, exact bytes) appears in Notepad.
+
+**Variant — Copy original:** Repeat steps 1-2. Instead of clicking "Copy geared", click "Copy original". Expect: the clipboard receives the ORIGINAL un-geared prompt (the text you typed before Gear ran). Paste in Notepad confirms.
+
+**Failure case (hard to reproduce manually):** If the OS clipboard is locked by another process during the write, the toast "Couldn't write to clipboard. Geared text remains in TokenLess — try Copy Geared again." appears, and the composer state is preserved so the user can retry. Verified in the integration test by injecting a fake clipboard that throws on writeText.

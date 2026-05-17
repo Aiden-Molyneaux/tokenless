@@ -20,18 +20,16 @@ test.describe('Phase 5A gearing flow', () => {
     }
   })
 
-  // v2: skipped because the test fixture depends on .terminal-pane to confirm
-  // app boot, and the embedded terminal is gone. Phase 3 rewrites this test
-  // against the new clipboard-capture composer flow (no PTY readiness wait).
-  test.skip('clicking Gear with a mocked response renders the geared-review pane with cost preview', async () => {
-    const mockClaudeCmd = resolve('test/doubles/claude-mock.cmd')
+  // v2 (Phase 4): un-skipped — removed the .terminal-pane wait that was gating
+  // on the now-deleted embedded PTY. The test now waits for .composer to confirm
+  // the app is ready and uses the Capture + Gear + Copy Geared flow.
+  test('clicking Gear with a mocked response renders the geared-review pane with cost preview', async () => {
     app = await electron.launch({
       args: ['out/main/index.js'],
       env: {
         ...process.env,
         TOKENLESS_USER_DATA_DIR: userDataDir,
-        TOKENLESS_SKIP_ONBOARDING: '1',
-        TOKENLESS_CLAUDE_BIN: mockClaudeCmd
+        TOKENLESS_SKIP_ONBOARDING: '1'
       }
     })
     const win = await app.firstWindow()
@@ -43,7 +41,7 @@ test.describe('Phase 5A gearing flow', () => {
     await win.getByPlaceholder('My Project').fill('Gear Test')
     await win.getByPlaceholder('C:/path/to/project').fill(process.cwd())
     await win.getByRole('button', { name: /^create$/i }).click()
-    await expect(win.locator('.terminal-pane')).toBeVisible({ timeout: 10000 })
+    await win.waitForSelector('.composer', { timeout: 5000 })
 
     // Stub the gearing IPC handler at the main-process level.
     //
@@ -86,14 +84,9 @@ test.describe('Phase 5A gearing flow', () => {
       })
     })
 
-    // Start a conversation so the conversationId is wired into the Composer.
-    // The Send button is disabled when conversationId is null — use it as a
-    // synchronisation signal that handleNewConversation() has completed.
-    await win.getByRole('button', { name: /new conversation/i }).click()
-
     // Type a prompt
     await win.locator('.prompt-textarea').fill('Refactor my code please')
-    await expect(win.getByRole('button', { name: /^send$/i })).toBeEnabled({ timeout: 10000 })
+    await expect(win.locator('.actions-row__button--gear')).toBeEnabled()
 
     // Click Gear
     await win.getByRole('button', { name: /^gear$/i }).click()
@@ -104,5 +97,9 @@ test.describe('Phase 5A gearing flow', () => {
     await expect(win.getByText(/Compression: 80%/)).toBeVisible()
     // The cost preview should show the dollar amount
     await expect(win.getByText(/0\.0123/)).toBeVisible()
+
+    // Click "Copy geared" — verifies the action button exists and closes the pane.
+    await win.getByRole('button', { name: /copy geared/i }).click()
+    await expect(win.locator('.gear-review-pane')).toHaveCount(0, { timeout: 5000 })
   })
 })

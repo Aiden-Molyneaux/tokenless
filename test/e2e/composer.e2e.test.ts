@@ -73,13 +73,12 @@ test('composer renders with textarea, 4 config dropdowns, and action buttons', a
   await expect(page.locator('.prompt-textarea')).toBeVisible()
   await expect(page.locator('.configs-row .dropdown')).toHaveCount(4)
   await expect(page.locator('.actions-row__button--gear')).toBeVisible()
-  // Phase 3 (v2 headless): Capture + Gear + Send + Templates + Commit + Push = 6 buttons.
-  // Phase 4 will replace Send with Copy Geared (still 6); Phase 5 may drop
-  // Commit/Push to reach the final 4-button row.
+  // Phase 4 (v2 headless): Capture + Gear + Copy Geared + Templates + Commit + Push = 6 buttons.
+  // Phase 5 may drop Commit/Push to reach the final 4-button row.
   await expect(page.locator('.actions-row__button')).toHaveCount(6)
 })
 
-test('typing in the prompt textarea enables Gear and Send buttons', async () => {
+test('typing in the prompt textarea enables the Gear button', async () => {
   const page = await app.firstWindow()
   await page.waitForLoadState('domcontentloaded')
   await ensureProjectExists(page)
@@ -89,6 +88,7 @@ test('typing in the prompt textarea enables Gear and Send buttons', async () => 
 
   await page.locator('.prompt-textarea').fill('Refactor the auth middleware to flatten conditionals')
   await expect(gearButton).toBeEnabled()
+  // Note: Copy Geared is NOT enabled by typing — it only enables after Gear has run.
 })
 
 test('clicking Gear swaps to GearReviewPane with original + geared text', async () => {
