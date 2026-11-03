@@ -4,7 +4,7 @@
   "private": true,
   "description": "Token-efficient prompt gearing for Claude",
   "author": "Aiden Molyneaux",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "main": "out/main/index.js",
   "type": "module",
   "scripts": {
