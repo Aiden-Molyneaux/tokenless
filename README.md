@@ -4,6 +4,9 @@ TokenLess is a small Windows app that sits next to Claude Code and looks over a 
 
 I built it because Claude usually says more than I need, and the answer is where the tokens go. On Anthropic's pricing, output tokens cost about five times as much as input tokens. A line like "diff only, no preamble" costs about a dozen tokens and can save hundreds. TokenLess adds that kind of line to every prompt using the cheapest model, so the expensive one gets told exactly what I want back.
 
+<p align="center"><img src="docs/images/review.jpg" width="480" alt="TokenLess after a Gear: critique flags, then the original beside the rewrite"></p>
+<p align="center"><em>A real Gear on a vague prompt. Haiku flags the open-ended scope and asks for a code-only diff.</em></p>
+
 ## Why not just ask Claude to shorten the prompt?
 
 Shortening the question saves the least. Gearing goes after the answer first: how long it should be, what format, and no narration. A geared prompt can come back longer than what you typed and still be the cheaper one to send.
